@@ -1,6 +1,12 @@
 #ifndef FONT_HPP
 #define FONT_HPP
 
+/**************************************************************************
+ * The Font class defines a bitmap font that holds a bitmap of all
+ * characters. The graphics class can use a Font to blit characters to
+ * a frame buffer.
+**************************************************************************/
+
 #include <stdint.h>
 #include <map>
 

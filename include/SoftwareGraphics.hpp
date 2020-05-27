@@ -1,6 +1,12 @@
 #ifndef SOFTWAREGRAPHICS_HPP
 #define SOFTWAREGRAPHICS_HPP
 
+/**************************************************************************
+ * The SofwareGraphics class defines functions used to render graphics
+ * with CPU-based rendering, as opposed to GPU-based rendering. This is
+ * useful for embedded applications where a GPU may not be available.
+**************************************************************************/
+
 #include "Graphics.hpp"
 
 class SoftwareGraphics 	: public Graphics
@@ -9,7 +15,8 @@ class SoftwareGraphics 	: public Graphics
 		SoftwareGraphics (FrameBuffer* frameBuffer, ColorProfile* colorProfile);
 		~SoftwareGraphics() override;
 
-		void setColor (float r, float g, float b) override; // r, g, b, and a should be between 0.0f and 1.0f
+		void setColor (float r, float g, float b) override;
+		void setColor (bool val) override;
 		void setFont (Font* font) override;
 
 		void fill();

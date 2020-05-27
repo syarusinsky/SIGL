@@ -1,9 +1,17 @@
 #include "Surface.hpp"
 
+#include "FrameBuffer.hpp"
+
+#ifdef SOFTWARE_RENDERING
+#include "SoftwareGraphics.hpp"
+#endif // SOFTWARE_RENDERING
+
 Surface::Surface (unsigned int width, unsigned int height, const CP_FORMAT& format) :
-	m_FrameBuffer( width, height, format ),
-	m_ColorProfile( m_FrameBuffer.getColorProfile() ),
-	m_Graphics( &m_FrameBuffer, m_ColorProfile )
+	m_FrameBuffer( new FrameBuffer(width, height, format) ),
+	m_ColorProfile( m_FrameBuffer->getColorProfile() ),
+#ifdef SOFTWARE_RENDERING
+	m_Graphics( new SoftwareGraphics(m_FrameBuffer, m_ColorProfile) )
+#endif // SOFTWARE_RENDERING
 {
 }
 
@@ -13,7 +21,7 @@ Surface::~Surface()
 
 FrameBuffer* Surface::getFrameBuffer()
 {
-	return &m_FrameBuffer;
+	return m_FrameBuffer;
 }
 
 ColorProfile* Surface::getColorProfile()

@@ -3,8 +3,6 @@
 #include <math.h>
 #include <algorithm>
 
-#include <iostream>
-
 SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer, ColorProfile* colorProfile) :
 	Graphics (frameBuffer, colorProfile)
 {
@@ -17,6 +15,11 @@ SoftwareGraphics::~SoftwareGraphics()
 void SoftwareGraphics::setColor (float r, float g, float b)
 {
 	m_ColorProfile->setColor( r, g, b );
+}
+
+void SoftwareGraphics::setColor (bool val)
+{
+	m_ColorProfile->setColor( val );
 }
 
 void SoftwareGraphics::setFont (Font* font)

@@ -4,7 +4,7 @@
 /*************************************************************************
  * The Graphics class defines several helper methods to draw graphical
  * elements to a frame buffer. Typically, a Graphics object will be
- * instantiated with a reference to a FrameBuffer which will be the
+ * instantiated with a pointer to a FrameBuffer which will be the
  * active context to paint within until it is changed by the user. The
  * class is pure virtual, so that both a software rendering version and
  * a hardware accelerated version can be implemented.
@@ -26,7 +26,8 @@ class Graphics
 			m_FBPixels (frameBuffer->getPixels()) {}
 		virtual ~Graphics() {}
 
-		virtual void setColor (float r, float g, float b) = 0; // TODO change these to also support monochrome
+		virtual void setColor (float r, float g, float b) = 0;
+		virtual void setColor (bool val) = 0;
 
 		virtual void setFont (Font* font) = 0;
 

@@ -22,7 +22,7 @@ class FrameBuffer
 
 		ColorProfile* getColorProfile();
 
-	private:
+	protected:
 		ColorProfile m_ColorProfile;
 		uint8_t*     m_Pixels;
 

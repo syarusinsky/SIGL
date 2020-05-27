@@ -1,6 +1,13 @@
 #ifndef COLORPROFILE_HPP
 #define COLORPROFILE_HPP
 
+/**************************************************************************
+ * The ColorProfile class defines the color profile of a frame buffer.
+ * The CP_FORMAT enum is used to specify the color depth and pixel width
+ * of each pixel. The ColorProfile is used by the graphics class to draw
+ * pixels in the frame buffer as well as set the color of each pixel.
+**************************************************************************/
+
 #include <stdint.h>
 
 enum class CP_FORMAT
