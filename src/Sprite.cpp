@@ -9,6 +9,13 @@ Sprite::Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format
 {
 }
 
+Sprite::Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels) :
+	FrameBuffer( width, height, format, pixels ),
+	m_ScaleFactor( 1.0f ),
+	m_RotationDegrees( 0.0f )
+{
+}
+
 unsigned int Sprite::getScaledWidth()
 {
 	return std::floor( m_Width * m_ScaleFactor );

@@ -4,17 +4,20 @@
 /**************************************************************************
  * The SofwareGraphics class defines functions used to render graphics
  * with CPU-based rendering, as opposed to GPU-based rendering. This is
- * useful for embedded applications where a GPU may not be available.
+ * useful for embedded applications where a GPU may not be available. The
+ * constructor is protected, so that only a Surface object can construct
+ * an instance and all drawing code can take place in the context of the
+ * surface.
 **************************************************************************/
 
 #include "Graphics.hpp"
 
 class SoftwareGraphics 	: public Graphics
 {
-	public:
-		SoftwareGraphics (FrameBuffer* frameBuffer, ColorProfile* colorProfile);
-		~SoftwareGraphics() override;
+	// only a surface should be able to construct
+	friend class Surface;
 
+	public:
 		void setColor (float r, float g, float b) override;
 		void setColor (bool val) override;
 		void setFont (Font* font) override;
@@ -31,9 +34,12 @@ class SoftwareGraphics 	: public Graphics
 		void drawCircleFilled (float originX, float originY, float radius) override;
 		void drawText (float xStart, float yStart, std::string, float scaleFactor) override;
 
-	private:
+	protected:
 		bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
+
+		SoftwareGraphics (FrameBuffer* frameBuffer);
+		~SoftwareGraphics() override;
 };
 
 #endif // SOFTWARE_GRAPHICS_HPP

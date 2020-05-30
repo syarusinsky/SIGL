@@ -3,8 +3,8 @@
 #include <math.h>
 #include <algorithm>
 
-SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer, ColorProfile* colorProfile) :
-	Graphics (frameBuffer, colorProfile)
+SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer) :
+	Graphics( frameBuffer )
 {
 }
 

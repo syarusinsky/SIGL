@@ -3,11 +3,12 @@
 
 /*************************************************************************
  * The Graphics class defines several helper methods to draw graphical
- * elements to a frame buffer. Typically, a Graphics object will be
- * instantiated with a pointer to a FrameBuffer which will be the
- * active context to paint within until it is changed by the user. The
- * class is pure virtual, so that both a software rendering version and
- * a hardware accelerated version can be implemented.
+ * elements to a frame buffer. The Graphics constructor is protected (as
+ * should be the subclasses that define the implementation), so that
+ * only a Surface class can construct them. This is so that typically all
+ * drawing code will be done inside a surface. The class is abstract,
+ * so that both a software rendering version and a hardware accelerated
+ * version can be implemented.
 *************************************************************************/
 
 #include "FrameBuffer.hpp"
@@ -18,13 +19,14 @@
 class Graphics
 {
 	public:
-		Graphics (FrameBuffer* frameBuffer, ColorProfile* colorProfile) :
-			m_FB (frameBuffer),
-			m_ColorProfile (colorProfile),
-			m_FBWidth (frameBuffer->getWidth()),
-			m_FBHeight (frameBuffer->getHeight()),
-			m_FBPixels (frameBuffer->getPixels()) {}
-		virtual ~Graphics() {}
+		void setFrameBuffer (FrameBuffer* frameBuffer)
+		{
+			m_FB = frameBuffer;
+			m_ColorProfile = frameBuffer->getColorProfile();
+			m_FBWidth = frameBuffer->getWidth();
+			m_FBHeight = frameBuffer->getHeight();
+			m_FBPixels = frameBuffer->getPixels();
+		}
 
 		virtual void setColor (float r, float g, float b) = 0;
 		virtual void setColor (bool val) = 0;
@@ -47,9 +49,18 @@ class Graphics
 		FrameBuffer*       m_FB;
 		ColorProfile*      m_ColorProfile;
 		Font*              m_CurrentFont;
-		const unsigned int m_FBWidth;
-		const unsigned int m_FBHeight;
-		uint8_t* const     m_FBPixels;
+		unsigned int       m_FBWidth;
+		unsigned int       m_FBHeight;
+		uint8_t*           m_FBPixels;
+
+		Graphics (FrameBuffer* frameBuffer) :
+			m_FB( frameBuffer ),
+			m_ColorProfile( frameBuffer->getColorProfile() ),
+			m_FBWidth( frameBuffer->getWidth() ),
+			m_FBHeight( frameBuffer->getHeight() ),
+			m_FBPixels( frameBuffer->getPixels() ) {}
+		virtual ~Graphics() {}
+
 };
 
 #endif // GRAPHICS_HPP

@@ -14,6 +14,7 @@ class FrameBuffer
 {
 	public:
 		FrameBuffer (unsigned int width, unsigned int height, const CP_FORMAT& format);
+		FrameBuffer (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels);
 		virtual ~FrameBuffer();
 
 		uint8_t*     getPixels();

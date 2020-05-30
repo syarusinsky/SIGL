@@ -1,6 +1,6 @@
 #include "FrameBuffer.hpp"
 
-FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, const CP_FORMAT& format) :
+FrameBuffer::FrameBuffer (unsigned int width, unsigned int height, const CP_FORMAT& format) :
 	m_ColorProfile( format ),
 	m_Pixels( nullptr ),
 	m_Width( width ),
@@ -19,6 +19,14 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height, const CP_FORMA
 		default:
 			break;
 	}
+}
+
+FrameBuffer::FrameBuffer (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels) :
+	m_ColorProfile( format ),
+	m_Pixels( pixels ),
+	m_Width( width ),
+	m_Height( height )
+{
 }
 
 FrameBuffer::~FrameBuffer()

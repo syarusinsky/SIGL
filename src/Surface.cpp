@@ -10,7 +10,7 @@ Surface::Surface (unsigned int width, unsigned int height, const CP_FORMAT& form
 	m_FrameBuffer( new FrameBuffer(width, height, format) ),
 	m_ColorProfile( m_FrameBuffer->getColorProfile() ),
 #ifdef SOFTWARE_RENDERING
-	m_Graphics( new SoftwareGraphics(m_FrameBuffer, m_ColorProfile) )
+	m_Graphics( new SoftwareGraphics(m_FrameBuffer) )
 #endif // SOFTWARE_RENDERING
 {
 }

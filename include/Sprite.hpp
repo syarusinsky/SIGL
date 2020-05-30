@@ -14,6 +14,7 @@ class Sprite : public FrameBuffer
 {
 	public:
 		Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format);
+		Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels);
 
 		unsigned int getScaledWidth();
 		unsigned int getScaledHeight();
