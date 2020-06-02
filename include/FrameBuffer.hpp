@@ -17,9 +17,9 @@ class FrameBuffer
 		FrameBuffer (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels);
 		virtual ~FrameBuffer();
 
-		uint8_t*     getPixels();
-		unsigned int getWidth();
-		unsigned int getHeight();
+		uint8_t* getPixels() const;
+		unsigned int getWidth() const;
+		unsigned int getHeight() const;
 
 		ColorProfile* getColorProfile();
 

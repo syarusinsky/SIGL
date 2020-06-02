@@ -33,17 +33,17 @@ FrameBuffer::~FrameBuffer()
 {
 }
 
-uint8_t* FrameBuffer::getPixels()
+uint8_t* FrameBuffer::getPixels() const
 {
 	return m_Pixels;
 }
 
-unsigned int FrameBuffer::getWidth()
+unsigned int FrameBuffer::getWidth() const
 {
 	return m_Width;
 }
 
-unsigned int FrameBuffer::getHeight()
+unsigned int FrameBuffer::getHeight() const
 {
 	return m_Height;
 }

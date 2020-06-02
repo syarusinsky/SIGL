@@ -33,6 +33,7 @@ class SoftwareGraphics 	: public Graphics
 		void drawCircle (float originX, float originY, float radius) override;
 		void drawCircleFilled (float originX, float originY, float radius) override;
 		void drawText (float xStart, float yStart, std::string, float scaleFactor) override;
+		void drawSprite (float xStart, float yStart, Sprite& sprite) override;
 
 	protected:
 		bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected

@@ -19,22 +19,22 @@ Font::Font (uint8_t* data) :
 	this->createCharacterMap();
 }
 
-unsigned int Font::getCharacterWidth()
+unsigned int Font::getCharacterWidth() const
 {
 	return m_CharacterWidth;
 }
 
-unsigned int Font::getBitmapWidth()
+unsigned int Font::getBitmapWidth() const
 {
 	return m_Width;
 }
 
-unsigned int Font::getBitmapHeight()
+unsigned int Font::getBitmapHeight() const
 {
 	return m_Height;
 }
 
-unsigned int Font::getCharacterIndex (const char character)
+unsigned int Font::getCharacterIndex (const char character) const
 {
 	return m_CharMap.at( character );
 }
@@ -48,7 +48,7 @@ void Font::createCharacterMap()
 	}
 }
 
-const uint8_t* Font::getBitmapStart()
+const uint8_t* Font::getBitmapStart() const
 {
 	return m_BitmapStart;
 }

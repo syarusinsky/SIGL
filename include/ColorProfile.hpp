@@ -10,6 +10,18 @@
 
 #include <stdint.h>
 
+struct Color
+{
+	float m_R = 0.0f;
+	float m_G = 0.0f;
+	float m_B = 0.0f;
+	float m_A = 0.0f;
+	bool  m_M = 0.0f;
+
+	bool  m_IsMonochrome = false;
+	bool  m_HasAlpha = false;
+};
+
 enum class CP_FORMAT
 {
 	MONOCHROME_1BIT,
@@ -23,14 +35,16 @@ class ColorProfile
 		~ColorProfile();
 
 		void putPixel (uint8_t* fbStart, unsigned int pixelNum);
+		Color getPixel (uint8_t* fbStart, unsigned int pixelNum) const;
 
 		void setColor (float rValue, float gValue, float bValue);
 		void setColor (bool mValue);
+		void setColor (const Color& color);
 
-		CP_FORMAT getFormat();
+		const CP_FORMAT getFormat() const;
 
 	private:
-		CP_FORMAT m_Format;
+		const CP_FORMAT m_Format;
 
 		uint8_t m_RValue;
 		uint8_t m_GValue;

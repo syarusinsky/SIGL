@@ -21,16 +21,16 @@ void ColorProfile::putPixel (uint8_t* fbStart, unsigned int pixelNum)
 	{
 		case CP_FORMAT::MONOCHROME_1BIT:
 		{
-			unsigned int byte = std::floor( pixelNum / 8 );
-			unsigned int realPixel = pixelNum % 8;
-			uint8_t realPixelMask = ( 1 << realPixel );
+			unsigned int byteNum = std::floor( pixelNum / 8 );
+			unsigned int pixelIndex = pixelNum % 8;
+			uint8_t bitmask = ( 1 << pixelIndex );
 			if ( m_MValue == true )
 			{
-				fbStart[byte] = fbStart[byte] | realPixelMask;
+				fbStart[byteNum] = fbStart[byteNum] | bitmask;
 			}
 			else
 			{
-				fbStart[byte] = fbStart[byte] & ~(realPixelMask);
+				fbStart[byteNum] = fbStart[byteNum] & ~(bitmask);
 			}
 		}
 
@@ -46,6 +46,39 @@ void ColorProfile::putPixel (uint8_t* fbStart, unsigned int pixelNum)
 		default:
 			break;
 	}
+}
+
+Color ColorProfile::getPixel (uint8_t* fbStart, unsigned int pixelNum) const
+{
+	Color color;
+
+	if ( m_Format == CP_FORMAT::MONOCHROME_1BIT )
+	{
+		color.m_IsMonochrome = true;
+
+		unsigned int byteNum = std::floor( pixelNum / 8 );
+		unsigned int pixelIndex = pixelNum % 8;
+		uint8_t bitmask = ( 1 << pixelIndex );
+
+		uint8_t byte = fbStart[byteNum];
+
+		if ( (byte & bitmask) >> pixelIndex )
+		{
+			color.m_M = true;
+		}
+		else
+		{
+			color.m_M = false;
+		}
+	}
+	else if ( m_Format == CP_FORMAT::RGB_24BIT )
+	{
+		color.m_R = static_cast<float>( fbStart[(pixelNum * 3 ) + 0]) / 255.0f;
+		color.m_G = static_cast<float>( fbStart[(pixelNum * 3 ) + 1]) / 255.0f;
+		color.m_B = static_cast<float>( fbStart[(pixelNum * 3 ) + 2]) / 255.0f;
+	}
+
+	return color;
 }
 
 void ColorProfile::setColor (float rValue, float gValue, float bValue)
@@ -71,9 +104,34 @@ void ColorProfile::setColor (float rValue, float gValue, float bValue)
 void ColorProfile::setColor (bool mValue)
 {
 	m_MValue = mValue;
+
+	if ( mValue )
+	{
+		m_RValue = 255;
+		m_GValue = 255;
+		m_BValue = 255;
+	}
+	else
+	{
+		m_RValue = 0;
+		m_GValue = 0;
+		m_BValue = 0;
+	}
 }
 
-CP_FORMAT ColorProfile::getFormat()
+void ColorProfile::setColor (const Color& color)
+{
+	if ( color.m_IsMonochrome )
+	{
+		this->setColor( color.m_M );
+	}
+	else if ( !color.m_HasAlpha )
+	{
+		this->setColor( color.m_R, color.m_G, color.m_B );
+	}
+}
+
+const CP_FORMAT ColorProfile::getFormat() const
 {
 	return m_Format;
 }

@@ -13,8 +13,10 @@
 
 #include "FrameBuffer.hpp"
 #include "ColorProfile.hpp"
-#include "Font.hpp"
 #include <string>
+
+class Font;
+class Sprite;
 
 class Graphics
 {
@@ -44,14 +46,15 @@ class Graphics
 		virtual void drawCircle (float originX, float originY, float radius) = 0;
 		virtual void drawCircleFilled (float originX, float originY, float radius) = 0;
 		virtual void drawText (float xStart, float yStart, std::string, float scaleFactor) = 0;
+		virtual void drawSprite (float xStart, float yStart, Sprite& sprite) = 0;
 
 	protected:
-		FrameBuffer*       m_FB;
-		ColorProfile*      m_ColorProfile;
-		Font*              m_CurrentFont;
-		unsigned int       m_FBWidth;
-		unsigned int       m_FBHeight;
-		uint8_t*           m_FBPixels;
+		FrameBuffer*         m_FB;
+		ColorProfile*        m_ColorProfile;
+		Font*                m_CurrentFont;
+		unsigned int         m_FBWidth;
+		unsigned int         m_FBHeight;
+		uint8_t*             m_FBPixels;
 
 		Graphics (FrameBuffer* frameBuffer) :
 			m_FB( frameBuffer ),

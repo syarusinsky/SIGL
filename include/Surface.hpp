@@ -26,14 +26,14 @@ class Surface
 		FrameBuffer*  getFrameBuffer();
 		ColorProfile* getColorProfile();
 
-		unsigned int  getPixelWidthInBits();
+		unsigned int  getPixelWidthInBits() const;
 
 		virtual void draw() = 0;
 
 	protected:
-		FrameBuffer*  	 m_FrameBuffer;
-		ColorProfile*	 m_ColorProfile;
-		Graphics*        m_Graphics;
+		FrameBuffer*   m_FrameBuffer;
+		ColorProfile*  m_ColorProfile;
+		Graphics*      m_Graphics;
 };
 
 #endif // SURFACE_HPP

@@ -16,14 +16,14 @@ class Sprite : public FrameBuffer
 		Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format);
 		Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels);
 
-		unsigned int getScaledWidth();
-		unsigned int getScaledHeight();
+		unsigned int getScaledWidth() const;
+		unsigned int getScaledHeight() const;
 
 		void setScaleFactor (float scaleFactor);
-		float getScaleFactor();
+		float getScaleFactor() const;
 
 		void setRotationDegrees (float rotDegrees);
-		float getRotationDegrees();
+		float getRotationDegrees() const;
 
 	protected:
 		float m_ScaleFactor;

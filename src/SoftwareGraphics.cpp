@@ -1,5 +1,8 @@
 #include "SoftwareGraphics.hpp"
 
+#include "Font.hpp"
+#include "Sprite.hpp"
+
 #include <math.h>
 #include <algorithm>
 
@@ -783,6 +786,33 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 	}
 }
 
+void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
+{
+	// getting the pixel values of the vertices
+	int currentXInt = xStart * (m_FBWidth  - 1);
+	int currentYInt = yStart * (m_FBHeight - 1);
+	int currentPixel = (currentYInt * m_FBWidth) + currentXInt;
+
+	int spriteWidth = sprite.getWidth();
+	int spriteHeight = sprite.getHeight();
+	ColorProfile* spriteCP = sprite.getColorProfile();
+	uint8_t* spritePixels = sprite.getPixels();
+
+	// TODO need to add scaling and rotation to this
+	for ( int row = 0; row < spriteHeight; row++ )
+	{
+		for ( int pixel = 0; pixel < spriteWidth; pixel++ )
+		{
+			Color color = spriteCP->getPixel( spritePixels, (row * spriteWidth) + pixel );
+			m_ColorProfile->setColor( color );
+			m_ColorProfile->putPixel( m_FBPixels, currentPixel );
+			currentPixel++;
+		}
+
+		currentPixel += ( m_FBWidth - spriteWidth );
+	}
+}
+
 bool SoftwareGraphics::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
 {
 	// cache points
@@ -861,27 +891,32 @@ bool SoftwareGraphics::clipLine (float* xStart, float* yStart, float* xEnd, floa
 				if (point1Region & RIGHT)
 				{
 					tempX1 = 1.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) * (1.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
+						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
 
 					if (tempY1 < 0.0f) // if the line is still outside, clip again
 					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) * (0.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
+							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY1 = 0.0f;
 					}
 				}
 				else if (point1Region & LEFT)
 				{
 					tempX1 = 0.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) * (0.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
+						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
 					if (tempY1 < 0.0f) // if the line is still outside, clip again
 					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) * (0.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
+							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY1 = 0.0f;
 					}
 				}
 				else
 				{
-					tempX1 = xStartClipped + (xEndClipped - xStartClipped) * (0.0f - yStartClipped) / (yEndClipped - yStartClipped);
+					tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
+						(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
 					tempY1 = 0.0f;
 				}
 			}
@@ -890,28 +925,33 @@ bool SoftwareGraphics::clipLine (float* xStart, float* yStart, float* xEnd, floa
 				if (point1Region & RIGHT)
 				{
 					tempX1 = 1.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) * (1.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
+						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
 
 					if (tempY1 > 1.0f) // if the line is still outside, clip again
 					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) * (1.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
+							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY1 = 1.0f;
 					}
 				}
 				else if (point1Region & LEFT)
 				{
 					tempX1 = 0.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) * (0.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
+						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
 
 					if (tempY1 > 1.0f) // if the line is still outside, clip again
 					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) * (1.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
+							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY1 = 1.0f;
 					}
 				}
 				else
 				{
-					tempX1 = xStartClipped + (xEndClipped - xStartClipped) * (1.0f - yStartClipped) / (yEndClipped - yStartClipped);
+					tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
+						(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
 					tempY1 = 1.0f;
 				}
 			}
@@ -937,27 +977,32 @@ bool SoftwareGraphics::clipLine (float* xStart, float* yStart, float* xEnd, floa
 				if (point2Region & RIGHT)
 				{
 					tempX2 = 1.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) * (1.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
+						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
 
 					if (tempY2 < 0.0f) // if the line is still outside, clip again
 					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) * (0.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
+							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY2 = 0.0f;
 					}
 				}
 				else if (point2Region & LEFT)
 				{
 					tempX2 = 0.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) * (0.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
+						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
 					if (tempY2 < 0.0f) // if the line is still outside, clip again
 					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) * (0.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
+							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY2 = 0.0f;
 					}
 				}
 				else
 				{
-					tempX2 = xStartClipped + (xEndClipped - xStartClipped) * (0.0f - yStartClipped) / (yEndClipped - yStartClipped);
+					tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
+						(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
 					tempY2 = 0.0f;
 				}
 			}
@@ -966,28 +1011,33 @@ bool SoftwareGraphics::clipLine (float* xStart, float* yStart, float* xEnd, floa
 				if (point2Region & RIGHT)
 				{
 					tempX2 = 1.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) * (1.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
+						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
 
 					if (tempY2 > 1.0f) // if the line is still outside, clip again
 					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) * (1.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
+							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY2 = 1.0f;
 					}
 				}
 				else if (point2Region & LEFT)
 				{
 					tempX2 = 0.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) * (0.0f - xStartClipped) / (xEndClipped - xStartClipped);
+					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
+						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
 
 					if (tempY2 > 1.0f) // if the line is still outside, clip again
 					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) * (1.0f - yStartClipped) / (yEndClipped - yStartClipped);
+						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
+							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
 						tempY2 = 1.0f;
 					}
 				}
 				else
 				{
-					tempX2 = xStartClipped + (xEndClipped - xStartClipped) * (1.0f - yStartClipped) / (yEndClipped - yStartClipped);
+					tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
+						(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
 					tempY2 = 1.0f;
 				}
 			}

@@ -15,13 +15,13 @@ class Font
 	public:
 		Font (uint8_t* data);
 
-		unsigned int getCharacterWidth();
-		unsigned int getBitmapWidth();
-		unsigned int getBitmapHeight();
+		unsigned int getCharacterWidth() const;
+		unsigned int getBitmapWidth() const;
+		unsigned int getBitmapHeight() const;
 
-		unsigned int getCharacterIndex (const char character); // returns the offset to begin rendering at
+		unsigned int getCharacterIndex (const char character) const; // returns the offset to begin rendering at
 
-		const uint8_t* getBitmapStart();
+		const uint8_t* getBitmapStart() const;
 
 	private:
 		const uint8_t*          m_Data;

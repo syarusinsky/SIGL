@@ -29,7 +29,7 @@ ColorProfile* Surface::getColorProfile()
 	return m_ColorProfile;
 }
 
-unsigned int Surface::getPixelWidthInBits()
+unsigned int Surface::getPixelWidthInBits() const
 {
 	switch ( m_ColorProfile->getFormat() )
 	{
