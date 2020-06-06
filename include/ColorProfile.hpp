@@ -25,7 +25,8 @@ struct Color
 enum class CP_FORMAT
 {
 	MONOCHROME_1BIT,
-	RGB_24BIT
+	RGB_24BIT,
+	RGBA_32BIT
 };
 
 class ColorProfile
@@ -38,6 +39,7 @@ class ColorProfile
 		Color getPixel (uint8_t* fbStart, unsigned int pixelNum) const;
 
 		void setColor (float rValue, float gValue, float bValue);
+		void setColor (float rValue, float gValue, float bValue, float aValue);
 		void setColor (bool mValue);
 		void setColor (const Color& color);
 
@@ -49,6 +51,7 @@ class ColorProfile
 		uint8_t m_RValue;
 		uint8_t m_GValue;
 		uint8_t m_BValue;
+		uint8_t m_AValue;
 		bool    m_MValue; // for monochrome
 };
 

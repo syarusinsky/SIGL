@@ -2,11 +2,13 @@
 
 #include <math.h>
 
+
 ColorProfile::ColorProfile (const CP_FORMAT& format) :
 	m_Format( format ),
 	m_RValue( 0 ),
 	m_GValue( 0 ),
 	m_BValue( 0 ),
+	m_AValue( 255 ),
 	m_MValue( false )
 {
 }
@@ -37,9 +39,26 @@ void ColorProfile::putPixel (uint8_t* fbStart, unsigned int pixelNum)
 			break;
 		case CP_FORMAT::RGB_24BIT:
 		{
-			fbStart[(pixelNum * 3) + 0] = m_RValue; // Red
-			fbStart[(pixelNum * 3) + 1] = m_GValue; // Green
-			fbStart[(pixelNum * 3) + 2] = m_BValue; // Blue
+			// TODO this needs to actually incorporate alpha blending
+			if ( m_AValue > 0 )
+			{
+				fbStart[(pixelNum * 3) + 0] = m_RValue; // Red
+				fbStart[(pixelNum * 3) + 1] = m_GValue; // Green
+				fbStart[(pixelNum * 3) + 2] = m_BValue; // Blue
+			}
+		}
+
+			break;
+		case CP_FORMAT::RGBA_32BIT:
+		{
+			// TODO this needs to actually incorporate alpha blending
+			if ( m_AValue > 0 )
+			{
+				fbStart[(pixelNum * 4) + 0] = m_RValue; // Red
+				fbStart[(pixelNum * 4) + 1] = m_GValue; // Green
+				fbStart[(pixelNum * 4) + 2] = m_BValue; // Blue
+				fbStart[(pixelNum * 4) + 3] = m_AValue; // Alpha
+			}
 		}
 
 			break;
@@ -57,7 +76,7 @@ Color ColorProfile::getPixel (uint8_t* fbStart, unsigned int pixelNum) const
 		color.m_IsMonochrome = true;
 
 		unsigned int byteNum = std::floor( pixelNum / 8 );
-		unsigned int pixelIndex = pixelNum % 8;
+		unsigned int pixelIndex = 7 - (pixelNum % 8);
 		uint8_t bitmask = ( 1 << pixelIndex );
 
 		uint8_t byte = fbStart[byteNum];
@@ -77,6 +96,14 @@ Color ColorProfile::getPixel (uint8_t* fbStart, unsigned int pixelNum) const
 		color.m_G = static_cast<float>( fbStart[(pixelNum * 3 ) + 1]) / 255.0f;
 		color.m_B = static_cast<float>( fbStart[(pixelNum * 3 ) + 2]) / 255.0f;
 	}
+	else if ( m_Format == CP_FORMAT::RGBA_32BIT )
+	{
+		color.m_R = static_cast<float>( fbStart[(pixelNum * 4 ) + 0]) / 255.0f;
+		color.m_G = static_cast<float>( fbStart[(pixelNum * 4 ) + 1]) / 255.0f;
+		color.m_B = static_cast<float>( fbStart[(pixelNum * 4 ) + 2]) / 255.0f;
+		color.m_A = static_cast<float>( fbStart[(pixelNum * 4 ) + 3]) / 255.0f;
+		color.m_HasAlpha = true;
+	}
 
 	return color;
 }
@@ -90,6 +117,29 @@ void ColorProfile::setColor (float rValue, float gValue, float bValue)
 	m_RValue = std::round( 255 * rValue );
 	m_GValue = std::round( 255 * gValue );
 	m_BValue = std::round( 255 * bValue );
+	m_AValue = 255;
+
+	if ( m_RValue > 0.0f || m_GValue > 0.0f || m_BValue > 0.0f )
+	{
+		m_MValue = true;
+	}
+	else
+	{
+		m_MValue = false;
+	}
+}
+
+void ColorProfile::setColor (float rValue, float gValue, float bValue, float aValue)
+{
+	if ( rValue > 1.0f ) rValue = 1.0f; if ( rValue < 0.0f ) rValue = 0.0f;
+	if ( gValue > 1.0f ) gValue = 1.0f; if ( gValue < 0.0f ) gValue = 0.0f;
+	if ( bValue > 1.0f ) bValue = 1.0f; if ( bValue < 0.0f ) bValue = 0.0f;
+	if ( aValue > 1.0f ) aValue = 1.0f; if ( aValue < 0.0f ) aValue = 0.0f;
+
+	m_RValue = std::round( 255 * rValue );
+	m_GValue = std::round( 255 * gValue );
+	m_BValue = std::round( 255 * bValue );
+	m_AValue = std::round( 255 * aValue );
 
 	if ( m_RValue > 0.0f || m_GValue > 0.0f || m_BValue > 0.0f )
 	{
@@ -110,12 +160,14 @@ void ColorProfile::setColor (bool mValue)
 		m_RValue = 255;
 		m_GValue = 255;
 		m_BValue = 255;
+		m_AValue = 255;
 	}
 	else
 	{
 		m_RValue = 0;
 		m_GValue = 0;
 		m_BValue = 0;
+		m_AValue = 0;
 	}
 }
 
@@ -128,6 +180,10 @@ void ColorProfile::setColor (const Color& color)
 	else if ( !color.m_HasAlpha )
 	{
 		this->setColor( color.m_R, color.m_G, color.m_B );
+	}
+	else
+	{
+		this->setColor( color.m_R, color.m_G, color.m_B, color.m_A );
 	}
 }
 

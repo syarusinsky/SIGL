@@ -804,8 +804,11 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 		for ( int pixel = 0; pixel < spriteWidth; pixel++ )
 		{
 			Color color = spriteCP->getPixel( spritePixels, (row * spriteWidth) + pixel );
-			m_ColorProfile->setColor( color );
-			m_ColorProfile->putPixel( m_FBPixels, currentPixel );
+			if ( ! (color.m_IsMonochrome && color.m_M == 0.0f) )
+			{
+				m_ColorProfile->setColor( color );
+				m_ColorProfile->putPixel( m_FBPixels, currentPixel );
+			}
 			currentPixel++;
 		}
 

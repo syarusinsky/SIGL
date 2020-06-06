@@ -14,7 +14,7 @@ class Sprite : public FrameBuffer
 {
 	public:
 		Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format);
-		Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels);
+		Sprite (uint8_t* data);
 
 		unsigned int getScaledWidth() const;
 		unsigned int getScaledHeight() const;
@@ -22,12 +22,12 @@ class Sprite : public FrameBuffer
 		void setScaleFactor (float scaleFactor);
 		float getScaleFactor() const;
 
-		void setRotationDegrees (float rotDegrees);
-		float getRotationDegrees() const;
+		void setRotation (int degrees);
+		float getRotation() const;
 
 	protected:
 		float m_ScaleFactor;
-		float m_RotationDegrees;
+		int   m_RotationDegrees;
 };
 
 #endif // SPRITE_HPP
