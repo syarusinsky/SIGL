@@ -6,6 +6,7 @@
 #include <math.h>
 #include <algorithm>
 
+
 SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer) :
 	Graphics( frameBuffer )
 {
@@ -663,6 +664,12 @@ void SoftwareGraphics::drawCircleFilled (float originX, float originY, float rad
 
 void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, float scaleFactor)
 {
+	// TODO text doesn't render if scale factor isn't an integer beyond 1.0f, fix later?
+	if ( scaleFactor > 1.0f )
+	{
+		scaleFactor = std::round( scaleFactor );
+	}
+
 	// getting the pixel values of the vertices
 	int currentXInt = xStart * (m_FBWidth  - 1);
 	int currentYInt = yStart * (m_FBHeight - 1);
@@ -686,6 +693,7 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 	float nNYTravel = static_cast<float>( scaledHeight ) / static_cast<float>( characterHeight );
 	float nNCurrentX = 0.0f; // these vars keep a 'running total' for upscaling
 	float nNCurrentY = 0.0f;
+	float nNYLeftOver = 0.0f;
 
 	// for left border clipping
 	unsigned int numXPixelsToSkip = 0;
@@ -734,7 +742,7 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 
 				while ( nNCurrentX < nNXTravel )
 				{
-					nNCurrentY = 0.0f;
+					nNCurrentY = nNYLeftOver;
 					pixelsMovedDown = 0;
 
 					while ( nNCurrentY < nNYTravel )
@@ -763,6 +771,7 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 					pixelsMovedRight++;
 				}
 
+				nNYLeftOver = std::fmod( nNCurrentY, nNYTravel );
 				nNCurrentX = std::fmod( nNCurrentX, nNXTravel );
 				charPixelIndex++;
 				charByteIndex = std::floor( static_cast<float>(charPixelIndex) / 8.0f );
@@ -798,21 +807,91 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 	ColorProfile* spriteCP = sprite.getColorProfile();
 	uint8_t* spritePixels = sprite.getPixels();
 
-	// TODO need to add scaling and rotation to this
-	for ( int row = 0; row < spriteHeight; row++ )
+	float scaleFactor = sprite.getScaleFactor();
+
+	float spriteRowTravel = 1.0f;
+	float spritePixelTravel = 1.0f;
+	if ( scaleFactor < 1.0f ) // we need to skip rows and columns if downscaling
 	{
-		for ( int pixel = 0; pixel < spriteWidth; pixel++ )
+		spriteRowTravel = spriteRowTravel / scaleFactor;
+		spritePixelTravel = spritePixelTravel / scaleFactor;
+	}
+	unsigned int scaledHeight = sprite.getScaledHeight();
+	unsigned int scaledWidth  = sprite.getScaledWidth();
+	float nNXTravel = static_cast<float>( scaledWidth ) / static_cast<float>( spriteWidth ); // nearest neighbor scaling vars
+	float nNYTravel = static_cast<float>( scaledHeight ) / static_cast<float>( spriteHeight );
+	float nNCurrentX = 0.0f; // these vars keep a 'running total' for upscaling
+	float nNCurrentY = 0.0f;
+	float nNYLeftOver = 0.0f;
+
+	// TODO left and right clipping will likely need to change to per-pixel when we do rotation
+	// for left border clipping
+	unsigned int numXPixelsToSkip = 0;
+	if ( xStart < 0.0f )
+	{
+		numXPixelsToSkip = std::abs( xStart ) * m_FBWidth;
+	}
+
+	// for right border clipping
+	int rightBorderPixel = 0;
+	if ( yStart >= 0.0f )
+	{
+		rightBorderPixel = m_FBWidth * ( std::floor(static_cast<float>(currentYInt * m_FBWidth) / m_FBWidth) + 1 );
+	}
+	else
+	{
+		rightBorderPixel = -1 * ( std::abs(currentYInt + 1) * m_FBWidth );
+	}
+
+	// TODO need to add rotation to this
+	for ( float row = 0; row < spriteHeight; row += spriteRowTravel )
+	{
+		unsigned int pixelsMovedRight = 0;
+		unsigned int pixelsMovedDown = 0;
+		unsigned int xPixelsSkipped = 0;
+
+		for ( float pixel = 0; pixel < spriteWidth; pixel += spritePixelTravel )
 		{
-			Color color = spriteCP->getPixel( spritePixels, (row * spriteWidth) + pixel );
-			if ( ! (color.m_IsMonochrome && color.m_M == 0.0f) )
+			Color color = spriteCP->getPixel( spritePixels, (std::floor(row) * spriteWidth) + std::floor(pixel) );
+
+			while ( nNCurrentX < nNXTravel )
 			{
-				m_ColorProfile->setColor( color );
-				m_ColorProfile->putPixel( m_FBPixels, currentPixel );
+				pixelsMovedDown = 0;
+				nNCurrentY = nNYLeftOver;
+
+				int pixelToWrite = currentPixel;
+				int newRightBorderPixel = rightBorderPixel;
+
+				while ( nNCurrentY < nNYTravel )
+				{
+					if ( currentPixel >= 0 &&
+							xPixelsSkipped >= numXPixelsToSkip &&
+							currentPixel < newRightBorderPixel &&
+							! (color.m_IsMonochrome && color.m_M == 0.0f) )
+					{
+							m_ColorProfile->setColor( color );
+							m_ColorProfile->putPixel( m_FBPixels, pixelToWrite );
+					}
+
+					nNCurrentY += 1.0f;
+					pixelsMovedDown++;
+					pixelToWrite += m_FBWidth;
+					newRightBorderPixel += m_FBWidth;
+				}
+
+				nNCurrentX += 1.0f;
+				xPixelsSkipped++;
+				pixelsMovedRight++;
+				currentPixel++;
 			}
-			currentPixel++;
+
+			nNCurrentX = std::fmod( nNCurrentX, nNXTravel );
 		}
 
-		currentPixel += ( m_FBWidth - spriteWidth );
+		nNYLeftOver = std::fmod( nNCurrentY, nNYTravel );
+		nNCurrentX = 0.0f;
+		rightBorderPixel += ( m_FBWidth * pixelsMovedDown );
+		currentPixel += ( (m_FBWidth * pixelsMovedDown)  - pixelsMovedRight );
 	}
 }
 
