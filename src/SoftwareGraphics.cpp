@@ -843,6 +843,9 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 		rightBorderPixel = -1 * ( std::abs(currentYInt + 1) * m_FBWidth );
 	}
 
+	// for bottom clipping
+	int fbSize = m_FBWidth * m_FBHeight;
+
 	// TODO need to add rotation to this
 	for ( float row = 0; row < spriteHeight; row += spriteRowTravel )
 	{
@@ -864,9 +867,9 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 
 				while ( nNCurrentY < nNYTravel )
 				{
-					if ( currentPixel >= 0 &&
+					if ( pixelToWrite >= 0 && pixelToWrite < fbSize &&
 							xPixelsSkipped >= numXPixelsToSkip &&
-							currentPixel < newRightBorderPixel &&
+							pixelToWrite < newRightBorderPixel &&
 							! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					{
 							m_ColorProfile->setColor( color );
