@@ -800,7 +800,7 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 	// getting the pixel values of the vertices
 	int currentXInt = xStart * (m_FBWidth  - 1);
 	int currentYInt = yStart * (m_FBHeight - 1);
-	int currentPixel = (currentYInt * m_FBWidth) + currentXInt;
+	// int currentPixel = (currentYInt * m_FBWidth) + currentXInt;
 
 	int spriteWidth = sprite.getWidth();
 	int spriteHeight = sprite.getHeight();
@@ -824,25 +824,6 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 	float nNCurrentY = 0.0f;
 	float nNYLeftOver = 0.0f;
 
-	// TODO left and right clipping will likely need to change to per-pixel when we do rotation
-	// for left border clipping
-	unsigned int numXPixelsToSkip = 0;
-	if ( xStart < 0.0f )
-	{
-		numXPixelsToSkip = std::abs( xStart ) * m_FBWidth;
-	}
-
-	// for right border clipping
-	int rightBorderPixel = 0;
-	if ( yStart >= 0.0f )
-	{
-		rightBorderPixel = m_FBWidth * ( std::floor(static_cast<float>(currentYInt * m_FBWidth) / m_FBWidth) + 1 );
-	}
-	else
-	{
-		rightBorderPixel = -1 * ( std::abs(currentYInt + 1) * m_FBWidth );
-	}
-
 	// for bottom clipping
 	int fbSize = m_FBWidth * m_FBHeight;
 
@@ -862,14 +843,14 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 				pixelsMovedDown = 0;
 				nNCurrentY = nNYLeftOver;
 
-				int pixelToWrite = currentPixel;
-				int newRightBorderPixel = rightBorderPixel;
+				int pixelToWrite = (currentYInt * m_FBWidth) + currentXInt;
 
 				while ( nNCurrentY < nNYTravel )
 				{
-					if ( pixelToWrite >= 0 && pixelToWrite < fbSize &&
-							xPixelsSkipped >= numXPixelsToSkip &&
-							pixelToWrite < newRightBorderPixel &&
+					if ( pixelToWrite >= 0 && // top clipping
+							pixelToWrite < fbSize && // bottom clipping
+							currentXInt >= 0 && // left clipping
+							currentXInt < m_FBWidth && // right clipping
 							! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					{
 							m_ColorProfile->setColor( color );
@@ -879,13 +860,12 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 					nNCurrentY += 1.0f;
 					pixelsMovedDown++;
 					pixelToWrite += m_FBWidth;
-					newRightBorderPixel += m_FBWidth;
 				}
 
 				nNCurrentX += 1.0f;
 				xPixelsSkipped++;
 				pixelsMovedRight++;
-				currentPixel++;
+				currentXInt++;
 			}
 
 			nNCurrentX = std::fmod( nNCurrentX, nNXTravel );
@@ -893,8 +873,8 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 
 		nNYLeftOver = std::fmod( nNCurrentY, nNYTravel );
 		nNCurrentX = 0.0f;
-		rightBorderPixel += ( m_FBWidth * pixelsMovedDown );
-		currentPixel += ( (m_FBWidth * pixelsMovedDown)  - pixelsMovedRight );
+		currentXInt -= pixelsMovedRight;
+		currentYInt += pixelsMovedDown;
 	}
 }
 
