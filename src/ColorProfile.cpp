@@ -26,11 +26,11 @@ void ColorProfile::putPixel (uint8_t* fbStart, unsigned int pixelNum)
 			unsigned int byteNum = std::floor( pixelNum / 8 );
 			unsigned int pixelIndex = pixelNum % 8;
 			uint8_t bitmask = ( 1 << pixelIndex );
-			if ( m_MValue == true )
+			if ( m_MValue == true && m_AValue > 0 )
 			{
 				fbStart[byteNum] = fbStart[byteNum] | bitmask;
 			}
-			else
+			else if ( m_AValue > 0 )
 			{
 				fbStart[byteNum] = fbStart[byteNum] & ~(bitmask);
 			}
@@ -84,24 +84,60 @@ Color ColorProfile::getPixel (uint8_t* fbStart, unsigned int pixelNum) const
 		if ( (byte & bitmask) >> pixelIndex )
 		{
 			color.m_M = true;
+			color.m_R = 1.0f;
+			color.m_G = 1.0f;
+			color.m_B = 1.0f;
+			color.m_A = 1.0f;
+		}
+		else
+		{
+			color.m_M = false;
+			color.m_R = 0.0f;
+			color.m_G = 0.0f;
+			color.m_B = 1.0f;
+			color.m_A = 0.0f;
+		}
+
+		color.m_HasAlpha = false;
+	}
+	else if ( m_Format == CP_FORMAT::RGB_24BIT )
+	{
+		color.m_IsMonochrome = false;
+
+		color.m_R = static_cast<float>( fbStart[(pixelNum * 3 ) + 0]) / 255.0f;
+		color.m_G = static_cast<float>( fbStart[(pixelNum * 3 ) + 1]) / 255.0f;
+		color.m_B = static_cast<float>( fbStart[(pixelNum * 3 ) + 2]) / 255.0f;
+		color.m_A = 1.0f;
+
+		if ( color.m_R > 0.0f || color.m_G > 0.0f || color.m_B > 0.0f )
+		{
+			color.m_M = true;
 		}
 		else
 		{
 			color.m_M = false;
 		}
-	}
-	else if ( m_Format == CP_FORMAT::RGB_24BIT )
-	{
-		color.m_R = static_cast<float>( fbStart[(pixelNum * 3 ) + 0]) / 255.0f;
-		color.m_G = static_cast<float>( fbStart[(pixelNum * 3 ) + 1]) / 255.0f;
-		color.m_B = static_cast<float>( fbStart[(pixelNum * 3 ) + 2]) / 255.0f;
+
+		color.m_HasAlpha = false;
 	}
 	else if ( m_Format == CP_FORMAT::RGBA_32BIT )
 	{
+		color.m_IsMonochrome = false;
+
 		color.m_R = static_cast<float>( fbStart[(pixelNum * 4 ) + 0]) / 255.0f;
 		color.m_G = static_cast<float>( fbStart[(pixelNum * 4 ) + 1]) / 255.0f;
 		color.m_B = static_cast<float>( fbStart[(pixelNum * 4 ) + 2]) / 255.0f;
 		color.m_A = static_cast<float>( fbStart[(pixelNum * 4 ) + 3]) / 255.0f;
+
+		if ( (color.m_R > 0.0f || color.m_G > 0.0f || color.m_B > 0.0f) && color.m_A > 0.0f )
+		{
+			color.m_M = true;
+		}
+		else
+		{
+			color.m_M = false;
+		}
+
 		color.m_HasAlpha = true;
 	}
 
@@ -173,18 +209,11 @@ void ColorProfile::setColor (bool mValue)
 
 void ColorProfile::setColor (const Color& color)
 {
-	if ( color.m_IsMonochrome )
-	{
-		this->setColor( color.m_M );
-	}
-	else if ( !color.m_HasAlpha )
-	{
-		this->setColor( color.m_R, color.m_G, color.m_B );
-	}
-	else
-	{
-		this->setColor( color.m_R, color.m_G, color.m_B, color.m_A );
-	}
+	m_RValue = std::round( 255 * color.m_R );
+	m_GValue = std::round( 255 * color.m_G );
+	m_BValue = std::round( 255 * color.m_B );
+	m_AValue = std::round( 255 * color.m_A );
+	m_MValue = color.m_M;
 }
 
 const CP_FORMAT ColorProfile::getFormat() const
