@@ -22,12 +22,18 @@ class Sprite : public FrameBuffer
 		void setScaleFactor (float scaleFactor);
 		float getScaleFactor() const;
 
-		void setRotation (int degrees);
-		float getRotation() const;
+		void setRotationAngle (int degrees);
+		int getRotationAngle() const;
+		void setRotationPointX (float x); // should be between 0.0f and 1.0f
+		int getRotationPointX() const;
+		void setRotationPointY (float y); // should be between 0.0f and 1.0f
+		int getRotationPointY() const;
 
 	protected:
 		float m_ScaleFactor;
 		int   m_RotationDegrees;
+		int   m_RotPointX;
+		int   m_RotPointY;
 };
 
 #endif // SPRITE_HPP

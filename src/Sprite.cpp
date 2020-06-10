@@ -34,7 +34,9 @@ class FormatInitializer
 Sprite::Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format) :
 	FrameBuffer( width, height, format ),
 	m_ScaleFactor( 1.0f ),
-	m_RotationDegrees( 0 )
+	m_RotationDegrees( 0 ),
+	m_RotPointX( m_Width / 2 ),
+	m_RotPointY( m_Height / 2 )
 {
 }
 
@@ -44,7 +46,9 @@ Sprite::Sprite (uint8_t* data) :
 			FormatInitializer( data[0] ).getFormat(),
 			&data[9] ),
 	m_ScaleFactor( 1.0f ),
-	m_RotationDegrees( 0 )
+	m_RotationDegrees( 0 ),
+	m_RotPointX( m_Width / 2 ),
+	m_RotPointY( m_Height / 2 )
 {
 }
 
@@ -68,12 +72,40 @@ float Sprite::getScaleFactor() const
 	return m_ScaleFactor;
 }
 
-void Sprite::setRotation (int degrees)
+void Sprite::setRotationAngle (int degrees)
 {
-	m_RotationDegrees = degrees;
+	if ( degrees < 0 )
+	{
+		degrees = std::abs( degrees ) % 360;
+		m_RotationDegrees = 360 - degrees;
+	}
+	else
+	{
+		m_RotationDegrees = degrees % 360;
+	}
 }
 
-float Sprite::getRotation() const
+int Sprite::getRotationAngle() const
 {
 	return m_RotationDegrees;
+}
+
+void Sprite::setRotationPointX (float x)
+{
+	m_RotPointX = ( m_Width - 1 ) * x;
+}
+
+int Sprite::getRotationPointX() const
+{
+	return m_RotPointX;
+}
+
+void Sprite::setRotationPointY (float y)
+{
+	m_RotPointY = ( m_Height - 1 ) * y;
+}
+
+int Sprite::getRotationPointY() const
+{
+	return m_RotPointY;
 }

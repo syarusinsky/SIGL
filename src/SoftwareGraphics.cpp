@@ -798,9 +798,10 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 {
 	// getting the pixel values of the vertices
-	int currentXInt = xStart * (m_FBWidth  - 1);
-	int currentYInt = yStart * (m_FBHeight - 1);
-	// int currentPixel = (currentYInt * m_FBWidth) + currentXInt;
+	int startXInt = xStart * (m_FBWidth  - 1);
+	int startYInt = yStart * (m_FBWidth - 1);
+	int currentXInt = startXInt;
+	int currentYInt = startYInt;
 
 	int spriteWidth = sprite.getWidth();
 	int spriteHeight = sprite.getHeight();
@@ -824,10 +825,14 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 	float nNCurrentY = 0.0f;
 	float nNYLeftOver = 0.0f;
 
+	// for rotation
+	int spriteRotDegrees = sprite.getRotationAngle();
+	int spriteRotPointX = std::round( sprite.getRotationPointX() * scaleFactor );;
+	int spriteRotPointY = std::round( sprite.getRotationPointY() * scaleFactor );
+
 	// for bottom clipping
 	int fbSize = m_FBWidth * m_FBHeight;
 
-	// TODO need to add rotation to this
 	for ( float row = 0; row < spriteHeight; row += spriteRowTravel )
 	{
 		unsigned int pixelsMovedRight = 0;
@@ -843,23 +848,60 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 				pixelsMovedDown = 0;
 				nNCurrentY = nNYLeftOver;
 
-				int pixelToWrite = (currentYInt * m_FBWidth) + currentXInt;
+				// do rotation
+				float radians = (spriteRotDegrees * M_PI) / 180.0f;
+				float sinVal = sin( radians );
+				float cosVal = cos( radians );
+
+				int newY = currentYInt;
 
 				while ( nNCurrentY < nNYTravel )
 				{
-					if ( pixelToWrite >= 0 && // top clipping
+					int translationPointX = startXInt + spriteRotPointX;
+					int translationPointY = startYInt + spriteRotPointY;
+					int xTranslated = currentXInt - translationPointX;
+					int yTranslated = newY - translationPointY;
+					int xRotated = static_cast<int>( (+xTranslated * cosVal) - (yTranslated * sinVal) );
+					int yRotated = static_cast<int>( (+xTranslated * sinVal) + (yTranslated * cosVal) );
+					int xTranslatedBack = xRotated + translationPointX;
+					int yTranslatedBack = yRotated + translationPointY;
+
+					int pixelToWrite = (yTranslatedBack * m_FBWidth) + xTranslatedBack;
+
+					if ( pixelToWrite >= 0 &&  // top clipping
 							pixelToWrite < fbSize && // bottom clipping
-							currentXInt >= 0 && // left clipping
-							currentXInt < m_FBWidth && // right clipping
+							xTranslatedBack >= 0 && // left clipping
+							xTranslatedBack < m_FBWidth && // right clipping
 							! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					{
 							m_ColorProfile->setColor( color );
 							m_ColorProfile->putPixel( m_FBPixels, pixelToWrite );
 					}
 
+					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
+					// but it works,.. maybe fix later?
+					int sbPixelRight = pixelToWrite + 1;
+					if ( sbPixelRight >= 0 &&  // top clipping
+							sbPixelRight < fbSize && // bottom clipping
+							xTranslatedBack + 1 >= 0 && // left clipping
+							xTranslatedBack + 1 < m_FBWidth && // right clipping
+							! (color.m_IsMonochrome && color.m_M == 0.0f) )
+					{
+							m_ColorProfile->putPixel( m_FBPixels, sbPixelRight );
+					}
+					int sbPixelDown = pixelToWrite + m_FBWidth;
+					if ( sbPixelDown >= 0 &&  // top clipping
+							sbPixelDown < fbSize && // bottom clipping
+							xTranslatedBack >= 0 && // left clipping
+							xTranslatedBack < m_FBWidth && // right clipping
+							! (color.m_IsMonochrome && color.m_M == 0.0f) )
+					{
+							m_ColorProfile->putPixel( m_FBPixels, sbPixelDown );
+					}
+
 					nNCurrentY += 1.0f;
 					pixelsMovedDown++;
-					pixelToWrite += m_FBWidth;
+					newY++;
 				}
 
 				nNCurrentX += 1.0f;
