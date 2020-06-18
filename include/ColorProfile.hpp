@@ -44,7 +44,7 @@ class ColorProfile
 
 		void setColor (float rValue, float gValue, float bValue);
 		void setColor (float rValue, float gValue, float bValue, float aValue);
-		void setColor (bool mValue);
+		void setColor (bool mValue, bool useAlpha = false);
 
 		const CP_FORMAT getFormat() const;
 

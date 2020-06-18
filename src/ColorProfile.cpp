@@ -187,7 +187,7 @@ void ColorProfile::setColor (float rValue, float gValue, float bValue, float aVa
 	}
 }
 
-void ColorProfile::setColor (bool mValue)
+void ColorProfile::setColor (bool mValue, bool useAlpha)
 {
 	m_MValue = mValue;
 
@@ -198,12 +198,19 @@ void ColorProfile::setColor (bool mValue)
 		m_BValue = 255;
 		m_AValue = 255;
 	}
-	else
+	else if ( !mValue && useAlpha )
 	{
 		m_RValue = 0;
 		m_GValue = 0;
 		m_BValue = 0;
 		m_AValue = 0;
+	}
+	else
+	{
+		m_RValue = 0;
+		m_GValue = 0;
+		m_BValue = 0;
+		m_AValue = 255;
 	}
 }
 
