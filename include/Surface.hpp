@@ -21,7 +21,7 @@ class Surface
 {
 	public:
 		Surface (unsigned int width, unsigned int height, const CP_FORMAT& format);
-		~Surface();
+		virtual ~Surface();
 
 		FrameBuffer*  getFrameBuffer();
 		ColorProfile* getColorProfile();
