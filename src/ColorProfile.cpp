@@ -24,7 +24,7 @@ void ColorProfile::putPixel (uint8_t* fbStart, unsigned int pixelNum)
 		case CP_FORMAT::MONOCHROME_1BIT:
 		{
 			unsigned int byteNum = std::floor( pixelNum / 8 );
-			unsigned int pixelIndex = pixelNum % 8;
+			unsigned int pixelIndex = 7 - (pixelNum % 8);
 			uint8_t bitmask = ( 1 << pixelIndex );
 			if ( m_MValue == true && m_AValue > 0 )
 			{
