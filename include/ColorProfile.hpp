@@ -16,7 +16,7 @@ struct Color
 	float m_G = 0.0f;
 	float m_B = 0.0f;
 	float m_A = 0.0f;
-	bool  m_M = 0.0f;
+	bool  m_M = false;
 
 	bool  m_IsMonochrome = false;
 	bool  m_HasAlpha = false;
