@@ -1,15 +1,18 @@
 #include "Font.hpp"
 
 static const unsigned int CHAR_WIDTH_INDEX = 0;
-static const unsigned int WIDTH_INDEX = 1;
-static const unsigned int HEIGHT_INDEX = 2;
-static const unsigned int BITMAP_START_INDEX_INDEX = 3;
-static const unsigned int MAPPING_START_INDEX = 4;
+static const unsigned int WIDTH_INDEX_1 = 1;
+static const unsigned int WIDTH_INDEX_2 = 2;
+static const unsigned int WIDTH_INDEX_3 = 3;
+static const unsigned int WIDTH_INDEX_4 = 4;
+static const unsigned int HEIGHT_INDEX = 5;
+static const unsigned int BITMAP_START_INDEX_INDEX = 6;
+static const unsigned int MAPPING_START_INDEX = 7;
 
 Font::Font (uint8_t* data) :
 	m_Data( data ),
 	m_CharacterWidth( data[CHAR_WIDTH_INDEX] ),
-	m_Width( data[WIDTH_INDEX] ),
+	m_Width( (data[WIDTH_INDEX_1] << 24) | (data[WIDTH_INDEX_2] << 16) | (data[WIDTH_INDEX_3] << 8) | data[WIDTH_INDEX_4] ),
 	m_Height( data[HEIGHT_INDEX] ),
 	m_MappingStart( &data[MAPPING_START_INDEX] ),
 	m_BitmapStartIndex( data[BITMAP_START_INDEX_INDEX] ),
