@@ -32,7 +32,7 @@ class SoftwareGraphics 	: public Graphics
 		void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
 		void drawCircle (float originX, float originY, float radius) override;
 		void drawCircleFilled (float originX, float originY, float radius) override;
-		void drawText (float xStart, float yStart, std::string, float scaleFactor) override;
+		void drawText (float xStart, float yStart, const char* text, float scaleFactor) override;
 		void drawSprite (float xStart, float yStart, Sprite& sprite) override;
 
 	protected:
