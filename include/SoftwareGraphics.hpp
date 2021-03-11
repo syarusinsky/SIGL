@@ -22,7 +22,7 @@ class SoftwareGraphics 	: public Graphics
 		void setColor (bool val) override;
 		void setFont (Font* font) override;
 
-		void fill();
+		void fill() override;
 		void drawLine (float xStart, float yStart, float xEnd, float yEnd) override;
 		void drawBox (float xStart, float yStart, float xEnd, float yEnd) override;
 		void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) override;
