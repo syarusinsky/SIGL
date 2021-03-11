@@ -39,8 +39,8 @@ class ColorProfile
 		ColorProfile (const CP_FORMAT& format);
 		~ColorProfile();
 
-		void putPixel (uint8_t* fbStart, unsigned int pixelNum);
-		Color getPixel (uint8_t* fbStart, unsigned int pixelNum) const;
+		void putPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigned int pixelNum);
+		Color getPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigned int pixelNum) const;
 
 		void setColor (float rValue, float gValue, float bValue);
 		void setColor (float rValue, float gValue, float bValue, float aValue);

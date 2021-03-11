@@ -54,6 +54,7 @@ class Graphics
 		Font*                m_CurrentFont;
 		unsigned int         m_FBWidth;
 		unsigned int         m_FBHeight;
+		unsigned int         m_FBNumPixels; 
 		uint8_t*             m_FBPixels;
 
 		Graphics (FrameBuffer* frameBuffer) :
@@ -61,6 +62,7 @@ class Graphics
 			m_ColorProfile( frameBuffer->getColorProfile() ),
 			m_FBWidth( frameBuffer->getWidth() ),
 			m_FBHeight( frameBuffer->getHeight() ),
+			m_FBNumPixels( m_FBWidth * m_FBHeight ),
 			m_FBPixels( frameBuffer->getPixels() ) {}
 		virtual ~Graphics() {}
 

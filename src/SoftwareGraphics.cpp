@@ -35,7 +35,7 @@ void SoftwareGraphics::fill()
 {
 	for (unsigned int pixel = 0; pixel < (m_FBWidth * m_FBHeight); pixel++)
 	{
-		m_ColorProfile->putPixel( m_FBPixels, pixel );
+		m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 	}
 }
 
@@ -75,7 +75,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			{
 				while (xAccumulator < 1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, pixel );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					xAccumulator += slope;
 					pixel += 1;
@@ -84,7 +84,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			}
 			else // stride along x-axis by one pixel
 			{
-				m_ColorProfile->putPixel( m_FBPixels, pixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 				pixel += 1;
 			}
@@ -94,7 +94,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			{
 				while (yAccumulator >= 1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, pixel );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					yAccumulator -= 1.0f;
 					pixel += m_FBWidth;
@@ -116,7 +116,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			{
 				while (xAccumulator > -1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, pixel );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					xAccumulator += slope;
 					pixel -= 1;
@@ -125,7 +125,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			}
 			else // stride along x-axis by one pixel
 			{
-				m_ColorProfile->putPixel( m_FBPixels, pixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 				pixel -= 1;
 			}
@@ -135,7 +135,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			{
 				while (yAccumulator <= 1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, pixel );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					yAccumulator += 1.0f;
 					pixel += m_FBWidth;
@@ -146,7 +146,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			{
 				pixel += m_FBWidth;
 
-				m_ColorProfile->putPixel( m_FBPixels, pixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 			}
 		}
 	}
@@ -192,7 +192,7 @@ void SoftwareGraphics::drawBoxFilled (float xStart, float yStart, float xEnd, fl
 
 		for (unsigned int rowPixel = pixel; rowPixel < pixelRowEnd; rowPixel += 1)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, rowPixel );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, rowPixel );
 		}
 	}
 }
@@ -374,7 +374,7 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, pixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 			}
 		}
 
@@ -424,7 +424,7 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 
 				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, pixel );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 				}
 			}
 			else // even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
@@ -476,7 +476,7 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 
 				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, pixel );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 				}
 			}
 		}
@@ -535,7 +535,7 @@ void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y,
 		{
 			while (tempPixel < pixel1)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, tempPixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -546,7 +546,7 @@ void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y,
 			tempPixel = pixel4;
 			while (tempPixel < pixel3)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, tempPixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -557,7 +557,7 @@ void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y,
 			tempPixel = pixel6;
 			while (tempPixel < pixel5)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, tempPixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -568,7 +568,7 @@ void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y,
 			tempPixel = pixel8;
 			while (tempPixel < pixel7)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, tempPixel );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -577,23 +577,23 @@ void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y,
 	{
 		if (y1_2 >= 0 && y1_2 < (int)m_FBHeight)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, pixel1 );
-			m_ColorProfile->putPixel( m_FBPixels, pixel2 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel1 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel2 );
 		}
 		if (y3_4 >= 0 && y3_4 < (int)m_FBHeight)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, pixel3 );
-			m_ColorProfile->putPixel( m_FBPixels, pixel4 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel3 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel4 );
 		}
 		if (y5_6 >= 0 && y5_6 < (int)m_FBHeight)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, pixel5 );
-			m_ColorProfile->putPixel( m_FBPixels, pixel6 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel5 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel6 );
 		}
 		if (y7_8 >= 0 && y7_8 < (int)m_FBHeight)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, pixel7 );
-			m_ColorProfile->putPixel( m_FBPixels, pixel8 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel7 );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel8 );
 		}
 	}
 }
@@ -755,7 +755,7 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 								&& xPixelsSkipped >= numXPixelsToSkip
 								&& pixelToWrite < rightClipX )
 						{
-							m_ColorProfile->putPixel( m_FBPixels, pixelToWrite );
+							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixelToWrite );
 						}
 
 						rightClipX += m_FBWidth;
@@ -841,7 +841,7 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 
 		for ( float pixel = 0; pixel < spriteWidth; pixel += spritePixelTravel )
 		{
-			Color color = spriteCP->getPixel( spritePixels, (std::floor(row) * spriteWidth) + std::floor(pixel) );
+			Color color = spriteCP->getPixel( spritePixels, m_FBNumPixels, (std::floor(row) * spriteWidth) + std::floor(pixel) );
 
 			while ( nNCurrentX < nNXTravel )
 			{
@@ -875,7 +875,7 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 							! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					{
 							m_ColorProfile->setColor( color );
-							m_ColorProfile->putPixel( m_FBPixels, pixelToWrite );
+							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixelToWrite );
 					}
 
 					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
@@ -887,7 +887,7 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 							xTranslatedBack + 1 < m_FBWidth && // right clipping
 							! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					{
-							m_ColorProfile->putPixel( m_FBPixels, sbPixelRight );
+							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelRight );
 					}
 					int sbPixelDown = pixelToWrite + m_FBWidth;
 					if ( sbPixelDown >= 0 &&  // top clipping
@@ -896,7 +896,7 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 							xTranslatedBack < m_FBWidth && // right clipping
 							! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					{
-							m_ColorProfile->putPixel( m_FBPixels, sbPixelDown );
+							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelDown );
 					}
 
 					nNCurrentY += 1.0f;

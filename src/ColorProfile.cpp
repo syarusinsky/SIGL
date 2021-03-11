@@ -17,8 +17,11 @@ ColorProfile::~ColorProfile()
 {
 }
 
-void ColorProfile::putPixel (uint8_t* fbStart, unsigned int pixelNum)
+void ColorProfile::putPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigned int pixelNum)
 {
+#ifdef ROTATE_DISPLAY_180_DEGREES
+	pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
 	switch ( m_Format )
 	{
 		case CP_FORMAT::MONOCHROME_1BIT:
@@ -67,8 +70,11 @@ void ColorProfile::putPixel (uint8_t* fbStart, unsigned int pixelNum)
 	}
 }
 
-Color ColorProfile::getPixel (uint8_t* fbStart, unsigned int pixelNum) const
+Color ColorProfile::getPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigned int pixelNum) const
 {
+#ifdef ROTATE_DISPLAY_180_DEGREES
+	pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
 	Color color;
 
 	if ( m_Format == CP_FORMAT::MONOCHROME_1BIT )
