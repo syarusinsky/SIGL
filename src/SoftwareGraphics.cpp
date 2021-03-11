@@ -662,7 +662,7 @@ void SoftwareGraphics::drawCircleFilled (float originX, float originY, float rad
 	}
 }
 
-void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, float scaleFactor)
+void SoftwareGraphics::drawText (float xStart, float yStart, const char* text, float scaleFactor)
 {
 	// TODO text doesn't render if scale factor isn't an integer beyond 1.0f, fix later?
 	if ( scaleFactor > 1.0f )
@@ -714,10 +714,9 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 	}
 
 	// go through each character and translate the pixels in the font to the frame buffer
-	unsigned int charIndex = 0;
-	for( char& character : text )
+	for( unsigned int charIndex = 0; text[charIndex] != '\0'; charIndex++ )
 	{
-		unsigned int charPixelIndex = m_CurrentFont->getCharacterIndex( character ) * characterWidth;
+		unsigned int charPixelIndex = m_CurrentFont->getCharacterIndex( text[charIndex] ) * characterWidth;
 		unsigned int charByteIndex = std::floor( static_cast<float>(charPixelIndex) / 8.0f );
 		unsigned int charPixelMask = 7 - ( charPixelIndex % 8 );
 
@@ -791,7 +790,6 @@ void SoftwareGraphics::drawText (float xStart, float yStart, std::string text, f
 		currentYInt = yStart * (m_FBHeight - 1);
 		currentXInt += static_cast<unsigned int>( characterWidth * scaleFactor );
 		currentPixel = ( currentYInt * m_FBWidth ) + currentXInt;
-		charIndex++;
 	}
 }
 

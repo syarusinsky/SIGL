@@ -30,6 +30,9 @@ class Graphics
 			m_FBPixels = frameBuffer->getPixels();
 		}
 
+		unsigned int convertXPercentageToUInt (float x) { return x * (m_FBWidth  - 1); }
+		unsigned int convertYPercentageToUInt (float y) { return y * (m_FBHeight - 1); }
+
 		virtual void setColor (float r, float g, float b) = 0;
 		virtual void setColor (bool val) = 0;
 
@@ -45,7 +48,7 @@ class Graphics
 		virtual void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawCircle (float originX, float originY, float radius) = 0;
 		virtual void drawCircleFilled (float originX, float originY, float radius) = 0;
-		virtual void drawText (float xStart, float yStart, std::string, float scaleFactor) = 0;
+		virtual void drawText (float xStart, float yStart, const char* text, float scaleFactor) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite& sprite) = 0;
 
 	protected:
