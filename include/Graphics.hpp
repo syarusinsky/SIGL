@@ -44,6 +44,7 @@ class Graphics
 		virtual void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) = 0;
 		virtual void drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
 		virtual void drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
+		virtual void drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
 		virtual void drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawCircle (float originX, float originY, float radius) = 0;

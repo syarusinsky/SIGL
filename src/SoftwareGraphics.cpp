@@ -6,6 +6,8 @@
 #include <math.h>
 #include <algorithm>
 
+// TODO remove this asap
+#include <iostream>
 
 SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer) :
 	Graphics( frameBuffer )
@@ -479,6 +481,421 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 				}
 			}
+		}
+	}
+}
+
+void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3)
+{
+	// getting the pixel values of the vertices
+	int x1UInt = x1 * (m_FBWidth  - 1);
+	int y1UInt = y1 * (m_FBHeight - 1);
+	int x2UInt = x2 * (m_FBWidth  - 1);
+	int y2UInt = y2 * (m_FBHeight - 1);
+	int x3UInt = x3 * (m_FBWidth  - 1);
+	int y3UInt = y3 * (m_FBHeight - 1);
+
+	int x1Sorted = x1UInt;
+	int y1Sorted = y1UInt;
+	int x2Sorted = x2UInt;
+	int y2Sorted = y2UInt;
+	int x3Sorted = x3UInt;
+	int y3Sorted = y3UInt;
+	float x1FSorted = x1;
+	float y1FSorted = y1;
+	float x2FSorted = x2;
+	float y2FSorted = y2;
+	float x3FSorted = x3;
+	float y3FSorted = y3;
+
+	// sorting vertices
+	// first sort by y values
+	if (y2Sorted > y3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+	if (y1Sorted > y2Sorted)
+	{
+		int xTemp = x1Sorted;
+		int yTemp = y1Sorted;
+		float xFTemp = x1FSorted;
+		float yFTemp = y1FSorted;
+		x1Sorted = x2Sorted;
+		y1Sorted = y2Sorted;
+		x2Sorted = xTemp;
+		y2Sorted = yTemp;
+		x1FSorted = x2FSorted;
+		y1FSorted = y2FSorted;
+		x2FSorted = xFTemp;
+		y2FSorted = yFTemp;
+	}
+	if (y2Sorted > y3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+
+	// then sort by x values
+	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
+	{
+		int xTemp = x1Sorted;
+		int yTemp = y1Sorted;
+		float xFTemp = x1FSorted;
+		float yFTemp = y1FSorted;
+		x1Sorted = x2Sorted;
+		y1Sorted = y2Sorted;
+		x2Sorted = xTemp;
+		y2Sorted = yTemp;
+		x1FSorted = x2FSorted;
+		y1FSorted = y2FSorted;
+		x2FSorted = xFTemp;
+		y2FSorted = yFTemp;
+	}
+	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+
+	// getting the slope of each line
+	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
+	float line2Slope = ((float) y3Sorted - y1Sorted) / ((float) x3Sorted - x1Sorted);
+	float line3Slope = ((float) y3Sorted - y2Sorted) / ((float) x3Sorted - x2Sorted);
+
+	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
+	float xLeftAccumulator  = (float) x1Sorted;
+	float xRightAccumulator = (float) x1Sorted;
+
+	// floats for incrementing xLeftAccumulator and xRightAccumulator
+	float xLeftIncrTop     = 1.0f / line1Slope;
+	float xRightIncrTop    = 1.0f / line2Slope;
+	float xLeftIncrBottom  = 1.0f / line3Slope;
+	float xRightIncrBottom = 1.0f / line2Slope;
+
+	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom, is this correct???
+	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
+
+	// depending on the position of the vertices, we need to swap increments
+	if ( (needsSwapping && x1Sorted < x2Sorted) || (needsSwapping && x1Sorted >= x2Sorted && x2Sorted > x3Sorted) )
+	{
+		float tempIncr = xLeftIncrTop;
+		xLeftIncrTop = xRightIncrTop;
+		xRightIncrTop = tempIncr;
+
+		tempIncr = xLeftIncrBottom;
+		xLeftIncrBottom = xRightIncrBottom;
+		xRightIncrBottom = tempIncr;
+	}
+
+	// coordinates variables
+	/*
+	int XXStart = (x1Sorted <= x2Sorted) ? x1Sorted : x2Sorted;
+	XXStart = (XXStart <= x3Sorted) ? XXStart : x3Sorted;
+	int XXEnd = (x3Sorted >= x2Sorted) ? x3Sorted : x2Sorted;
+	XXEnd = (XXEnd >= x1Sorted) ? XXEnd : x1Sorted;
+	float xInRelationToXX = 0.0f;
+	float xInRelationIncr = 1.0f / (XXEnd - XXStart);
+	float yInRelationToY3 = 0.0f;
+	float yInRelationIncr = 1.0f / (y3Sorted - y1Sorted);
+	float x1UnsortedRelative = (x1UInt - XXStart) * xInRelationIncr;
+	float y1UnsortedRelative = (y1UInt - y1Sorted) * yInRelationIncr;
+	float x2UnsortedRelative = (x2UInt - XXStart) * xInRelationIncr;
+	float y2UnsortedRelative = (y2UInt - y1Sorted) * yInRelationIncr;
+	float x3UnsortedRelative = (x3UInt - XXStart) * xInRelationIncr;
+	float y3UnsortedRelative = (y3UInt - y1Sorted) * yInRelationIncr;
+	float x1SortedRelativePo = (x1Sorted - XXStart) * xInRelationIncr;
+	float y1SortedRelativePo = (y1Sorted - y1Sorted) * yInRelationIncr;
+	float x2SortedRelativePo = (x2Sorted - XXStart) * xInRelationIncr;
+	float y2SortedRelativePo = (y2Sorted - y1Sorted) * yInRelationIncr;
+	float x3SortedRelativePo = (x3Sorted - XXStart) * xInRelationIncr;
+	float y3SortedRelativePo = (y3Sorted - y1Sorted) * yInRelationIncr;
+	float xCentroidOfTriangl = (x1UnsortedRelative + x2UnsortedRelative + x3UnsortedRelative) / 3.0f;
+	float yCentroidOfTriangl = (y1UnsortedRelative + y2UnsortedRelative + y3UnsortedRelative) / 3.0f;
+#define DISTANCE(y, x) 		sqrt(pow(yInRelationToY3 - y, 2) + pow(xInRelationToXX - x, 2))
+#define RED_VALUE 			std::max( 0.0f, (float)(DISTANCE(y1UnsortedRelative, x1UnsortedRelative)) )
+#define GREEN_VALUE 		std::max( 0.0f, (float)(DISTANCE(y2UnsortedRelative, x2UnsortedRelative)) )
+#define BLUE_VALUE			std::max( 0.0f, (float)(DISTANCE(y3UnsortedRelative, x3UnsortedRelative)) )
+#define NORMALIZED_SUM 		1.0f // (RED_VALUE + GREEN_VALUE + BLUE_VALUE)
+#define NORMALIZED_RED 		(RED_VALUE / NORMALIZED_SUM)
+#define NORMALIZED_GREEN 	(GREEN_VALUE / NORMALIZED_SUM)
+#define NORMALIZED_BLUE 	(BLUE_VALUE / NORMALIZED_SUM)
+#define NORMALIZED_COLOR 	NORMALIZED_RED, NORMALIZED_GREEN, NORMALIZED_BLUE
+#define COLOR_VALUES 		NORMALIZED_COLOR
+	xInRelationToXX = 0.0f;
+	yInRelationToY3 = 1.0f;
+	yInRelationToY3 = 0.0f;
+	*/
+
+	// coordinates variables
+	int xInRelationLeftmost = (x1UInt <= x2UInt) ? x1UInt : x2UInt;
+	xInRelationLeftmost = (xInRelationLeftmost <= x3UInt) ? xInRelationLeftmost : x3UInt;
+	int xInRelationRightmost = (x1UInt >= x2UInt) ? x1UInt : x2UInt;
+	xInRelationRightmost = (xInRelationRightmost >= x3UInt) ? xInRelationRightmost : x3UInt;
+	float xInRelationIncr = 1.0f / (xInRelationRightmost - xInRelationLeftmost);
+	float yInRelationIncr = 1.0f / (y3Sorted - y1Sorted);
+	float x1InRelationToXLeft = 1.0f - ((xInRelationRightmost - x1UInt) * xInRelationIncr);
+	float y1InRelationToYTop = 1.0f - ((y3Sorted - y1UInt) * yInRelationIncr);
+	float x2InRelationToX1 = -1.0f * ((x1UInt - x2UInt) * xInRelationIncr);
+	float y2InRelationToY1 = -1.0f * ((y1UInt - y2UInt) * yInRelationIncr);
+	float x3InRelationToX1 = -1.0f * ((x1UInt - x3UInt) * xInRelationIncr);
+	float y3InRelationToY1 = -1.0f * ((y1UInt - y3UInt) * yInRelationIncr);
+#define DISTANCE(x1, y1, x2, y2) 	sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2))
+#define XY1_DIST_TO_XY2 			DISTANCE(0.0f, 0.0f, x2InRelationToX1, y2InRelationToY1)
+#define XY1_DIST_TO_XY3				DISTANCE(0.0f, 0.0f, x3InRelationToX1, y3InRelationToY1)
+#define XY1_DIST_TO_XLEFT 			DISTANCE(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1)
+#define XY1_DIST_TO_XRIGHT 			DISTANCE(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1)
+#define XY2_DIST_TO_XLEFT 			DISTANCE(x2InRelationToX1, y2InRelationToY1, xLeftInRelationToX1, yInRelationToY1)
+#define XY2_DIST_TO_XRIGHT 			DISTANCE(x2InRelationToX1, y2InRelationToY1, xRightInRelationToX1, yInRelationToY1)
+#define XY3_DIST_TO_XLEFT 			DISTANCE(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1)
+#define XY3_DIST_TO_XRIGHT 			DISTANCE(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1)
+// VERY CLOSE!!! This is where I left off,...
+// NORMALIZED values might not be right all the time? Log values to confirm
+#define NORMALIZED_R_LEFT 			1.0f - (XY1_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
+#define NORMALIZED_R_RIGHT 			1.0f - (XY1_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
+#define NORMALIZED_G_LEFT 			1.0f - (XY2_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
+#define NORMALIZED_G_RIGHT 			1.0f - (XY2_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
+#define NORMALIZED_B_LEFT 			1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
+#define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
+#define RED_VALUE 					rCurrent
+#define GREEN_VALUE 				gCurrent
+#define BLUE_VALUE 					bCurrent
+#define COLOR_VALUES 				RED_VALUE, GREEN_VALUE, BLUE_VALUE
+
+	// setting the y value for texture mapping
+	float yInRelationToY1 = -1.0f * (1.0f - ((y3Sorted - y1UInt) * yInRelationIncr));
+
+	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
+	if (line1Slope == 0.0f)
+	{
+		// fill row to x2, y2
+		float tempX1 = x1FSorted;
+		float tempY1 = y1FSorted;
+		float tempX2 = x2FSorted;
+		float tempY2 = y2FSorted;
+
+		// if after clipping this line exists within the screen, render the line
+		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
+		{
+			unsigned int tempX1UInt = x1FSorted * (m_FBWidth  - 1);
+			unsigned int tempY1UInt = y1FSorted * (m_FBHeight - 1);
+			unsigned int tempX2UInt = x2FSorted * (m_FBWidth  - 1);
+			unsigned int tempY2UInt = y2FSorted * (m_FBHeight - 1);
+
+			unsigned int tempXY1 = ( (tempY1UInt * m_FBWidth) + tempX1UInt );
+			unsigned int tempXY2 = ( (tempY2UInt * m_FBWidth) + tempX2UInt );
+
+			// TODO remove this asap
+			float rCurrent = 1.0f;
+			float gCurrent = 1.0f;
+			float bCurrent = 1.0f;
+
+			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
+			{
+				m_ColorProfile->setColor( COLOR_VALUES );
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+			}
+		}
+
+		xRightAccumulator = (float) x2Sorted;
+		yInRelationToY1 += yInRelationIncr;
+	}
+	else
+	{
+		// render up until the second vertice
+		for (int row = y1Sorted; row <= y2Sorted; row++)
+		{
+			// clip vertically if row is off screen
+			if (row >= (int)m_FBHeight)
+			{
+				break;
+			}
+			else if (row >= 0)
+			{
+				// get x-intercepts of lines
+				xLeftAccumulator  += xLeftIncrTop;
+				xRightAccumulator += xRightIncrTop;
+
+				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
+				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
+				{
+					xLeftAccumulator = x2Sorted;
+
+					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
+					{
+						xRightAccumulator = x3Sorted;
+					}
+				}
+				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
+				{
+					xRightAccumulator = x2Sorted;
+				}
+
+				// rounding the points and clipping horizontally
+				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
+				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+
+				// ensuring the accumulators don't overrun the edges of the triangle
+				if (row == y2Sorted) leftX = x2Sorted;
+				if (row == y3Sorted) rightX = x2Sorted;
+
+				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
+				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+
+				// setting the x values for gradients
+				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - leftX) * xInRelationIncr);
+				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - rightX) * xInRelationIncr);
+				// find the distance between ex. (xleft, y) and (x1, y1) and divide by the distance of (x2, y2) and (x1, y1)
+				float rStart = NORMALIZED_R_LEFT;
+				float gStart = NORMALIZED_G_LEFT;
+				float bStart = NORMALIZED_B_LEFT;
+				// find the distance between (xright, y) and (x1, y1) and divide by the distance of (x3, y3) and (x1, y1)
+				float rEnd = NORMALIZED_R_RIGHT;
+				float gEnd = NORMALIZED_G_RIGHT;
+				float bEnd = NORMALIZED_B_RIGHT;
+				// linearly interpolate between the two values
+				float rIncr = (rEnd - rStart) / (rightX - leftX);
+				float rCurrent = rStart;
+				float gIncr = (gEnd - gStart) / (rightX - leftX);
+				float gCurrent = gStart;
+				float bIncr = (bEnd - bStart) / (rightX - leftX);
+				float bCurrent = bStart;
+
+				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
+				{
+					m_ColorProfile->setColor( COLOR_VALUES );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+
+					rCurrent += rIncr;
+					gCurrent += gIncr;
+					bCurrent += bIncr;
+				}
+			}
+			else // even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
+			{
+				// get x-intercepts of lines
+				xLeftAccumulator  += xLeftIncrTop;
+				xRightAccumulator += xRightIncrTop;
+
+				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
+				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
+				{
+					xLeftAccumulator = x2Sorted;
+
+					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
+					{
+						xRightAccumulator = x3Sorted;
+					}
+				}
+				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
+				{
+					xRightAccumulator = x2Sorted;
+				}
+			}
+			
+			yInRelationToY1 += yInRelationIncr;
+		}
+	}
+
+	// rasterize up until the last vertice
+	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
+	{
+		for (int row = y2Sorted; row <= y3Sorted; row++)
+		{
+			// clip vertically if row is off screen
+			if (row >= (int)m_FBHeight)
+			{
+				break;
+			}
+			else if ( row >= 0 )
+			{
+				// get x-intercepts of lines
+				xLeftAccumulator  += xLeftIncrBottom;
+				xRightAccumulator += xRightIncrBottom;
+
+				// rounding the points and clipping horizontally
+				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
+				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+
+				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
+				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+
+				// setting the x values for gradients
+				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - leftX) * xInRelationIncr);
+				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - rightX) * xInRelationIncr);
+				// find the distance between ex. (xleft, y) and (x1, y1) and divide by the distance of (x2, y2) and (x1, y1)
+				float rStart = NORMALIZED_R_LEFT;
+				float gStart = NORMALIZED_G_LEFT;
+				float bStart = NORMALIZED_B_LEFT;
+				// find the distance between (xright, y) and (x1, y1) and divide by the distance of (x3, y3) and (x1, y1)
+				float rEnd = NORMALIZED_R_RIGHT;
+				float gEnd = NORMALIZED_G_RIGHT;
+				float bEnd = NORMALIZED_B_RIGHT;
+				// linearly interpolate between the two values
+				float rIncr = (rEnd - rStart) / (rightX - leftX);
+				float rCurrent = rStart;
+				float gIncr = (gEnd - gStart) / (rightX - leftX);
+				float gCurrent = gStart;
+				float bIncr = (bEnd - bStart) / (rightX - leftX);
+				float bCurrent = bStart;
+
+				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
+				{
+					m_ColorProfile->setColor( COLOR_VALUES );
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					
+					rCurrent += rIncr;
+					gCurrent += gIncr;
+					bCurrent += bIncr;
+				}
+			}
+
+			yInRelationToY1 += yInRelationIncr;
 		}
 	}
 }
