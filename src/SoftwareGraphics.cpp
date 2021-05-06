@@ -487,6 +487,8 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 
 void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3)
 {
+	std::cout << "RENDERING NEW TRIANGLE -----------------------------------------" << std::endl;
+
 	// getting the pixel values of the vertices
 	int x1UInt = x1 * (m_FBWidth  - 1);
 	int y1UInt = y1 * (m_FBHeight - 1);
@@ -680,14 +682,14 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	float xInRelationIncr = 1.0f / (xInRelationRightmost - xInRelationLeftmost);
 	float yInRelationIncr = 1.0f / (y3Sorted - y1Sorted);
 	float x1InRelationToXLeft = 1.0f - ((xInRelationRightmost - x1UInt) * xInRelationIncr);
-	float y1InRelationToYTop = 1.0f - ((y3Sorted - y1UInt) * yInRelationIncr);
 	float x2InRelationToX1 = -1.0f * ((x1UInt - x2UInt) * xInRelationIncr);
 	float y2InRelationToY1 = -1.0f * ((y1UInt - y2UInt) * yInRelationIncr);
 	float x3InRelationToX1 = -1.0f * ((x1UInt - x3UInt) * xInRelationIncr);
 	float y3InRelationToY1 = -1.0f * ((y1UInt - y3UInt) * yInRelationIncr);
-#define DISTANCE(x1, y1, x2, y2) 	sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2))
+#define DISTANCE(x1, y1, x2, y2) 		sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2))
 #define XY1_DIST_TO_XY2 			DISTANCE(0.0f, 0.0f, x2InRelationToX1, y2InRelationToY1)
 #define XY1_DIST_TO_XY3				DISTANCE(0.0f, 0.0f, x3InRelationToX1, y3InRelationToY1)
+#define XY2_DIST_TO_XY3 			DISTANCE(x2InRelationToX1, y2InRelationToY1, x3InRelationToX1, y3InRelationToY1)
 #define XY1_DIST_TO_XLEFT 			DISTANCE(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1)
 #define XY1_DIST_TO_XRIGHT 			DISTANCE(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1)
 #define XY2_DIST_TO_XLEFT 			DISTANCE(x2InRelationToX1, y2InRelationToY1, xLeftInRelationToX1, yInRelationToY1)
@@ -696,49 +698,128 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 #define XY3_DIST_TO_XRIGHT 			DISTANCE(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1)
 // VERY CLOSE!!! This is where I left off,...
 // NORMALIZED values might not be right all the time? Log values to confirm
+// #define NORMALIZED_R_LEFT 			1.0f - (XY1_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
+// #define NORMALIZED_R_RIGHT 			1.0f - (XY1_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
+// #define NORMALIZED_G_LEFT 			1.0f - (XY2_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
+// #define NORMALIZED_G_RIGHT 			1.0f - (XY2_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
+// #define NORMALIZED_B_LEFT 			1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY3)
+// #define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
 #define NORMALIZED_R_LEFT 			1.0f - (XY1_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
 #define NORMALIZED_R_RIGHT 			1.0f - (XY1_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
 #define NORMALIZED_G_LEFT 			1.0f - (XY2_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
-#define NORMALIZED_G_RIGHT 			1.0f - (XY2_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
-#define NORMALIZED_B_LEFT 			1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
-#define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
-#define RED_VALUE 					rCurrent
+#define NORMALIZED_G_RIGHT 			1.0f - (XY2_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
+#define NORMALIZED_B_LEFT 			1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY3)
+#define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
+#define RED_VALUE 				rCurrent
 #define GREEN_VALUE 				gCurrent
-#define BLUE_VALUE 					bCurrent
+#define BLUE_VALUE 				bCurrent
 #define COLOR_VALUES 				RED_VALUE, GREEN_VALUE, BLUE_VALUE
+	std::cout << "y1: " << std::to_string(y1) << std::endl;
 
 	// setting the y value for texture mapping
 	float yInRelationToY1 = -1.0f * (1.0f - ((y3Sorted - y1UInt) * yInRelationIncr));
 
 	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
-	if (line1Slope == 0.0f)
+	if ( line1Slope == 0.0f || isnan(line1Slope) )
 	{
+		std::cout << "slope is zero, rendering a straight line at the top" << std::endl;
+
 		// fill row to x2, y2
 		float tempX1 = x1FSorted;
 		float tempY1 = y1FSorted;
 		float tempX2 = x2FSorted;
 		float tempY2 = y2FSorted;
+		if ( tempX1 == tempX2 ) { goto skip; } // don't draw lines with 0 width obviously
+		float tempMidX = 0.0f; // to use as the midpoint for gradient
+		float tempMidY = 0.0f;
+
+		// if this 'triangle' is essentially just a straight line
+		if ( y2FSorted == y3FSorted )
+		{
+			tempX2 = x3FSorted;
+			tempY2 = y3FSorted;
+			tempMidX = x2FSorted;
+			tempMidY = y2FSorted;
+		}
 
 		// if after clipping this line exists within the screen, render the line
 		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
 		{
-			unsigned int tempX1UInt = x1FSorted * (m_FBWidth  - 1);
-			unsigned int tempY1UInt = y1FSorted * (m_FBHeight - 1);
-			unsigned int tempX2UInt = x2FSorted * (m_FBWidth  - 1);
-			unsigned int tempY2UInt = y2FSorted * (m_FBHeight - 1);
+			unsigned int tempX1UInt = tempX1 * (m_FBWidth  - 1);
+			unsigned int tempY1UInt = tempY1 * (m_FBHeight - 1);
+			unsigned int tempX2UInt = tempX2 * (m_FBWidth  - 1);
+			unsigned int tempY2UInt = tempY2 * (m_FBHeight - 1);
+			unsigned int tempMidXUInt = tempMidX * (m_FBWidth  - 1);
+			unsigned int tempMidYUInt = tempMidY * (m_FBHeight - 1);
 
 			unsigned int tempXY1 = ( (tempY1UInt * m_FBWidth) + tempX1UInt );
 			unsigned int tempXY2 = ( (tempY2UInt * m_FBWidth) + tempX2UInt );
+			unsigned int tempMidXY = ( (tempMidYUInt * m_FBWidth) + tempMidXUInt );
 
-			// TODO remove this asap
-			float rCurrent = 1.0f;
-			float gCurrent = 1.0f;
-			float bCurrent = 1.0f;
+			// linearly interpolate between the vertices
+			float colIncr = 1.0f / (tempX2UInt - tempX1UInt);
+			float rCurrent = 0.0f;
+			float gCurrent = 0.0f;
+			float bCurrent = 0.0f;
+			float rIncr = 0.0f;
+			float gIncr = 0.0f;
+			float bIncr = 0.0f;
+			bool rTaken = false;
+			bool gTaken = false;
+			bool bTaken = false;
+			if ( tempX1UInt == x1UInt )
+			{
+				rCurrent = 1.0f;
+				rIncr = -1.0f * colIncr;
+				rTaken = true;
+			}
+			else if ( tempX1UInt == x2UInt )
+			{
+				gCurrent = 1.0f;
+				gIncr = -1.0f * colIncr;
+				gTaken = true;
+			}
+			else
+			{
+				bCurrent = 1.0f;
+				bIncr = -1.0f * colIncr;
+				bTaken = true;
+			}
+			if ( tempX2UInt == x1UInt )
+			{
+				rIncr = colIncr;
+				rTaken = true;
+			}
+			else if ( tempX2UInt == x2UInt )
+			{
+				gIncr = colIncr;
+				gTaken = true;
+			}
+			else
+			{
+				bIncr = colIncr;
+				bTaken = true;
+			}
+			float* midpointCol = nullptr;
+			float* midpointIncr = nullptr;
+			if ( rTaken & gTaken ) 		{ midpointCol = &bCurrent; midpointIncr = &bIncr; }
+			else if ( rTaken & bTaken ) 	{ midpointCol = &gCurrent; midpointIncr = &gIncr; }
+			else if ( gTaken & bTaken ) 	{ midpointCol = &rCurrent; midpointIncr = &rIncr; }
+			*midpointIncr = 1.0f / (tempMidXUInt - tempX1UInt);
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
+				if ( pixel == tempMidXY )
+				{
+					*midpointIncr = 1.0f / (tempX2UInt - tempMidXUInt);
+				}
+
 				m_ColorProfile->setColor( COLOR_VALUES );
 				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+
+				rCurrent += rIncr;
+				gCurrent += gIncr;
+				bCurrent += bIncr;
 			}
 		}
 
@@ -747,6 +828,8 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	}
 	else
 	{
+		std::cout << "rendering the top half of the triangle" << std::endl;
+
 		// render up until the second vertice
 		for (int row = y1Sorted; row <= y2Sorted; row++)
 		{
@@ -805,8 +888,18 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 				float gCurrent = gStart;
 				float bIncr = (bEnd - bStart) / (rightX - leftX);
 				float bCurrent = bStart;
+				// std::cout << "bCurrent: " << std::to_string(bCurrent) << std::endl;
+				// std::cout << "   bStart: " << std::to_string(bStart) << std::endl;
+				// std::cout << "   bEnd: " << std::to_string(bEnd) << std::endl;
+				// std::cout << "   bIncr: " << std::to_string(bIncr) << std::endl;
+				// std::cout << "XY3_DIST_TO_XLEFT: " << std::to_string(XY3_DIST_TO_XLEFT) << std::endl;
+				// std::cout << "XY3_DIST_TO_XRIGHT: " << std::to_string(XY3_DIST_TO_XRIGHT) << std::endl;
+				// std::cout << "   NORMALIZED_B_LEFT: " << std::to_string(NORMALIZED_B_LEFT) << std::endl;
+				// std::cout << "   NORMALIZED_B_RIGHT: " << std::to_string(NORMALIZED_B_RIGHT) << std::endl;
+				// std::cout << "   tempXY1: " << std::to_string(tempXY1) << std::endl;
+				// std::cout << "   tempXY2: " << std::to_string(tempXY2) << std::endl;
 
-				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
+				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
 					m_ColorProfile->setColor( COLOR_VALUES );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
@@ -837,14 +930,17 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 					xRightAccumulator = x2Sorted;
 				}
 			}
-			
+
 			yInRelationToY1 += yInRelationIncr;
 		}
 	}
 
+skip:
 	// rasterize up until the last vertice
 	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
 	{
+		std::cout << "rendering the bottom half of the triangle" << std::endl;
+
 		for (int row = y2Sorted; row <= y3Sorted; row++)
 		{
 			// clip vertically if row is off screen
@@ -884,11 +980,11 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 				float bIncr = (bEnd - bStart) / (rightX - leftX);
 				float bCurrent = bStart;
 
-				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
+				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
 					m_ColorProfile->setColor( COLOR_VALUES );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
-					
+
 					rCurrent += rIncr;
 					gCurrent += gIncr;
 					bCurrent += bIncr;
