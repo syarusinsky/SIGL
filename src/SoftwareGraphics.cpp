@@ -696,20 +696,12 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 #define XY2_DIST_TO_XRIGHT 			DISTANCE(x2InRelationToX1, y2InRelationToY1, xRightInRelationToX1, yInRelationToY1)
 #define XY3_DIST_TO_XLEFT 			DISTANCE(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1)
 #define XY3_DIST_TO_XRIGHT 			DISTANCE(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1)
-// VERY CLOSE!!! This is where I left off,...
-// NORMALIZED values might not be right all the time? Log values to confirm
-// #define NORMALIZED_R_LEFT 			1.0f - (XY1_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
-// #define NORMALIZED_R_RIGHT 			1.0f - (XY1_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
-// #define NORMALIZED_G_LEFT 			1.0f - (XY2_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
-// #define NORMALIZED_G_RIGHT 			1.0f - (XY2_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
-// #define NORMALIZED_B_LEFT 			1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY3)
-// #define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
 #define NORMALIZED_R_LEFT 			1.0f - (XY1_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
 #define NORMALIZED_R_RIGHT 			1.0f - (XY1_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
 #define NORMALIZED_G_LEFT 			1.0f - (XY2_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
-#define NORMALIZED_G_RIGHT 			1.0f - (XY2_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
-#define NORMALIZED_B_LEFT 			1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY3)
-#define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
+#define NORMALIZED_G_RIGHT 			0.0f // 1.0f - (XY2_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
+#define NORMALIZED_B_LEFT 			0.0f // 1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY3)
+#define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
 #define RED_VALUE 				rCurrent
 #define GREEN_VALUE 				gCurrent
 #define BLUE_VALUE 				bCurrent
