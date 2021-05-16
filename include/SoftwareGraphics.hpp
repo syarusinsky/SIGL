@@ -37,6 +37,7 @@ class SoftwareGraphics 	: public Graphics
 		void drawSprite (float xStart, float yStart, Sprite& sprite) override;
 
 	protected:
+		// TODO make clipLine a static inline function and move to Graphics.hpp
 		bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
 

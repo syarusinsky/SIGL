@@ -3,7 +3,6 @@
 #include "Font.hpp"
 #include "Sprite.hpp"
 
-#include <math.h>
 #include <algorithm>
 
 // TODO remove this asap
@@ -484,6 +483,10 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 		}
 	}
 }
+static inline float triGradNormalizedDist (float currentDistFromXY1, float endDistFromXY1)
+{
+	return std::max( 1.0f - (currentDistFromXY1 / endDistFromXY1), 0.0f );
+}
 
 void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3)
 {
@@ -620,7 +623,7 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	float xLeftIncrBottom  = 1.0f / line3Slope;
 	float xRightIncrBottom = 1.0f / line2Slope;
 
-	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom, is this correct???
+	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
 	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
 
 	// depending on the position of the vertices, we need to swap increments
@@ -636,45 +639,6 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	}
 
 	// coordinates variables
-	/*
-	int XXStart = (x1Sorted <= x2Sorted) ? x1Sorted : x2Sorted;
-	XXStart = (XXStart <= x3Sorted) ? XXStart : x3Sorted;
-	int XXEnd = (x3Sorted >= x2Sorted) ? x3Sorted : x2Sorted;
-	XXEnd = (XXEnd >= x1Sorted) ? XXEnd : x1Sorted;
-	float xInRelationToXX = 0.0f;
-	float xInRelationIncr = 1.0f / (XXEnd - XXStart);
-	float yInRelationToY3 = 0.0f;
-	float yInRelationIncr = 1.0f / (y3Sorted - y1Sorted);
-	float x1UnsortedRelative = (x1UInt - XXStart) * xInRelationIncr;
-	float y1UnsortedRelative = (y1UInt - y1Sorted) * yInRelationIncr;
-	float x2UnsortedRelative = (x2UInt - XXStart) * xInRelationIncr;
-	float y2UnsortedRelative = (y2UInt - y1Sorted) * yInRelationIncr;
-	float x3UnsortedRelative = (x3UInt - XXStart) * xInRelationIncr;
-	float y3UnsortedRelative = (y3UInt - y1Sorted) * yInRelationIncr;
-	float x1SortedRelativePo = (x1Sorted - XXStart) * xInRelationIncr;
-	float y1SortedRelativePo = (y1Sorted - y1Sorted) * yInRelationIncr;
-	float x2SortedRelativePo = (x2Sorted - XXStart) * xInRelationIncr;
-	float y2SortedRelativePo = (y2Sorted - y1Sorted) * yInRelationIncr;
-	float x3SortedRelativePo = (x3Sorted - XXStart) * xInRelationIncr;
-	float y3SortedRelativePo = (y3Sorted - y1Sorted) * yInRelationIncr;
-	float xCentroidOfTriangl = (x1UnsortedRelative + x2UnsortedRelative + x3UnsortedRelative) / 3.0f;
-	float yCentroidOfTriangl = (y1UnsortedRelative + y2UnsortedRelative + y3UnsortedRelative) / 3.0f;
-#define DISTANCE(y, x) 		sqrt(pow(yInRelationToY3 - y, 2) + pow(xInRelationToXX - x, 2))
-#define RED_VALUE 			std::max( 0.0f, (float)(DISTANCE(y1UnsortedRelative, x1UnsortedRelative)) )
-#define GREEN_VALUE 		std::max( 0.0f, (float)(DISTANCE(y2UnsortedRelative, x2UnsortedRelative)) )
-#define BLUE_VALUE			std::max( 0.0f, (float)(DISTANCE(y3UnsortedRelative, x3UnsortedRelative)) )
-#define NORMALIZED_SUM 		1.0f // (RED_VALUE + GREEN_VALUE + BLUE_VALUE)
-#define NORMALIZED_RED 		(RED_VALUE / NORMALIZED_SUM)
-#define NORMALIZED_GREEN 	(GREEN_VALUE / NORMALIZED_SUM)
-#define NORMALIZED_BLUE 	(BLUE_VALUE / NORMALIZED_SUM)
-#define NORMALIZED_COLOR 	NORMALIZED_RED, NORMALIZED_GREEN, NORMALIZED_BLUE
-#define COLOR_VALUES 		NORMALIZED_COLOR
-	xInRelationToXX = 0.0f;
-	yInRelationToY3 = 1.0f;
-	yInRelationToY3 = 0.0f;
-	*/
-
-	// coordinates variables
 	int xInRelationLeftmost = (x1UInt <= x2UInt) ? x1UInt : x2UInt;
 	xInRelationLeftmost = (xInRelationLeftmost <= x3UInt) ? xInRelationLeftmost : x3UInt;
 	int xInRelationRightmost = (x1UInt >= x2UInt) ? x1UInt : x2UInt;
@@ -686,27 +650,148 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	float y2InRelationToY1 = -1.0f * ((y1UInt - y2UInt) * yInRelationIncr);
 	float x3InRelationToX1 = -1.0f * ((x1UInt - x3UInt) * xInRelationIncr);
 	float y3InRelationToY1 = -1.0f * ((y1UInt - y3UInt) * yInRelationIncr);
-#define DISTANCE(x1, y1, x2, y2) 		sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2))
-#define XY1_DIST_TO_XY2 			DISTANCE(0.0f, 0.0f, x2InRelationToX1, y2InRelationToY1)
-#define XY1_DIST_TO_XY3				DISTANCE(0.0f, 0.0f, x3InRelationToX1, y3InRelationToY1)
-#define XY2_DIST_TO_XY3 			DISTANCE(x2InRelationToX1, y2InRelationToY1, x3InRelationToX1, y3InRelationToY1)
-#define XY1_DIST_TO_XLEFT 			DISTANCE(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1)
-#define XY1_DIST_TO_XRIGHT 			DISTANCE(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1)
-#define XY2_DIST_TO_XLEFT 			DISTANCE(x2InRelationToX1, y2InRelationToY1, xLeftInRelationToX1, yInRelationToY1)
-#define XY2_DIST_TO_XRIGHT 			DISTANCE(x2InRelationToX1, y2InRelationToY1, xRightInRelationToX1, yInRelationToY1)
-#define XY3_DIST_TO_XLEFT 			DISTANCE(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1)
-#define XY3_DIST_TO_XRIGHT 			DISTANCE(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1)
-#define NORMALIZED_R_LEFT 			1.0f - (XY1_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
-#define NORMALIZED_R_RIGHT 			1.0f - (XY1_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
-#define NORMALIZED_G_LEFT 			1.0f - (XY2_DIST_TO_XLEFT / XY1_DIST_TO_XY2)
-#define NORMALIZED_G_RIGHT 			0.0f // 1.0f - (XY2_DIST_TO_XRIGHT / XY2_DIST_TO_XY3)
-#define NORMALIZED_B_LEFT 			0.0f // 1.0f - (XY3_DIST_TO_XLEFT / XY1_DIST_TO_XY3)
-#define NORMALIZED_B_RIGHT 			1.0f - (XY3_DIST_TO_XRIGHT / XY1_DIST_TO_XY3)
-#define RED_VALUE 				rCurrent
-#define GREEN_VALUE 				gCurrent
-#define BLUE_VALUE 				bCurrent
-#define COLOR_VALUES 				RED_VALUE, GREEN_VALUE, BLUE_VALUE
-	std::cout << "y1: " << std::to_string(y1) << std::endl;
+	float xy1DistToXy2 = this->distance(0.0f, 0.0f, x2InRelationToX1, y2InRelationToY1);
+	float xy1DistToXy3 = this->distance(0.0f, 0.0f, x3InRelationToX1, y3InRelationToY1);
+	float xy2DistToXy3 = this->distance(x2InRelationToX1, y2InRelationToY1, x3InRelationToX1, y3InRelationToY1);
+	// setting these values to std::numeric_limits<float>::min() will result in triGradNormalizedDist returning 0.0f
+	const float zeroVal = std::numeric_limits<float>::min();
+	float rStartEdgeDistT = zeroVal; // T for rendering the top half of the triangle
+	float gStartEdgeDistT = zeroVal;
+	float bStartEdgeDistT = zeroVal;
+	float rEndEdgeDistT = zeroVal;
+	float gEndEdgeDistT = zeroVal;
+	float bEndEdgeDistT = zeroVal;
+	float rStartEdgeDistB = zeroVal; // B for rendering the bottom half of the triangle
+	float gStartEdgeDistB = zeroVal;
+	float bStartEdgeDistB = zeroVal;
+	float rEndEdgeDistB = zeroVal;
+	float gEndEdgeDistB = zeroVal;
+	float bEndEdgeDistB = zeroVal;
+	if ( y1UInt == y1Sorted ) // xy1 is on top (scanning top-down)
+	{
+		// first assuming that xy2 is above and to the left of xy3
+		rStartEdgeDistT = xy1DistToXy2;
+		rEndEdgeDistT = xy1DistToXy3;
+		gStartEdgeDistT = xy1DistToXy2;
+		bEndEdgeDistT = xy1DistToXy3;
+		rStartEdgeDistB = xy1DistToXy2;
+		rEndEdgeDistB = xy1DistToXy3;
+		gStartEdgeDistB = xy2DistToXy3;
+		bStartEdgeDistB = xy2DistToXy3;
+		bEndEdgeDistB = xy1DistToXy3;
+
+		if ( x3UInt < x2UInt )
+		{
+			rStartEdgeDistT = xy1DistToXy3;
+			rEndEdgeDistT = xy1DistToXy2;
+			gStartEdgeDistT = zeroVal;
+			gEndEdgeDistT = xy1DistToXy2;
+			bStartEdgeDistT = xy1DistToXy3;
+			bEndEdgeDistT = zeroVal;
+			rStartEdgeDistB = xy1DistToXy3;
+			rEndEdgeDistB = xy1DistToXy2;
+
+			if ( y3UInt < y2UInt )
+			{
+				if ( needsSwapping )
+				{
+					rStartEdgeDistT = xy1DistToXy2;
+					rEndEdgeDistT = xy1DistToXy3;
+					rStartEdgeDistB = xy1DistToXy2;
+					rEndEdgeDistB = zeroVal;
+					gStartEdgeDistT = xy1DistToXy2;
+					gEndEdgeDistT = zeroVal;
+					gStartEdgeDistB = xy1DistToXy2;
+					gEndEdgeDistB = xy2DistToXy3;
+					bStartEdgeDistT = zeroVal;
+					bEndEdgeDistT = xy1DistToXy3;
+					bStartEdgeDistB = zeroVal;
+					bEndEdgeDistB = xy2DistToXy3;
+				}
+				else
+				{
+					gEndEdgeDistB = xy1DistToXy2;
+					bEndEdgeDistB = zeroVal;
+				}
+			}
+			else
+			{
+				if ( needsSwapping )
+				{
+					gStartEdgeDistB = zeroVal;
+					gEndEdgeDistB = xy2DistToXy3;
+					bStartEdgeDistB = xy1DistToXy3;
+					bEndEdgeDistB = xy2DistToXy3;
+				}
+				else
+				{
+					rStartEdgeDistT = xy1DistToXy2;
+					rEndEdgeDistT = xy1DistToXy3;
+					rStartEdgeDistB = zeroVal;
+					rEndEdgeDistB = xy1DistToXy3;
+					gStartEdgeDistT = xy1DistToXy2;
+					gEndEdgeDistT = zeroVal;
+					bStartEdgeDistT = zeroVal;
+					bEndEdgeDistT = xy1DistToXy3;
+					bEndEdgeDistB = xy1DistToXy3;
+				}
+			}
+		}
+		else if ( y3UInt < y2UInt )
+		{
+			if ( needsSwapping )
+			{
+				gStartEdgeDistB = xy1DistToXy2;
+				gEndEdgeDistB = xy2DistToXy3;
+				bStartEdgeDistB = zeroVal;
+				bEndEdgeDistB = xy2DistToXy3;
+			}
+			else
+			{
+				rStartEdgeDistT = xy1DistToXy3;
+				rEndEdgeDistT = xy1DistToXy2;
+				rStartEdgeDistB = zeroVal;
+				rEndEdgeDistB = xy1DistToXy2;
+				gStartEdgeDistT = zeroVal;
+				gEndEdgeDistT = xy1DistToXy2;
+				gStartEdgeDistB = xy2DistToXy3;
+				gEndEdgeDistB = xy1DistToXy2;
+				bStartEdgeDistT = xy1DistToXy3;
+				bEndEdgeDistT = zeroVal;
+				bStartEdgeDistB = xy2DistToXy3;
+				bEndEdgeDistB = zeroVal;
+			}
+		}
+		else if ( needsSwapping )
+		{
+			rStartEdgeDistT = xy1DistToXy3;
+			rEndEdgeDistT = xy1DistToXy2;
+			rStartEdgeDistB = xy1DistToXy3;
+			rEndEdgeDistB = zeroVal;
+			gStartEdgeDistT = zeroVal;
+			gEndEdgeDistT = xy1DistToXy2;
+			gStartEdgeDistB = zeroVal;
+			gEndEdgeDistB = xy2DistToXy3;
+			bStartEdgeDistT = xy1DistToXy3;
+			bEndEdgeDistT = zeroVal;
+			bStartEdgeDistB = xy1DistToXy3;
+			bEndEdgeDistB = xy2DistToXy3;
+		}
+	}
+	else if ( y1UInt == y2Sorted ) // xy1 is in the middle (scanning left or right)
+	{
+		// TODO still have to implement this
+		if ( y3UInt < y2UInt )
+		{
+		}
+	}
+	else if ( y1UInt == y3Sorted ) // xy1 is on the bottom (scanning bottom-up)
+	{
+		// TODO still have to implement this
+		if ( y3UInt < y2UInt )
+		{
+		}
+	}
 
 	// setting the y value for texture mapping
 	float yInRelationToY1 = -1.0f * (1.0f - ((y3Sorted - y1UInt) * yInRelationIncr));
@@ -806,7 +891,7 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 					*midpointIncr = 1.0f / (tempX2UInt - tempMidXUInt);
 				}
 
-				m_ColorProfile->setColor( COLOR_VALUES );
+				m_ColorProfile->setColor( rCurrent, gCurrent, bCurrent );
 				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 				rCurrent += rIncr;
@@ -865,14 +950,20 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 				// setting the x values for gradients
 				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - leftX) * xInRelationIncr);
 				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - rightX) * xInRelationIncr);
-				// find the distance between ex. (xleft, y) and (x1, y1) and divide by the distance of (x2, y2) and (x1, y1)
-				float rStart = NORMALIZED_R_LEFT;
-				float gStart = NORMALIZED_G_LEFT;
-				float bStart = NORMALIZED_B_LEFT;
-				// find the distance between (xright, y) and (x1, y1) and divide by the distance of (x3, y3) and (x1, y1)
-				float rEnd = NORMALIZED_R_RIGHT;
-				float gEnd = NORMALIZED_G_RIGHT;
-				float bEnd = NORMALIZED_B_RIGHT;
+				// get important distances
+				float xy1DistToXLeft = this->distance(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1);
+				float xy1DistToXRight = this->distance(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1);
+				float xy2DistToXLeft = this->distance(x2InRelationToX1, y2InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
+				float xy2DistToXRight = this->distance(x2InRelationToX1, y2InRelationToY1, xRightInRelationToX1, yInRelationToY1);
+				float xy3DistToXLeft = this->distance(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
+				float xy3DistToXRight = this->distance(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1);
+				// compute the starting and ending color values for each scanline
+				float rStart = triGradNormalizedDist(xy1DistToXLeft, rStartEdgeDistT);
+				float gStart = triGradNormalizedDist(xy2DistToXLeft, gStartEdgeDistT);
+				float bStart = triGradNormalizedDist(xy3DistToXLeft, bStartEdgeDistT);
+				float rEnd = triGradNormalizedDist(xy1DistToXRight, rEndEdgeDistT);
+				float gEnd = triGradNormalizedDist(xy2DistToXRight, gEndEdgeDistT);
+				float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistT);
 				// linearly interpolate between the two values
 				float rIncr = (rEnd - rStart) / (rightX - leftX);
 				float rCurrent = rStart;
@@ -880,20 +971,10 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 				float gCurrent = gStart;
 				float bIncr = (bEnd - bStart) / (rightX - leftX);
 				float bCurrent = bStart;
-				// std::cout << "bCurrent: " << std::to_string(bCurrent) << std::endl;
-				// std::cout << "   bStart: " << std::to_string(bStart) << std::endl;
-				// std::cout << "   bEnd: " << std::to_string(bEnd) << std::endl;
-				// std::cout << "   bIncr: " << std::to_string(bIncr) << std::endl;
-				// std::cout << "XY3_DIST_TO_XLEFT: " << std::to_string(XY3_DIST_TO_XLEFT) << std::endl;
-				// std::cout << "XY3_DIST_TO_XRIGHT: " << std::to_string(XY3_DIST_TO_XRIGHT) << std::endl;
-				// std::cout << "   NORMALIZED_B_LEFT: " << std::to_string(NORMALIZED_B_LEFT) << std::endl;
-				// std::cout << "   NORMALIZED_B_RIGHT: " << std::to_string(NORMALIZED_B_RIGHT) << std::endl;
-				// std::cout << "   tempXY1: " << std::to_string(tempXY1) << std::endl;
-				// std::cout << "   tempXY2: " << std::to_string(tempXY2) << std::endl;
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					m_ColorProfile->setColor( COLOR_VALUES );
+					m_ColorProfile->setColor( rCurrent, gCurrent, bCurrent );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					rCurrent += rIncr;
@@ -956,14 +1037,20 @@ skip:
 				// setting the x values for gradients
 				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - leftX) * xInRelationIncr);
 				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - rightX) * xInRelationIncr);
-				// find the distance between ex. (xleft, y) and (x1, y1) and divide by the distance of (x2, y2) and (x1, y1)
-				float rStart = NORMALIZED_R_LEFT;
-				float gStart = NORMALIZED_G_LEFT;
-				float bStart = NORMALIZED_B_LEFT;
-				// find the distance between (xright, y) and (x1, y1) and divide by the distance of (x3, y3) and (x1, y1)
-				float rEnd = NORMALIZED_R_RIGHT;
-				float gEnd = NORMALIZED_G_RIGHT;
-				float bEnd = NORMALIZED_B_RIGHT;
+				// get important distances
+				float xy1DistToXLeft = this->distance(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1);
+				float xy1DistToXRight = this->distance(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1);
+				float xy2DistToXLeft = this->distance(x2InRelationToX1, y2InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
+				float xy2DistToXRight = this->distance(x2InRelationToX1, y2InRelationToY1, xRightInRelationToX1, yInRelationToY1);
+				float xy3DistToXLeft = this->distance(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
+				float xy3DistToXRight = this->distance(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1);
+				// compute the starting and ending color values for each scanline
+				float rStart = triGradNormalizedDist(xy1DistToXLeft, rStartEdgeDistB);
+				float gStart = triGradNormalizedDist(xy2DistToXLeft, gStartEdgeDistB);
+				float bStart = triGradNormalizedDist(xy3DistToXLeft, bStartEdgeDistB);
+				float rEnd = triGradNormalizedDist(xy1DistToXRight, rEndEdgeDistB);
+				float gEnd = triGradNormalizedDist(xy2DistToXRight, gEndEdgeDistB);
+				float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistB);
 				// linearly interpolate between the two values
 				float rIncr = (rEnd - rStart) / (rightX - leftX);
 				float rCurrent = rStart;
@@ -974,7 +1061,7 @@ skip:
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					m_ColorProfile->setColor( COLOR_VALUES );
+					m_ColorProfile->setColor( rCurrent, gCurrent, bCurrent );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					rCurrent += rIncr;

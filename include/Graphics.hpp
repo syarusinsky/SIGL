@@ -14,6 +14,7 @@
 #include "FrameBuffer.hpp"
 #include "ColorProfile.hpp"
 #include <string>
+#include <math.h>
 
 class Font;
 class Sprite;
@@ -30,8 +31,8 @@ class Graphics
 			m_FBPixels = frameBuffer->getPixels();
 		}
 
-		unsigned int convertXPercentageToUInt (float x) { return x * (m_FBWidth  - 1); }
-		unsigned int convertYPercentageToUInt (float y) { return y * (m_FBHeight - 1); }
+		inline unsigned int convertXPercentageToUInt (float x) { return x * (m_FBWidth  - 1); }
+		inline unsigned int convertYPercentageToUInt (float y) { return y * (m_FBHeight - 1); }
 
 		virtual void setColor (float r, float g, float b) = 0;
 		virtual void setColor (bool val) = 0;
@@ -51,6 +52,8 @@ class Graphics
 		virtual void drawCircleFilled (float originX, float originY, float radius) = 0;
 		virtual void drawText (float xStart, float yStart, const char* text, float scaleFactor) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite& sprite) = 0;
+
+		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
 	protected:
 		FrameBuffer*         m_FB;
