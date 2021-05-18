@@ -45,11 +45,10 @@ class ColorProfile
 		void setColor (float rValue, float gValue, float bValue);
 		void setColor (float rValue, float gValue, float bValue, float aValue);
 		void setColor (bool mValue, bool useAlpha = false);
+		void setColor (const Color& color);
+		Color getColor() const;
 
 		const CP_FORMAT getFormat() const;
-
-	protected:
-		void setColor (const Color& color);
 
 	private:
 		const CP_FORMAT m_Format;

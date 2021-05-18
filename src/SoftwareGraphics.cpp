@@ -205,6 +205,105 @@ void SoftwareGraphics::drawTriangle (float x1, float y1, float x2, float y2, flo
 	drawLine( x3, y3, x1, y1 );
 }
 
+static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSorted, float& y1FSorted,
+									int& x2Sorted, int& y2Sorted, float& x2FSorted, float& y2FSorted,
+									int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted )
+{
+	// first sort by y values
+	if (y2Sorted > y3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+	if (y1Sorted > y2Sorted)
+	{
+		int xTemp = x1Sorted;
+		int yTemp = y1Sorted;
+		float xFTemp = x1FSorted;
+		float yFTemp = y1FSorted;
+		x1Sorted = x2Sorted;
+		y1Sorted = y2Sorted;
+		x2Sorted = xTemp;
+		y2Sorted = yTemp;
+		x1FSorted = x2FSorted;
+		y1FSorted = y2FSorted;
+		x2FSorted = xFTemp;
+		y2FSorted = yFTemp;
+	}
+	if (y2Sorted > y3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+
+	// then sort by x values
+	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
+	{
+		int xTemp = x1Sorted;
+		int yTemp = y1Sorted;
+		float xFTemp = x1FSorted;
+		float yFTemp = y1FSorted;
+		x1Sorted = x2Sorted;
+		y1Sorted = y2Sorted;
+		x2Sorted = xTemp;
+		y2Sorted = yTemp;
+		x1FSorted = x2FSorted;
+		y1FSorted = y2FSorted;
+		x2FSorted = xFTemp;
+		y2FSorted = yFTemp;
+	}
+	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
+	{
+		int xTemp = x2Sorted;
+		int yTemp = y2Sorted;
+		float xFTemp = x2FSorted;
+		float yFTemp = y2FSorted;
+		x2Sorted = x3Sorted;
+		y2Sorted = y3Sorted;
+		x3Sorted = xTemp;
+		y3Sorted = yTemp;
+		x2FSorted = x3FSorted;
+		y2FSorted = y3FSorted;
+		x3FSorted = xFTemp;
+		y3FSorted = yFTemp;
+	}
+}
+
 void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	// getting the pixel values of the vertices
@@ -229,384 +328,8 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 	float y3FSorted = y3;
 
 	// sorting vertices
-	// first sort by y values
-	if (y2Sorted > y3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
-	if (y1Sorted > y2Sorted)
-	{
-		int xTemp = x1Sorted;
-		int yTemp = y1Sorted;
-		float xFTemp = x1FSorted;
-		float yFTemp = y1FSorted;
-		x1Sorted = x2Sorted;
-		y1Sorted = y2Sorted;
-		x2Sorted = xTemp;
-		y2Sorted = yTemp;
-		x1FSorted = x2FSorted;
-		y1FSorted = y2FSorted;
-		x2FSorted = xFTemp;
-		y2FSorted = yFTemp;
-	}
-	if (y2Sorted > y3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
-
-	// then sort by x values
-	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
-	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
-	{
-		int xTemp = x1Sorted;
-		int yTemp = y1Sorted;
-		float xFTemp = x1FSorted;
-		float yFTemp = y1FSorted;
-		x1Sorted = x2Sorted;
-		y1Sorted = y2Sorted;
-		x2Sorted = xTemp;
-		y2Sorted = yTemp;
-		x1FSorted = x2FSorted;
-		y1FSorted = y2FSorted;
-		x2FSorted = xFTemp;
-		y2FSorted = yFTemp;
-	}
-	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
-
-	// getting the slope of each line
-	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
-	float line2Slope = ((float) y3Sorted - y1Sorted) / ((float) x3Sorted - x1Sorted);
-	float line3Slope = ((float) y3Sorted - y2Sorted) / ((float) x3Sorted - x2Sorted);
-
-	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
-	float xLeftAccumulator  = (float) x1Sorted;
-	float xRightAccumulator = (float) x1Sorted;
-
-	// floats for incrementing xLeftAccumulator and xRightAccumulator
-	float xLeftIncrTop     = 1.0f / line1Slope;
-	float xRightIncrTop    = 1.0f / line2Slope;
-	float xLeftIncrBottom  = 1.0f / line3Slope;
-	float xRightIncrBottom = 1.0f / line2Slope;
-
-	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom, is this correct???
-	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
-
-	// depending on the position of the vertices, we need to swap increments
-	if ( (needsSwapping && x1Sorted < x2Sorted) || (needsSwapping && x1Sorted >= x2Sorted && x2Sorted > x3Sorted) )
-	{
-		float tempIncr = xLeftIncrTop;
-		xLeftIncrTop = xRightIncrTop;
-		xRightIncrTop = tempIncr;
-
-		tempIncr = xLeftIncrBottom;
-		xLeftIncrBottom = xRightIncrBottom;
-		xRightIncrBottom = tempIncr;
-	}
-
-	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
-	if (line1Slope == 0.0f)
-	{
-		// fill row to x2, y2
-		float tempX1 = x1FSorted;
-		float tempY1 = y1FSorted;
-		float tempX2 = x2FSorted;
-		float tempY2 = y2FSorted;
-
-		// if after clipping this line exists within the screen, render the line
-		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
-		{
-			unsigned int tempX1UInt = x1FSorted * (m_FBWidth  - 1);
-			unsigned int tempY1UInt = y1FSorted * (m_FBHeight - 1);
-			unsigned int tempX2UInt = x2FSorted * (m_FBWidth  - 1);
-			unsigned int tempY2UInt = y2FSorted * (m_FBHeight - 1);
-
-			unsigned int tempXY1 = ( (tempY1UInt * m_FBWidth) + tempX1UInt );
-			unsigned int tempXY2 = ( (tempY2UInt * m_FBWidth) + tempX2UInt );
-
-			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
-			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
-			}
-		}
-
-		xRightAccumulator = (float) x2Sorted;
-	}
-	else
-	{
-		// render up until the second vertice
-		for (int row = y1Sorted; row <= y2Sorted; row++)
-		{
-			// clip vertically if row is off screen
-			if (row >= (int)m_FBHeight)
-			{
-				break;
-			}
-			else if (row >= 0)
-			{
-				// get x-intercepts of lines
-				xLeftAccumulator  += xLeftIncrTop;
-				xRightAccumulator += xRightIncrTop;
-
-				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
-				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
-				{
-					xLeftAccumulator = x2Sorted;
-
-					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
-					{
-						xRightAccumulator = x3Sorted;
-					}
-				}
-				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
-				{
-					xRightAccumulator = x2Sorted;
-				}
-
-				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
-
-				// ensuring the accumulators don't overrun the edges of the triangle
-				if (row == y2Sorted) leftX = x2Sorted;
-				if (row == y3Sorted) rightX = x2Sorted;
-
-				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
-				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
-
-				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
-				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
-				}
-			}
-			else // even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
-			{
-				// get x-intercepts of lines
-				xLeftAccumulator  += xLeftIncrTop;
-				xRightAccumulator += xRightIncrTop;
-
-				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
-				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
-				{
-					xLeftAccumulator = x2Sorted;
-
-					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
-					{
-						xRightAccumulator = x3Sorted;
-					}
-				}
-				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
-				{
-					xRightAccumulator = x2Sorted;
-				}
-			}
-		}
-	}
-
-	// rasterize up until the last vertice
-	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
-	{
-		for (int row = y2Sorted; row <= y3Sorted; row++)
-		{
-			// clip vertically if row is off screen
-			if (row >= (int)m_FBHeight)
-			{
-				break;
-			}
-			else if ( row >= 0 )
-			{
-				// get x-intercepts of lines
-				xLeftAccumulator  += xLeftIncrBottom;
-				xRightAccumulator += xRightIncrBottom;
-
-				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
-
-				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
-				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
-
-				for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
-				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
-				}
-			}
-		}
-	}
-}
-static inline float triGradNormalizedDist (float currentDistFromXY1, float endDistFromXY1)
-{
-	return std::max( 1.0f - (currentDistFromXY1 / endDistFromXY1), 0.0f );
-}
-
-void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3)
-{
-	std::cout << "RENDERING NEW TRIANGLE -----------------------------------------" << std::endl;
-
-	// getting the pixel values of the vertices
-	int x1UInt = x1 * (m_FBWidth  - 1);
-	int y1UInt = y1 * (m_FBHeight - 1);
-	int x2UInt = x2 * (m_FBWidth  - 1);
-	int y2UInt = y2 * (m_FBHeight - 1);
-	int x3UInt = x3 * (m_FBWidth  - 1);
-	int y3UInt = y3 * (m_FBHeight - 1);
-
-	int x1Sorted = x1UInt;
-	int y1Sorted = y1UInt;
-	int x2Sorted = x2UInt;
-	int y2Sorted = y2UInt;
-	int x3Sorted = x3UInt;
-	int y3Sorted = y3UInt;
-	float x1FSorted = x1;
-	float y1FSorted = y1;
-	float x2FSorted = x2;
-	float y2FSorted = y2;
-	float x3FSorted = x3;
-	float y3FSorted = y3;
-
-	// sorting vertices
-	// first sort by y values
-	if (y2Sorted > y3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
-	if (y1Sorted > y2Sorted)
-	{
-		int xTemp = x1Sorted;
-		int yTemp = y1Sorted;
-		float xFTemp = x1FSorted;
-		float yFTemp = y1FSorted;
-		x1Sorted = x2Sorted;
-		y1Sorted = y2Sorted;
-		x2Sorted = xTemp;
-		y2Sorted = yTemp;
-		x1FSorted = x2FSorted;
-		y1FSorted = y2FSorted;
-		x2FSorted = xFTemp;
-		y2FSorted = yFTemp;
-	}
-	if (y2Sorted > y3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
-
-	// then sort by x values
-	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
-	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
-	{
-		int xTemp = x1Sorted;
-		int yTemp = y1Sorted;
-		float xFTemp = x1FSorted;
-		float yFTemp = y1FSorted;
-		x1Sorted = x2Sorted;
-		y1Sorted = y2Sorted;
-		x2Sorted = xTemp;
-		y2Sorted = yTemp;
-		x1FSorted = x2FSorted;
-		y1FSorted = y2FSorted;
-		x2FSorted = xFTemp;
-		y2FSorted = yFTemp;
-	}
-	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
-	{
-		int xTemp = x2Sorted;
-		int yTemp = y2Sorted;
-		float xFTemp = x2FSorted;
-		float yFTemp = y2FSorted;
-		x2Sorted = x3Sorted;
-		y2Sorted = y3Sorted;
-		x3Sorted = xTemp;
-		y3Sorted = yTemp;
-		x2FSorted = x3FSorted;
-		y2FSorted = y3FSorted;
-		x3FSorted = xFTemp;
-		y3FSorted = yFTemp;
-	}
+	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, x2Sorted, y2Sorted, x2FSorted, y2FSorted,
+						x3Sorted, y3Sorted, x3FSorted, y3FSorted );
 
 	// getting the slope of each line
 	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
@@ -638,36 +361,153 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 		xRightIncrBottom = tempIncr;
 	}
 
-	// coordinates variables
-	int xInRelationLeftmost = (x1UInt <= x2UInt) ? x1UInt : x2UInt;
-	xInRelationLeftmost = (xInRelationLeftmost <= x3UInt) ? xInRelationLeftmost : x3UInt;
-	int xInRelationRightmost = (x1UInt >= x2UInt) ? x1UInt : x2UInt;
-	xInRelationRightmost = (xInRelationRightmost >= x3UInt) ? xInRelationRightmost : x3UInt;
-	float xInRelationIncr = 1.0f / (xInRelationRightmost - xInRelationLeftmost);
-	float yInRelationIncr = 1.0f / (y3Sorted - y1Sorted);
-	float x1InRelationToXLeft = 1.0f - ((xInRelationRightmost - x1UInt) * xInRelationIncr);
-	float x2InRelationToX1 = -1.0f * ((x1UInt - x2UInt) * xInRelationIncr);
-	float y2InRelationToY1 = -1.0f * ((y1UInt - y2UInt) * yInRelationIncr);
-	float x3InRelationToX1 = -1.0f * ((x1UInt - x3UInt) * xInRelationIncr);
-	float y3InRelationToY1 = -1.0f * ((y1UInt - y3UInt) * yInRelationIncr);
-	float xy1DistToXy2 = this->distance(0.0f, 0.0f, x2InRelationToX1, y2InRelationToY1);
-	float xy1DistToXy3 = this->distance(0.0f, 0.0f, x3InRelationToX1, y3InRelationToY1);
-	float xy2DistToXy3 = this->distance(x2InRelationToX1, y2InRelationToY1, x3InRelationToX1, y3InRelationToY1);
-	// setting these values to std::numeric_limits<float>::min() will result in triGradNormalizedDist returning 0.0f
-	const float zeroVal = std::numeric_limits<float>::min();
-	float rStartEdgeDistT = zeroVal; // T for rendering the top half of the triangle
-	float gStartEdgeDistT = zeroVal;
-	float bStartEdgeDistT = zeroVal;
-	float rEndEdgeDistT = zeroVal;
-	float gEndEdgeDistT = zeroVal;
-	float bEndEdgeDistT = zeroVal;
-	float rStartEdgeDistB = zeroVal; // B for rendering the bottom half of the triangle
-	float gStartEdgeDistB = zeroVal;
-	float bStartEdgeDistB = zeroVal;
-	float rEndEdgeDistB = zeroVal;
-	float gEndEdgeDistB = zeroVal;
-	float bEndEdgeDistB = zeroVal;
-	if ( y1UInt == y1Sorted ) // xy1 is on top (scanning top-down)
+	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
+	if ( line1Slope == 0.0f || isnan(line1Slope) )
+	{
+		// fill row to x2, y2
+		float tempX1 = x1FSorted;
+		float tempY1 = y1FSorted;
+		float tempX2 = x2FSorted;
+		float tempY2 = y2FSorted;
+
+		// if this 'triangle' is essentially just a straight line
+		if ( y2FSorted == y3FSorted )
+		{
+			tempX2 = x3FSorted;
+			tempY2 = y3FSorted;
+		}
+
+		// if after clipping this line exists within the screen, render the line
+		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
+		{
+			int tempX1Int = tempX1 * (m_FBWidth  - 1);
+			int tempY1Int = tempY1 * (m_FBHeight - 1);
+			int tempX2Int = tempX2 * (m_FBWidth  - 1);
+			int tempY2Int = tempY2 * (m_FBHeight - 1);
+
+			int tempXY1 = ( (tempY1Int * m_FBWidth) + tempX1Int );
+			int tempXY2 = ( (tempY2Int * m_FBWidth) + tempX2Int );
+
+			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
+			{
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+			}
+		}
+
+		xRightAccumulator = (float) x2Sorted;
+	}
+	else
+	{
+		// render up until the second vertice
+		for (int row = y1Sorted; row <= y2Sorted; row++)
+		{
+			// clip vertically if row is off screen
+			if (row >= (int)m_FBHeight)
+			{
+				break;
+			}
+			else if (row >= 0)
+			{
+				// rounding the points and clipping horizontally
+				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
+				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+
+				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
+				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+
+				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
+				{
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				}
+
+				// increment accumulators
+				xLeftAccumulator  += xLeftIncrTop;
+				xRightAccumulator += xRightIncrTop;
+
+				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
+				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
+				{
+					xLeftAccumulator = x2Sorted;
+
+					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
+					{
+						xRightAccumulator = x3Sorted;
+					}
+				}
+				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
+				{
+					xRightAccumulator = x2Sorted;
+				}
+			}
+			else // even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
+			{
+				// increment accumulators
+				xLeftAccumulator  += xLeftIncrTop;
+				xRightAccumulator += xRightIncrTop;
+
+				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
+				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
+				{
+					xLeftAccumulator = x2Sorted;
+
+					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
+					{
+						xRightAccumulator = x3Sorted;
+					}
+				}
+				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
+				{
+					xRightAccumulator = x2Sorted;
+				}
+			}
+		}
+	}
+
+skip:
+	// rasterize up until the last vertice
+	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
+	{
+		for (int row = y2Sorted + 1; row <= y3Sorted; row++)
+		{
+			// clip vertically if row is off screen
+			if (row >= (int)m_FBHeight)
+			{
+				break;
+			}
+			else if ( row >= 0 )
+			{
+				// rounding the points and clipping horizontally
+				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
+				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+
+				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
+				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+
+				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
+				{
+					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				}
+
+				// increment accumulators
+				xLeftAccumulator  += xLeftIncrBottom;
+				xRightAccumulator += xRightIncrBottom;
+			}
+		}
+	}
+}
+static inline float triGradNormalizedDist (float currentDistFromXY1, float endDistFromXY1)
+{
+	return std::max( 1.0f - (currentDistFromXY1 / endDistFromXY1), 0.0f );
+}
+
+static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDistT, float& rStartEdgeDistB, float& rEndEdgeDistB, float& gStartEdgeDistT,
+										float& gEndEdgeDistT, float& gStartEdgeDistB, float& gEndEdgeDistB, float& bStartEdgeDistT, float &bEndEdgeDistT,
+										float& bStartEdgeDistB, float& bEndEdgeDistB, const float& xy1DistToXy2, const float& xy1DistToXy3,
+										const float& xy2DistToXy3, const int& y1UInt, const int& y1Sorted, const int& y2Sorted, const int &y3Sorted,
+										const int& x2UInt, const int& x3UInt, const int& y2UInt, const int& y3UInt, const bool& needsSwapping,
+										const float& zeroVal )
+{
+	if ( y1UInt == y1Sorted ) // xy1 is on top
 	{
 		// first assuming that xy2 is above and to the left of xy3
 		rStartEdgeDistT = xy1DistToXy2;
@@ -682,59 +522,49 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 
 		if ( x3UInt < x2UInt )
 		{
-			rStartEdgeDistT = xy1DistToXy3;
-			rEndEdgeDistT = xy1DistToXy2;
-			gStartEdgeDistT = zeroVal;
-			gEndEdgeDistT = xy1DistToXy2;
-			bStartEdgeDistT = xy1DistToXy3;
-			bEndEdgeDistT = zeroVal;
-			rStartEdgeDistB = xy1DistToXy3;
-			rEndEdgeDistB = xy1DistToXy2;
+			rStartEdgeDistB = zeroVal;
+			rEndEdgeDistB = xy1DistToXy3;
 
 			if ( y3UInt < y2UInt )
 			{
 				if ( needsSwapping )
 				{
-					rStartEdgeDistT = xy1DistToXy2;
-					rEndEdgeDistT = xy1DistToXy3;
 					rStartEdgeDistB = xy1DistToXy2;
 					rEndEdgeDistB = zeroVal;
-					gStartEdgeDistT = xy1DistToXy2;
-					gEndEdgeDistT = zeroVal;
 					gStartEdgeDistB = xy1DistToXy2;
 					gEndEdgeDistB = xy2DistToXy3;
-					bStartEdgeDistT = zeroVal;
-					bEndEdgeDistT = xy1DistToXy3;
 					bStartEdgeDistB = zeroVal;
 					bEndEdgeDistB = xy2DistToXy3;
 				}
 				else
 				{
+					rStartEdgeDistT = xy1DistToXy3;
+					rEndEdgeDistT = xy1DistToXy2;
+					rStartEdgeDistB = zeroVal;
+					rEndEdgeDistB = xy1DistToXy2;
+					gStartEdgeDistT = zeroVal;
+					gEndEdgeDistT = xy1DistToXy2;
 					gEndEdgeDistB = xy1DistToXy2;
+					bStartEdgeDistT = xy1DistToXy3;
+					bEndEdgeDistT = zeroVal;
+					bStartEdgeDistB = xy2DistToXy3;
 					bEndEdgeDistB = zeroVal;
 				}
 			}
-			else
+			else if ( needsSwapping )
 			{
-				if ( needsSwapping )
-				{
-					gStartEdgeDistB = zeroVal;
-					gEndEdgeDistB = xy2DistToXy3;
-					bStartEdgeDistB = xy1DistToXy3;
-					bEndEdgeDistB = xy2DistToXy3;
-				}
-				else
-				{
-					rStartEdgeDistT = xy1DistToXy2;
-					rEndEdgeDistT = xy1DistToXy3;
-					rStartEdgeDistB = zeroVal;
-					rEndEdgeDistB = xy1DistToXy3;
-					gStartEdgeDistT = xy1DistToXy2;
-					gEndEdgeDistT = zeroVal;
-					bStartEdgeDistT = zeroVal;
-					bEndEdgeDistT = xy1DistToXy3;
-					bEndEdgeDistB = xy1DistToXy3;
-				}
+				rStartEdgeDistT = xy1DistToXy3;
+				rEndEdgeDistT = xy1DistToXy2;
+				rStartEdgeDistB = xy1DistToXy3;
+				rEndEdgeDistB = zeroVal;
+				gStartEdgeDistT = zeroVal;
+				gEndEdgeDistT = xy1DistToXy2;
+				gStartEdgeDistB = zeroVal;
+				gEndEdgeDistB = xy2DistToXy3;
+				bStartEdgeDistT = xy1DistToXy3;
+				bEndEdgeDistT = zeroVal;
+				bStartEdgeDistB = xy1DistToXy3;
+				bEndEdgeDistB = xy2DistToXy3;
 			}
 		}
 		else if ( y3UInt < y2UInt )
@@ -778,119 +608,357 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 			bEndEdgeDistB = xy2DistToXy3;
 		}
 	}
-	else if ( y1UInt == y2Sorted ) // xy1 is in the middle (scanning left or right)
+	else if ( y1UInt == y2Sorted ) // xy1 is in the middle
 	{
-		// TODO still have to implement this
-		if ( y3UInt < y2UInt )
+		// first assuming that xy2 is above and to the left of xy3
+		rStartEdgeDistT = xy1DistToXy2;
+		gStartEdgeDistT = xy1DistToXy2;
+		gEndEdgeDistT = xy2DistToXy3;
+		bEndEdgeDistT = xy2DistToXy3;
+		rStartEdgeDistB = xy1DistToXy3;
+		gEndEdgeDistB = xy2DistToXy3;
+		bStartEdgeDistB = xy1DistToXy3;
+		bEndEdgeDistB = xy2DistToXy3;
+
+		if ( x3UInt < x2UInt )
 		{
+			if ( y3UInt < y2UInt )
+			{
+				if ( needsSwapping )
+				{
+					rStartEdgeDistT = zeroVal;
+					rEndEdgeDistT = xy1DistToXy3;
+					rStartEdgeDistB = zeroVal;
+					rEndEdgeDistB = xy1DistToXy2;
+					gStartEdgeDistT = xy2DistToXy3;
+					gEndEdgeDistT = zeroVal;
+					gStartEdgeDistB = xy2DistToXy3;
+					gEndEdgeDistB = xy1DistToXy2;
+					bStartEdgeDistT = xy2DistToXy3;
+					bEndEdgeDistT = xy1DistToXy3;
+					bStartEdgeDistB = xy2DistToXy3;
+					bEndEdgeDistB = zeroVal;
+				}
+				else
+				{
+					rStartEdgeDistT = xy1DistToXy3;
+					rStartEdgeDistB = xy1DistToXy2;
+					gStartEdgeDistB = xy1DistToXy2;
+					bStartEdgeDistT = xy1DistToXy3;
+					bStartEdgeDistB = zeroVal;
+					bEndEdgeDistB = xy2DistToXy3;
+				}
+			}
+			else if ( needsSwapping )
+			{
+				rStartEdgeDistT = zeroVal;
+				rEndEdgeDistT = xy1DistToXy2;
+				rStartEdgeDistB = zeroVal;
+				rEndEdgeDistB = xy1DistToXy3;
+				gStartEdgeDistT = xy2DistToXy3;
+				gEndEdgeDistT = xy1DistToXy2;
+				gStartEdgeDistB = xy2DistToXy3;
+				gEndEdgeDistB = zeroVal;
+				bStartEdgeDistT = xy2DistToXy3;
+				bEndEdgeDistT = zeroVal;
+				bStartEdgeDistB = xy2DistToXy3;
+				bEndEdgeDistB = xy1DistToXy3;
+			}
+		}
+		else if ( y3UInt < y2UInt )
+		{
+			if ( needsSwapping )
+			{
+				rStartEdgeDistT = zeroVal;
+				rEndEdgeDistT = xy1DistToXy3;
+				rStartEdgeDistB = zeroVal;
+				rEndEdgeDistB = xy1DistToXy2;
+				gStartEdgeDistT = xy2DistToXy3;
+				gEndEdgeDistT = zeroVal;
+				gStartEdgeDistB = xy2DistToXy3;
+				gEndEdgeDistB = xy1DistToXy2;
+				bStartEdgeDistT = xy2DistToXy3;
+				bEndEdgeDistT = xy1DistToXy3;
+				bStartEdgeDistB = xy2DistToXy3;
+				bEndEdgeDistB = zeroVal;
+			}
+			else
+			{
+				rStartEdgeDistT = xy1DistToXy3;
+				rStartEdgeDistB = xy1DistToXy2;
+				gStartEdgeDistB = xy1DistToXy2;
+				bStartEdgeDistT = xy1DistToXy3;
+				bStartEdgeDistB = zeroVal;
+			}
+		}
+		else if ( needsSwapping )
+		{
+			rStartEdgeDistT = zeroVal;
+			rEndEdgeDistT = xy1DistToXy2;
+			gStartEdgeDistT = xy2DistToXy3;
+			gEndEdgeDistT = xy1DistToXy2;
+			bStartEdgeDistT = xy2DistToXy3;
+			bEndEdgeDistT = zeroVal;
+			rStartEdgeDistB = zeroVal;
+			rEndEdgeDistB = xy1DistToXy3;
+			gStartEdgeDistB = xy2DistToXy3;
+			gEndEdgeDistB = zeroVal;
+			bStartEdgeDistB = xy2DistToXy3;
+			bEndEdgeDistB = xy1DistToXy3;
 		}
 	}
-	else if ( y1UInt == y3Sorted ) // xy1 is on the bottom (scanning bottom-up)
+	else if ( y1UInt == y3Sorted ) // xy1 is on the bottom
 	{
-		// TODO still have to implement this
-		if ( y3UInt < y2UInt )
+		// first assuming that xy2 is above and to the left of xy3
+		rEndEdgeDistT = xy1DistToXy2;
+		rStartEdgeDistB = xy1DistToXy3;
+		rEndEdgeDistB = xy1DistToXy2;
+		gStartEdgeDistT = xy2DistToXy3;
+		gEndEdgeDistT = xy1DistToXy2;
+		gEndEdgeDistB = xy1DistToXy2;
+		bStartEdgeDistT = xy2DistToXy3;
+		bStartEdgeDistB = xy1DistToXy3;
+
+		if ( x3UInt < x2UInt )
 		{
+			if ( y3UInt < y2UInt )
+			{
+				if ( needsSwapping )
+				{
+					rStartEdgeDistT = xy1DistToXy3;
+					rEndEdgeDistT = zeroVal;
+					gStartEdgeDistT = zeroVal;
+					gEndEdgeDistT = xy2DistToXy3;
+					gStartEdgeDistB = zeroVal;
+					bStartEdgeDistT = xy1DistToXy3;
+					bEndEdgeDistT = xy2DistToXy3;
+					bEndEdgeDistB = zeroVal;
+				}
+				else
+				{
+					rEndEdgeDistT = xy1DistToXy3;
+					rStartEdgeDistB = xy1DistToXy2;
+					rEndEdgeDistB = xy1DistToXy3;
+					gEndEdgeDistT = zeroVal;
+					gStartEdgeDistB = xy1DistToXy2;
+					gEndEdgeDistB = zeroVal;
+					bEndEdgeDistT = xy1DistToXy3;
+					bStartEdgeDistB = zeroVal;
+					bEndEdgeDistB = xy1DistToXy3;
+				}
+			}
+			else if ( needsSwapping )
+			{
+				rStartEdgeDistT = xy1DistToXy2;
+				rEndEdgeDistT = zeroVal;
+				rStartEdgeDistB = xy1DistToXy2;
+				rEndEdgeDistB = xy1DistToXy3;
+				gStartEdgeDistT = xy1DistToXy2;
+				gEndEdgeDistT = xy2DistToXy3;
+				gStartEdgeDistB = xy1DistToXy2;
+				gEndEdgeDistB = zeroVal;
+				bStartEdgeDistT = zeroVal;
+				bEndEdgeDistT = xy2DistToXy3;
+				bStartEdgeDistB = zeroVal;
+				bEndEdgeDistB = xy1DistToXy3;
+			}
 		}
+		else if ( y3UInt < y2UInt )
+		{
+			if ( needsSwapping )
+			{
+				rStartEdgeDistT = xy1DistToXy3;
+				rEndEdgeDistT = zeroVal;
+				gStartEdgeDistT = zeroVal;
+				gEndEdgeDistT = xy2DistToXy3;
+				bStartEdgeDistT = xy1DistToXy3;
+				bEndEdgeDistT = xy2DistToXy3;
+				bStartEdgeDistB = xy1DistToXy3;
+				bEndEdgeDistB = zeroVal;
+			}
+			else
+			{
+				gEndEdgeDistT = zeroVal;
+				gStartEdgeDistB = xy1DistToXy2;
+				gEndEdgeDistB = zeroVal;
+				bEndEdgeDistT = xy1DistToXy3;
+				bStartEdgeDistB = zeroVal;
+				bEndEdgeDistB = xy1DistToXy3;
+			}
+		}
+		else if ( needsSwapping )
+		{
+			rStartEdgeDistT = xy1DistToXy2;
+			rEndEdgeDistT = zeroVal;
+			rStartEdgeDistB = xy1DistToXy2;
+			rEndEdgeDistB = xy1DistToXy3;
+			gStartEdgeDistT = xy1DistToXy2;
+			gEndEdgeDistT = xy2DistToXy3;
+			gStartEdgeDistB = xy1DistToXy2;
+			gEndEdgeDistB = zeroVal;
+			bStartEdgeDistT = zeroVal;
+			bEndEdgeDistT = xy2DistToXy3;
+			bStartEdgeDistB = zeroVal;
+			bEndEdgeDistB = xy1DistToXy3;
+		}
+	}
+}
+
+void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3)
+{
+	// get previous color, since we'll want to set it back when we're done with the gradient colors
+	const Color previousColor = m_ColorProfile->getColor();
+
+	// getting the pixel values of the vertices
+	int x1UInt = x1 * (m_FBWidth  - 1);
+	int y1UInt = y1 * (m_FBHeight - 1);
+	int x2UInt = x2 * (m_FBWidth  - 1);
+	int y2UInt = y2 * (m_FBHeight - 1);
+	int x3UInt = x3 * (m_FBWidth  - 1);
+	int y3UInt = y3 * (m_FBHeight - 1);
+
+	int x1Sorted = x1UInt;
+	int y1Sorted = y1UInt;
+	int x2Sorted = x2UInt;
+	int y2Sorted = y2UInt;
+	int x3Sorted = x3UInt;
+	int y3Sorted = y3UInt;
+	float x1FSorted = x1;
+	float y1FSorted = y1;
+	float x2FSorted = x2;
+	float y2FSorted = y2;
+	float x3FSorted = x3;
+	float y3FSorted = y3;
+
+	// sorting vertices
+	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, x2Sorted, y2Sorted, x2FSorted, y2FSorted,
+						x3Sorted, y3Sorted, x3FSorted, y3FSorted );
+
+	// getting the slope of each line
+	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
+	float line2Slope = ((float) y3Sorted - y1Sorted) / ((float) x3Sorted - x1Sorted);
+	float line3Slope = ((float) y3Sorted - y2Sorted) / ((float) x3Sorted - x2Sorted);
+
+	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
+	float xLeftAccumulator  = (float) x1Sorted;
+	float xRightAccumulator = (float) x1Sorted;
+
+	// floats for incrementing xLeftAccumulator and xRightAccumulator
+	float xLeftIncrTop     = 1.0f / line1Slope;
+	float xRightIncrTop    = 1.0f / line2Slope;
+	float xLeftIncrBottom  = 1.0f / line3Slope;
+	float xRightIncrBottom = 1.0f / line2Slope;
+
+	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
+	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
+
+	// depending on the position of the vertices, we need to swap increments
+	if ( (needsSwapping && x1Sorted < x2Sorted) || (needsSwapping && x1Sorted >= x2Sorted && x2Sorted > x3Sorted) )
+	{
+		float tempIncr = xLeftIncrTop;
+		xLeftIncrTop = xRightIncrTop;
+		xRightIncrTop = tempIncr;
+
+		tempIncr = xLeftIncrBottom;
+		xLeftIncrBottom = xRightIncrBottom;
+		xRightIncrBottom = tempIncr;
 	}
 
-	// setting the y value for texture mapping
+	// coordinates variables
+	int xInRelationLeftmost = (x1UInt <= x2UInt) ? x1UInt : x2UInt;
+	xInRelationLeftmost = (xInRelationLeftmost <= x3UInt) ? xInRelationLeftmost : x3UInt;
+	int xInRelationRightmost = (x1UInt >= x2UInt) ? x1UInt : x2UInt;
+	xInRelationRightmost = (xInRelationRightmost >= x3UInt) ? xInRelationRightmost : x3UInt;
+	float xInRelationIncr = 1.0f / (xInRelationRightmost - xInRelationLeftmost);
+	float yInRelationIncr = 1.0f / (y3Sorted - y1Sorted);
+	float x1InRelationToXLeft = 1.0f - ((xInRelationRightmost - x1UInt) * xInRelationIncr);
+	float x2InRelationToX1 = -1.0f * ((x1UInt - x2UInt) * xInRelationIncr);
+	float y2InRelationToY1 = -1.0f * ((y1UInt - y2UInt) * yInRelationIncr);
+	float x3InRelationToX1 = -1.0f * ((x1UInt - x3UInt) * xInRelationIncr);
+	float y3InRelationToY1 = -1.0f * ((y1UInt - y3UInt) * yInRelationIncr);
+	y2InRelationToY1 = ( isnan(y2InRelationToY1) ) ? 0.0f : y2InRelationToY1; // can happen when
+	y3InRelationToY1 = ( isnan(y3InRelationToY1) ) ? 0.0f : y3InRelationToY1; // y1 = y2 = y3
+	float xy1DistToXy2 = this->distance(0.0f, 0.0f, x2InRelationToX1, y2InRelationToY1);
+	float xy1DistToXy3 = this->distance(0.0f, 0.0f, x3InRelationToX1, y3InRelationToY1);
+	float xy2DistToXy3 = this->distance(x2InRelationToX1, y2InRelationToY1, x3InRelationToX1, y3InRelationToY1);
+	// setting these values to std::numeric_limits<float>::min() will result in triGradNormalizedDist returning 0.0f
+	const float zeroVal = std::numeric_limits<float>::min();
+	float rStartEdgeDistT = zeroVal; // T for rendering the top half of the triangle
+	float gStartEdgeDistT = zeroVal;
+	float bStartEdgeDistT = zeroVal;
+	float rEndEdgeDistT = zeroVal;
+	float gEndEdgeDistT = zeroVal;
+	float bEndEdgeDistT = zeroVal;
+	float rStartEdgeDistB = zeroVal; // B for rendering the bottom half of the triangle
+	float gStartEdgeDistB = zeroVal;
+	float bStartEdgeDistB = zeroVal;
+	float rEndEdgeDistB = zeroVal;
+	float gEndEdgeDistB = zeroVal;
+	float bEndEdgeDistB = zeroVal;
+	// swap start and end values based on vertex positions
+	calcTriGradients( rStartEdgeDistT, rEndEdgeDistT, rStartEdgeDistB, rEndEdgeDistB, gStartEdgeDistT, gEndEdgeDistT,
+						gStartEdgeDistB, gEndEdgeDistB, bStartEdgeDistT, bEndEdgeDistT, bStartEdgeDistB, bEndEdgeDistB,
+						xy1DistToXy2, xy1DistToXy3, xy2DistToXy3, y1UInt, y1Sorted, y2Sorted, y3Sorted, x2UInt, x3UInt,
+						y2UInt, y3UInt, needsSwapping, zeroVal );
+
+	// setting the y value for gradients
 	float yInRelationToY1 = -1.0f * (1.0f - ((y3Sorted - y1UInt) * yInRelationIncr));
+	yInRelationToY1 = ( isnan(yInRelationToY1) ) ? 0.0f : yInRelationToY1;
 
 	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
 	if ( line1Slope == 0.0f || isnan(line1Slope) )
 	{
-		std::cout << "slope is zero, rendering a straight line at the top" << std::endl;
-
 		// fill row to x2, y2
 		float tempX1 = x1FSorted;
 		float tempY1 = y1FSorted;
 		float tempX2 = x2FSorted;
 		float tempY2 = y2FSorted;
-		if ( tempX1 == tempX2 ) { goto skip; } // don't draw lines with 0 width obviously
-		float tempMidX = 0.0f; // to use as the midpoint for gradient
-		float tempMidY = 0.0f;
 
 		// if this 'triangle' is essentially just a straight line
 		if ( y2FSorted == y3FSorted )
 		{
 			tempX2 = x3FSorted;
 			tempY2 = y3FSorted;
-			tempMidX = x2FSorted;
-			tempMidY = y2FSorted;
 		}
 
 		// if after clipping this line exists within the screen, render the line
 		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
 		{
-			unsigned int tempX1UInt = tempX1 * (m_FBWidth  - 1);
-			unsigned int tempY1UInt = tempY1 * (m_FBHeight - 1);
-			unsigned int tempX2UInt = tempX2 * (m_FBWidth  - 1);
-			unsigned int tempY2UInt = tempY2 * (m_FBHeight - 1);
-			unsigned int tempMidXUInt = tempMidX * (m_FBWidth  - 1);
-			unsigned int tempMidYUInt = tempMidY * (m_FBHeight - 1);
+			int tempX1Int = tempX1 * (m_FBWidth  - 1);
+			int tempY1Int = tempY1 * (m_FBHeight - 1);
+			int tempX2Int = tempX2 * (m_FBWidth  - 1);
+			int tempY2Int = tempY2 * (m_FBHeight - 1);
 
-			unsigned int tempXY1 = ( (tempY1UInt * m_FBWidth) + tempX1UInt );
-			unsigned int tempXY2 = ( (tempY2UInt * m_FBWidth) + tempX2UInt );
-			unsigned int tempMidXY = ( (tempMidYUInt * m_FBWidth) + tempMidXUInt );
+			int tempXY1 = ( (tempY1Int * m_FBWidth) + tempX1Int );
+			int tempXY2 = ( (tempY2Int * m_FBWidth) + tempX2Int );
 
-			// linearly interpolate between the vertices
-			float colIncr = 1.0f / (tempX2UInt - tempX1UInt);
-			float rCurrent = 0.0f;
-			float gCurrent = 0.0f;
-			float bCurrent = 0.0f;
-			float rIncr = 0.0f;
-			float gIncr = 0.0f;
-			float bIncr = 0.0f;
-			bool rTaken = false;
-			bool gTaken = false;
-			bool bTaken = false;
-			if ( tempX1UInt == x1UInt )
-			{
-				rCurrent = 1.0f;
-				rIncr = -1.0f * colIncr;
-				rTaken = true;
-			}
-			else if ( tempX1UInt == x2UInt )
-			{
-				gCurrent = 1.0f;
-				gIncr = -1.0f * colIncr;
-				gTaken = true;
-			}
-			else
-			{
-				bCurrent = 1.0f;
-				bIncr = -1.0f * colIncr;
-				bTaken = true;
-			}
-			if ( tempX2UInt == x1UInt )
-			{
-				rIncr = colIncr;
-				rTaken = true;
-			}
-			else if ( tempX2UInt == x2UInt )
-			{
-				gIncr = colIncr;
-				gTaken = true;
-			}
-			else
-			{
-				bIncr = colIncr;
-				bTaken = true;
-			}
-			float* midpointCol = nullptr;
-			float* midpointIncr = nullptr;
-			if ( rTaken & gTaken ) 		{ midpointCol = &bCurrent; midpointIncr = &bIncr; }
-			else if ( rTaken & bTaken ) 	{ midpointCol = &gCurrent; midpointIncr = &gIncr; }
-			else if ( gTaken & bTaken ) 	{ midpointCol = &rCurrent; midpointIncr = &rIncr; }
-			*midpointIncr = 1.0f / (tempMidXUInt - tempX1UInt);
+			// setting the x values for gradients
+			float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - tempX1Int) * xInRelationIncr);
+			float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - tempX2Int) * xInRelationIncr);
+			// get important distances
+			float xy1DistToXLeft = this->distance(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1);
+			float xy1DistToXRight = this->distance(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1);
+			float xy2DistToXLeft = this->distance(x2InRelationToX1, y2InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
+			float xy2DistToXRight = this->distance(x2InRelationToX1, y2InRelationToY1, xRightInRelationToX1, yInRelationToY1);
+			float xy3DistToXLeft = this->distance(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
+			float xy3DistToXRight = this->distance(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1);
+			// compute the starting and ending color values for each scanline
+			float rStart = triGradNormalizedDist(xy1DistToXLeft, rStartEdgeDistT);
+			float gStart = triGradNormalizedDist(xy2DistToXLeft, gStartEdgeDistT);
+			float bStart = triGradNormalizedDist(xy3DistToXLeft, bStartEdgeDistT);
+			float rEnd = triGradNormalizedDist(xy1DistToXRight, rEndEdgeDistT);
+			float gEnd = triGradNormalizedDist(xy2DistToXRight, gEndEdgeDistT);
+			float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistT);
+			// linearly interpolate between the two values
+			float rIncr = (rEnd - rStart) / (tempX2Int - tempX1Int);
+			float rCurrent = rStart;
+			float gIncr = (gEnd - gStart) / (tempX2Int - tempX1Int);
+			float gCurrent = gStart;
+			float bIncr = (bEnd - bStart) / (tempX2Int - tempX1Int);
+			float bCurrent = bStart;
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
-				if ( pixel == tempMidXY )
-				{
-					*midpointIncr = 1.0f / (tempX2UInt - tempMidXUInt);
-				}
-
 				m_ColorProfile->setColor( rCurrent, gCurrent, bCurrent );
 				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
@@ -905,8 +973,6 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	}
 	else
 	{
-		std::cout << "rendering the top half of the triangle" << std::endl;
-
 		// render up until the second vertice
 		for (int row = y1Sorted; row <= y2Sorted; row++)
 		{
@@ -917,32 +983,9 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 			}
 			else if (row >= 0)
 			{
-				// get x-intercepts of lines
-				xLeftAccumulator  += xLeftIncrTop;
-				xRightAccumulator += xRightIncrTop;
-
-				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
-				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
-				{
-					xLeftAccumulator = x2Sorted;
-
-					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
-					{
-						xRightAccumulator = x3Sorted;
-					}
-				}
-				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
-				{
-					xRightAccumulator = x2Sorted;
-				}
-
 				// rounding the points and clipping horizontally
 				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
 				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
-
-				// ensuring the accumulators don't overrun the edges of the triangle
-				if (row == y2Sorted) leftX = x2Sorted;
-				if (row == y3Sorted) rightX = x2Sorted;
 
 				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
 				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
@@ -981,10 +1024,29 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 					gCurrent += gIncr;
 					bCurrent += bIncr;
 				}
+
+				// increment accumulators
+				xLeftAccumulator  += xLeftIncrTop;
+				xRightAccumulator += xRightIncrTop;
+
+				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
+				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
+				{
+					xLeftAccumulator = x2Sorted;
+
+					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
+					{
+						xRightAccumulator = x3Sorted;
+					}
+				}
+				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
+				{
+					xRightAccumulator = x2Sorted;
+				}
 			}
 			else // even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
 			{
-				// get x-intercepts of lines
+				// increment accumulators
 				xLeftAccumulator  += xLeftIncrTop;
 				xRightAccumulator += xRightIncrTop;
 
@@ -1012,9 +1074,7 @@ skip:
 	// rasterize up until the last vertice
 	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
 	{
-		std::cout << "rendering the bottom half of the triangle" << std::endl;
-
-		for (int row = y2Sorted; row <= y3Sorted; row++)
+		for (int row = y2Sorted + 1; row <= y3Sorted; row++)
 		{
 			// clip vertically if row is off screen
 			if (row >= (int)m_FBHeight)
@@ -1023,10 +1083,6 @@ skip:
 			}
 			else if ( row >= 0 )
 			{
-				// get x-intercepts of lines
-				xLeftAccumulator  += xLeftIncrBottom;
-				xRightAccumulator += xRightIncrBottom;
-
 				// rounding the points and clipping horizontally
 				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
 				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
@@ -1068,11 +1124,18 @@ skip:
 					gCurrent += gIncr;
 					bCurrent += bIncr;
 				}
+
+				// increment accumulators
+				xLeftAccumulator  += xLeftIncrBottom;
+				xRightAccumulator += xRightIncrBottom;
 			}
 
 			yInRelationToY1 += yInRelationIncr;
 		}
 	}
+
+	// set the previously used color back since we're done with the gradients
+	m_ColorProfile->setColor( previousColor );
 }
 
 void SoftwareGraphics::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
@@ -1087,6 +1150,12 @@ void SoftwareGraphics::drawQuadFilled (float x1, float y1, float x2, float y2, f
 {
 	drawTriangleFilled( x1, y1, x2, y2, x3, y3 );
 	drawTriangleFilled( x1, y1, x4, y4, x3, y3 );
+}
+
+void SoftwareGraphics::drawQuadGradient (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+{
+	drawTriangleGradient( x1, y1, x2, y2, x3, y3 );
+	drawTriangleGradient( x1, y1, x4, y4, x3, y3 );
 }
 
 void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y, bool filled)
