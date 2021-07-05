@@ -4,9 +4,7 @@
 #include "Sprite.hpp"
 
 #include <algorithm>
-
-// TODO remove this asap
-#include <iostream>
+#include <limits>
 
 SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer) :
 	Graphics( frameBuffer )

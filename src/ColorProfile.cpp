@@ -236,17 +236,14 @@ const CP_FORMAT ColorProfile::getFormat() const
 
 Color ColorProfile::getColor() const
 {
-	Color currentColor =
-	{
-		((float)m_RValue / 255.0f),
-		((float)m_GValue / 255.0f),
-		((float)m_BValue / 255.0f),
-		((float)m_AValue / 255.0f),
-		m_MValue,
-
-		( m_Format == CP_FORMAT::MONOCHROME_1BIT ) ? true : false,
-		( m_Format == CP_FORMAT::RGBA_32BIT ) ? true : false
-	};
+	Color currentColor;
+	currentColor.m_R = ((float)m_RValue / 255.0f);
+	currentColor.m_G = ((float)m_GValue / 255.0f);
+	currentColor.m_B = ((float)m_BValue / 255.0f);
+	currentColor.m_A = ((float)m_AValue / 255.0f);
+	currentColor.m_M = m_MValue;
+	currentColor.m_IsMonochrome = ( m_Format == CP_FORMAT::MONOCHROME_1BIT ) ? true : false;
+	currentColor.m_HasAlpha = ( m_Format == CP_FORMAT::RGBA_32BIT ) ? true : false;
 
 	return currentColor;
 }
