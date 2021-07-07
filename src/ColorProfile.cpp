@@ -72,9 +72,6 @@ void ColorProfile::putPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigne
 
 Color ColorProfile::getPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigned int pixelNum) const
 {
-#ifdef ROTATE_DISPLAY_180_DEGREES
-	pixelNum = fbNumPixels - 1 - pixelNum;
-#endif
 	Color color;
 
 	if ( m_Format == CP_FORMAT::MONOCHROME_1BIT )

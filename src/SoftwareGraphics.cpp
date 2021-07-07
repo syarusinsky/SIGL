@@ -1537,6 +1537,8 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 
 					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
 					// but it works,.. maybe fix later?
+					// TODO update: commenting out for now because of how outrageously smoothbrain it is
+					/*
 					int sbPixelRight = pixelToWrite + 1;
 					if ( sbPixelRight >= 0 &&  // top clipping
 							sbPixelRight < fbSize && // bottom clipping
@@ -1555,6 +1557,7 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 					{
 							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelDown );
 					}
+					*/
 
 					nNCurrentY += 1.0f;
 					pixelsMovedDown++;
