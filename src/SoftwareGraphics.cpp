@@ -70,7 +70,11 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 		while (pixel <= pixelEnd)
 		{
 			// x stride
-			if (slope < 1.0f) // stride along x-axis across multiple pixels
+			if (std::isinf(slope)) // don't stride along the x-axis at all
+			{
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+			}
+			else if (slope < 1.0f) // stride along x-axis across multiple pixels
 			{
 				while (xAccumulator < 1.0f && pixel <= pixelEnd)
 				{
@@ -111,7 +115,11 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 		while (pixel < pixelEnd)
 		{
 			// x stride
-			if (slope > -1.0f) // stride along x-axis across multiple pixels
+			if (std::isinf(slope)) // don't stride along the x-axis at all
+			{
+				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+			}
+			else if (slope > -1.0f) // stride along x-axis across multiple pixels
 			{
 				while (xAccumulator > -1.0f && pixel <= pixelEnd)
 				{
