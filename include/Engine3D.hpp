@@ -7,57 +7,49 @@
 **************************************************************************/
 
 #include <vector>
+#include <Matrix.hpp>
+#include <Vector.hpp>
 
-struct Vector3D
-{
-    float x;
-    float y;
-    float z;
-};
+Vector<3> mulVector3DByMatrix4D (const Vector<3>& vector, const Matrix<4, 4>& matrix);
 
-struct Matrix4D
-{
-    float matrix[4][4] = { 0.0f };
-};
-
-Vector3D mulVector3DByMatrix4D (const Vector3D& vector, const Matrix4D& matrix);
+Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegrees);
 
 struct Vertex
 {
-    Vector3D vec;
+	Vector<3> vec;
 };
 
 struct Face
 {
-    Vertex vertices[3];
+	Vertex vertices[3];
 };
 
 struct Mesh
 {
-    std::vector<Face> faces;
+	std::vector<Face> faces;
 
-    void scale (float scaleFactor);
+	void scale (float scaleFactor);
 };
 
 class Camera3D
 {
-    public:
-        Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio);
+	public:
+		Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio);
 
-        Face projectFace (const Face& face);
+		Face projectFace (const Face& face);
 
-        // scales the x and y vertices to 0.0f -> 1.0f instead of projected -1.0f to 1.0f
-        void scaleXYToZeroToOne (Face& face);
+		// scales the x and y vertices to 0.0f -> 1.0f instead of projected -1.0f to 1.0f
+		void scaleXYToZeroToOne (Face& face);
 
-    private:
-        float       m_NearClip;
-        float       m_FarClip;
-        float       m_FieldOfView;
-        float       m_AspectRatio;
+	private:
+		float			m_NearClip;
+		float			m_FarClip;
+		float			m_FieldOfView;
+		float			m_AspectRatio;
 
-        Matrix4D    m_ProjectionMatrix;
+		Matrix<4, 4>	m_ProjectionMatrix;
 
-        void generateProjectionMatrix();
+		void generateProjectionMatrix();
 };
 
 Mesh createCubeMesh();

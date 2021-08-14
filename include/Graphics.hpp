@@ -11,6 +11,8 @@
  * version can be implemented.
 *************************************************************************/
 
+#define _USE_MATH_DEFINES
+
 #include "FrameBuffer.hpp"
 #include "ColorProfile.hpp"
 #include <string>
