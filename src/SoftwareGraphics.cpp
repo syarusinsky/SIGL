@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <limits>
 
+// TODO remove after testing
+#include <iostream>
+
 SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer) :
 	Graphics( frameBuffer )
 {
@@ -510,10 +513,11 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 										float& gEndEdgeDistT, float& gStartEdgeDistB, float& gEndEdgeDistB, float& bStartEdgeDistT, float &bEndEdgeDistT,
 										float& bStartEdgeDistB, float& bEndEdgeDistB, const float& xy1DistToXy2, const float& xy1DistToXy3,
 										const float& xy2DistToXy3, const int& y1UInt, const int& y1Sorted, const int& y2Sorted, const int &y3Sorted,
-										const int& x2UInt, const int& x3UInt, const int& y2UInt, const int& y3UInt, const bool& needsSwapping,
-										const float& zeroVal )
+										const int& x1UInt, const int& x2UInt, const int& x3UInt, const int& y2UInt, const int& y3UInt,
+										const bool& needsSwapping, const float& zeroVal )
 {
-	if ( y1UInt == y1Sorted ) // xy1 is on top
+	if ( y1UInt == y1Sorted &&
+		(y1Sorted < y2Sorted || (y1Sorted == y2Sorted && x1UInt < x2UInt)) ) // xy1 is on top
 	{
 		// first assuming that xy2 is above and to the left of xy3
 		rStartEdgeDistT = xy1DistToXy2;
@@ -614,7 +618,8 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 			bEndEdgeDistB = xy2DistToXy3;
 		}
 	}
-	else if ( y1UInt == y2Sorted ) // xy1 is in the middle
+	else if ( y1UInt == y2Sorted &&
+		(y2Sorted < y3Sorted || (y2Sorted == y3Sorted && x1UInt < x2UInt)) ) // xy1 is in the middle
 	{
 		// first assuming that xy2 is above and to the left of xy3
 		rStartEdgeDistT = xy1DistToXy2;
@@ -904,8 +909,8 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	// swap start and end values based on vertex positions
 	calcTriGradients( rStartEdgeDistT, rEndEdgeDistT, rStartEdgeDistB, rEndEdgeDistB, gStartEdgeDistT, gEndEdgeDistT,
 						gStartEdgeDistB, gEndEdgeDistB, bStartEdgeDistT, bEndEdgeDistT, bStartEdgeDistB, bEndEdgeDistB,
-						xy1DistToXy2, xy1DistToXy3, xy2DistToXy3, y1UInt, y1Sorted, y2Sorted, y3Sorted, x2UInt, x3UInt,
-						y2UInt, y3UInt, needsSwapping, zeroVal );
+						xy1DistToXy2, xy1DistToXy3, xy2DistToXy3, y1UInt, y1Sorted, y2Sorted, y3Sorted, x1UInt, x2UInt,
+						x3UInt, y2UInt, y3UInt, needsSwapping, zeroVal );
 
 	// setting the y value for gradients
 	float yInRelationToY1 = -1.0f * (1.0f - ((y3Sorted - y1UInt) * yInRelationIncr));
