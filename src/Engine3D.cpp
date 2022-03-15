@@ -3,6 +3,27 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+Vector<3> crossProductVec3D (const Vector<3>& vec1, const Vector<3>& vec2, const Vector<3>& vec3)
+{
+	Vector<3> vec12( {vec2.x() - vec1.x(), vec2.y() - vec1.y(), vec2.z() - vec1.z()} );
+	Vector<3> vec23( {vec3.x() - vec2.x(), vec3.y() - vec2.y(), vec3.z() - vec2.z()} );
+
+	Vector<3> crossProduct( {vec12.y() * vec23.z() - vec12.z() * vec23.y(),
+					vec12.z() * vec23.x() - vec12.x() * vec23.z(),
+					vec12.x() * vec23.y() - vec12.y() * vec23.x()} );
+
+	return crossProduct;
+}
+
+void normalizeVec3D (Vector<3>& vec)
+{
+	float length = sqrtf( vec.x() * vec.x() + vec.y() * vec.y() + vec.z() * vec.z() );
+
+	vec.x() = vec.x() / length;
+	vec.y() = vec.y() / length;
+	vec.z() = vec.z() / length;
+}
+
 Mesh createCubeMesh()
 {
 	Mesh cube;
@@ -69,6 +90,18 @@ void Mesh::scale (float scaleFactor)
 	}
 }
 
+void Face::calcNormals()
+{
+	Vertex& vert1 = vertices[0];
+	Vertex& vert2 = vertices[1];
+	Vertex& vert3 = vertices[2];
+
+	Vector<3> normal = crossProductVec3D( vert1.vec, vert2.vec, vert3.vec );
+	normalizeVec3D( normal );
+
+	this->normal = normal;
+}
+
 Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegrees)
 {
 	// convert degrees to radians
@@ -102,9 +135,25 @@ Camera3D::Camera3D (float nearClip, float farClip, float fieldOfView, float aspe
 	m_FarClip( farClip ),
 	m_FieldOfView( fieldOfView ),
 	m_AspectRatio( aspectRatio ),
-	m_ProjectionMatrix( 0.0f )
+	m_ProjectionMatrix( 0.0f ),
+	m_Position( 0.0f )
 {
 	this->generateProjectionMatrix();
+}
+
+float Camera3D::x() const
+{
+	return m_Position.x();
+}
+
+float Camera3D::y() const
+{
+	return m_Position.y();
+}
+
+float Camera3D::z() const
+{
+	return m_Position.z();
 }
 
 void Camera3D::generateProjectionMatrix()

@@ -6,9 +6,6 @@
 #include <algorithm>
 #include <limits>
 
-// TODO remove after testing
-#include <iostream>
-
 SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer) :
 	Graphics( frameBuffer )
 {
@@ -732,7 +729,7 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 
 		if ( x3UInt < x2UInt )
 		{
-			if ( y3UInt < y2UInt )
+			if ( y3UInt <= y2UInt )
 			{
 				if ( needsSwapping )
 				{

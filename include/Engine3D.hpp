@@ -22,6 +22,9 @@ struct Vertex
 struct Face
 {
 	Vertex vertices[3];
+	Vector<3> normal;
+
+	void calcNormals();
 };
 
 struct Mesh
@@ -41,6 +44,10 @@ class Camera3D
 		// scales the x and y vertices to 0.0f -> 1.0f instead of projected -1.0f to 1.0f
 		void scaleXYToZeroToOne (Face& face);
 
+		float x() const;
+		float y() const;
+		float z() const;
+
 	private:
 		float			m_NearClip;
 		float			m_FarClip;
@@ -48,6 +55,8 @@ class Camera3D
 		float			m_AspectRatio;
 
 		Matrix<4, 4>	m_ProjectionMatrix;
+
+		Vector<3> 		m_Position;
 
 		void generateProjectionMatrix();
 };
