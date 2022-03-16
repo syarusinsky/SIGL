@@ -999,8 +999,8 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
 
 				// setting the x values for gradients
-				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - leftX) * xInRelationIncr);
-				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - rightX) * xInRelationIncr);
+				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator) * xInRelationIncr);
+				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xRightAccumulator) * xInRelationIncr);
 				// get important distances
 				float xy1DistToXLeft = this->distance(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1);
 				float xy1DistToXRight = this->distance(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1);
@@ -1016,11 +1016,11 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 				float gEnd = triGradNormalizedDist(xy2DistToXRight, gEndEdgeDistT);
 				float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistT);
 				// linearly interpolate between the two values
-				float rIncr = (rEnd - rStart) / (rightX - leftX);
+				float rIncr = (rEnd - rStart) / (xRightAccumulator - xLeftAccumulator);
 				float rCurrent = rStart;
-				float gIncr = (gEnd - gStart) / (rightX - leftX);
+				float gIncr = (gEnd - gStart) / (xRightAccumulator - xLeftAccumulator);
 				float gCurrent = gStart;
-				float bIncr = (bEnd - bStart) / (rightX - leftX);
+				float bIncr = (bEnd - bStart) / (xRightAccumulator - xLeftAccumulator);
 				float bCurrent = bStart;
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
@@ -1099,8 +1099,8 @@ skip:
 				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
 
 				// setting the x values for gradients
-				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - leftX) * xInRelationIncr);
-				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - rightX) * xInRelationIncr);
+				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator) * xInRelationIncr);
+				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xRightAccumulator) * xInRelationIncr);
 				// get important distances
 				float xy1DistToXLeft = this->distance(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1);
 				float xy1DistToXRight = this->distance(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1);
@@ -1116,11 +1116,11 @@ skip:
 				float gEnd = triGradNormalizedDist(xy2DistToXRight, gEndEdgeDistB);
 				float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistB);
 				// linearly interpolate between the two values
-				float rIncr = (rEnd - rStart) / (rightX - leftX);
+				float rIncr = (rEnd - rStart) / (xRightAccumulator - xLeftAccumulator);
 				float rCurrent = rStart;
-				float gIncr = (gEnd - gStart) / (rightX - leftX);
+				float gIncr = (gEnd - gStart) / (xRightAccumulator - xLeftAccumulator);
 				float gCurrent = gStart;
-				float bIncr = (bEnd - bStart) / (rightX - leftX);
+				float bIncr = (bEnd - bStart) / (xRightAccumulator - xLeftAccumulator);
 				float bCurrent = bStart;
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
