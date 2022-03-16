@@ -506,15 +506,15 @@ static inline float triGradNormalizedDist (float currentDistFromXY1, float endDi
 	return std::max( 1.0f - (currentDistFromXY1 / endDistFromXY1), 0.0f );
 }
 
-static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDistT, float& rStartEdgeDistB, float& rEndEdgeDistB, float& gStartEdgeDistT,
-										float& gEndEdgeDistT, float& gStartEdgeDistB, float& gEndEdgeDistB, float& bStartEdgeDistT, float &bEndEdgeDistT,
-										float& bStartEdgeDistB, float& bEndEdgeDistB, const float& xy1DistToXy2, const float& xy1DistToXy3,
-										const float& xy2DistToXy3, const int& y1UInt, const int& y1Sorted, const int& y2Sorted, const int &y3Sorted,
-										const int& x1UInt, const int& x2UInt, const int& x3UInt, const int& y2UInt, const int& y3UInt,
-										const bool& needsSwapping, const float& zeroVal )
+static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDistT, float& rStartEdgeDistB, float& rEndEdgeDistB,
+					float& gStartEdgeDistT, float& gEndEdgeDistT, float& gStartEdgeDistB, float& gEndEdgeDistB,
+					float& bStartEdgeDistT, float &bEndEdgeDistT, float& bStartEdgeDistB, float& bEndEdgeDistB,
+					const float& xy1DistToXy2, const float& xy1DistToXy3, const float& xy2DistToXy3, const int& y1UInt,
+					const int& y1Sorted, const int& y2Sorted, const int &y3Sorted, const int& x1Int, const int& x2Int,
+					const int& x3Int, const int& y2Int, const int& y3Int, const bool& needsSwapping, const float& zeroVal )
 {
 	if ( y1UInt == y1Sorted &&
-		(y1Sorted < y2Sorted || (y1Sorted == y2Sorted && x1UInt < x2UInt)) ) // xy1 is on top
+		(y1Sorted < y2Sorted || (y1Sorted == y2Sorted && x1Int < x2Int)) ) // xy1 is on top
 	{
 		// first assuming that xy2 is above and to the left of xy3
 		rStartEdgeDistT = xy1DistToXy2;
@@ -527,12 +527,12 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 		bStartEdgeDistB = xy2DistToXy3;
 		bEndEdgeDistB = xy1DistToXy3;
 
-		if ( x3UInt < x2UInt )
+		if ( x3Int < x2Int )
 		{
 			rStartEdgeDistB = zeroVal;
 			rEndEdgeDistB = xy1DistToXy3;
 
-			if ( y3UInt < y2UInt )
+			if ( y3Int < y2Int )
 			{
 				if ( needsSwapping )
 				{
@@ -574,7 +574,7 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 				bEndEdgeDistB = xy2DistToXy3;
 			}
 		}
-		else if ( y3UInt < y2UInt )
+		else if ( y3Int < y2Int )
 		{
 			if ( needsSwapping )
 			{
@@ -616,7 +616,7 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 		}
 	}
 	else if ( y1UInt == y2Sorted &&
-		(y2Sorted < y3Sorted || (y2Sorted == y3Sorted && x1UInt < x2UInt)) ) // xy1 is in the middle
+		(y2Sorted < y3Sorted || (y2Sorted == y3Sorted && x1Int < x2Int)) ) // xy1 is in the middle
 	{
 		// first assuming that xy2 is above and to the left of xy3
 		rStartEdgeDistT = xy1DistToXy2;
@@ -628,9 +628,9 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 		bStartEdgeDistB = xy1DistToXy3;
 		bEndEdgeDistB = xy2DistToXy3;
 
-		if ( x3UInt < x2UInt )
+		if ( x3Int < x2Int )
 		{
-			if ( y3UInt < y2UInt )
+			if ( y3Int < y2Int )
 			{
 				if ( needsSwapping )
 				{
@@ -673,7 +673,7 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 				bEndEdgeDistB = xy1DistToXy3;
 			}
 		}
-		else if ( y3UInt < y2UInt )
+		else if ( y3Int < y2Int )
 		{
 			if ( needsSwapping )
 			{
@@ -727,9 +727,9 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 		bStartEdgeDistT = xy2DistToXy3;
 		bStartEdgeDistB = xy1DistToXy3;
 
-		if ( x3UInt < x2UInt )
+		if ( x3Int < x2Int )
 		{
-			if ( y3UInt <= y2UInt )
+			if ( y3Int <= y2Int )
 			{
 				if ( needsSwapping )
 				{
@@ -771,7 +771,7 @@ static inline void calcTriGradients( float& rStartEdgeDistT, float& rEndEdgeDist
 				bEndEdgeDistB = xy1DistToXy3;
 			}
 		}
-		else if ( y3UInt < y2UInt )
+		else if ( y3Int < y2Int )
 		{
 			if ( needsSwapping )
 			{
@@ -818,19 +818,19 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	const Color previousColor = m_ColorProfile->getColor();
 
 	// getting the pixel values of the vertices
-	int x1UInt = x1 * (m_FBWidth  - 1);
-	int y1UInt = y1 * (m_FBHeight - 1);
-	int x2UInt = x2 * (m_FBWidth  - 1);
-	int y2UInt = y2 * (m_FBHeight - 1);
-	int x3UInt = x3 * (m_FBWidth  - 1);
-	int y3UInt = y3 * (m_FBHeight - 1);
+	int x1Int = x1 * (m_FBWidth  - 1);
+	int y1Int = y1 * (m_FBHeight - 1);
+	int x2Int = x2 * (m_FBWidth  - 1);
+	int y2Int = y2 * (m_FBHeight - 1);
+	int x3Int = x3 * (m_FBWidth  - 1);
+	int y3Int = y3 * (m_FBHeight - 1);
 
-	int x1Sorted = x1UInt;
-	int y1Sorted = y1UInt;
-	int x2Sorted = x2UInt;
-	int y2Sorted = y2UInt;
-	int x3Sorted = x3UInt;
-	int y3Sorted = y3UInt;
+	int x1Sorted = x1Int;
+	int y1Sorted = y1Int;
+	int x2Sorted = x2Int;
+	int y2Sorted = y2Int;
+	int x3Sorted = x3Int;
+	int y3Sorted = y3Int;
 	float x1FSorted = x1;
 	float y1FSorted = y1;
 	float x2FSorted = x2;
@@ -873,17 +873,17 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	}
 
 	// coordinates variables
-	int xInRelationLeftmost = (x1UInt <= x2UInt) ? x1UInt : x2UInt;
-	xInRelationLeftmost = (xInRelationLeftmost <= x3UInt) ? xInRelationLeftmost : x3UInt;
-	int xInRelationRightmost = (x1UInt >= x2UInt) ? x1UInt : x2UInt;
-	xInRelationRightmost = (xInRelationRightmost >= x3UInt) ? xInRelationRightmost : x3UInt;
+	int xInRelationLeftmost = (x1Int <= x2Int) ? x1Int : x2Int;
+	xInRelationLeftmost = (xInRelationLeftmost <= x3Int) ? xInRelationLeftmost : x3Int;
+	int xInRelationRightmost = (x1Int >= x2Int) ? x1Int : x2Int;
+	xInRelationRightmost = (xInRelationRightmost >= x3Int) ? xInRelationRightmost : x3Int;
 	float xInRelationIncr = 1.0f / (xInRelationRightmost - xInRelationLeftmost);
 	float yInRelationIncr = 1.0f / (y3Sorted - y1Sorted);
-	float x1InRelationToXLeft = 1.0f - ((xInRelationRightmost - x1UInt) * xInRelationIncr);
-	float x2InRelationToX1 = -1.0f * ((x1UInt - x2UInt) * xInRelationIncr);
-	float y2InRelationToY1 = -1.0f * ((y1UInt - y2UInt) * yInRelationIncr);
-	float x3InRelationToX1 = -1.0f * ((x1UInt - x3UInt) * xInRelationIncr);
-	float y3InRelationToY1 = -1.0f * ((y1UInt - y3UInt) * yInRelationIncr);
+	float x1InRelationToXLeft = 1.0f - ((xInRelationRightmost - x1Int) * xInRelationIncr);
+	float x2InRelationToX1 = -1.0f * ((x1Int - x2Int) * xInRelationIncr);
+	float y2InRelationToY1 = -1.0f * ((y1Int - y2Int) * yInRelationIncr);
+	float x3InRelationToX1 = -1.0f * ((x1Int - x3Int) * xInRelationIncr);
+	float y3InRelationToY1 = -1.0f * ((y1Int - y3Int) * yInRelationIncr);
 	y2InRelationToY1 = ( isnan(y2InRelationToY1) ) ? 0.0f : y2InRelationToY1; // can happen when
 	y3InRelationToY1 = ( isnan(y3InRelationToY1) ) ? 0.0f : y3InRelationToY1; // y1 = y2 = y3
 	float xy1DistToXy2 = this->distance(0.0f, 0.0f, x2InRelationToX1, y2InRelationToY1);
@@ -906,11 +906,11 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	// swap start and end values based on vertex positions
 	calcTriGradients( rStartEdgeDistT, rEndEdgeDistT, rStartEdgeDistB, rEndEdgeDistB, gStartEdgeDistT, gEndEdgeDistT,
 						gStartEdgeDistB, gEndEdgeDistB, bStartEdgeDistT, bEndEdgeDistT, bStartEdgeDistB, bEndEdgeDistB,
-						xy1DistToXy2, xy1DistToXy3, xy2DistToXy3, y1UInt, y1Sorted, y2Sorted, y3Sorted, x1UInt, x2UInt,
-						x3UInt, y2UInt, y3UInt, needsSwapping, zeroVal );
+						xy1DistToXy2, xy1DistToXy3, xy2DistToXy3, y1Int, y1Sorted, y2Sorted, y3Sorted, x1Int, x2Int,
+						x3Int, y2Int, y3Int, needsSwapping, zeroVal );
 
 	// setting the y value for gradients
-	float yInRelationToY1 = -1.0f * (1.0f - ((y3Sorted - y1UInt) * yInRelationIncr));
+	float yInRelationToY1 = -1.0f * (1.0f - ((y3Sorted - y1Int) * yInRelationIncr));
 	yInRelationToY1 = ( isnan(yInRelationToY1) ) ? 0.0f : yInRelationToY1;
 
 	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
