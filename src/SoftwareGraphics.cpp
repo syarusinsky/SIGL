@@ -370,6 +370,8 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
 	if ( line1Slope == 0.0f || isnan(line1Slope) )
 	{
+		xRightAccumulator = (float) x2Sorted;
+
 		// fill row to x2, y2
 		float tempX1 = x1FSorted;
 		float tempY1 = y1FSorted;
@@ -381,6 +383,7 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 		{
 			tempX2 = x3FSorted;
 			tempY2 = y3FSorted;
+			xRightAccumulator = (float) x3Sorted;
 		}
 
 		// if after clipping this line exists within the screen, render the line
@@ -399,8 +402,6 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 			}
 		}
-
-		xRightAccumulator = (float) x2Sorted;
 	}
 	else
 	{
@@ -469,7 +470,6 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 		}
 	}
 
-skip:
 	// rasterize up until the last vertice
 	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
 	{
@@ -916,6 +916,8 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
 	if ( line1Slope == 0.0f || isnan(line1Slope) )
 	{
+		xRightAccumulator = (float) x2Sorted;
+
 		// fill row to x2, y2
 		float tempX1 = x1FSorted;
 		float tempY1 = y1FSorted;
@@ -927,22 +929,26 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 		{
 			tempX2 = x3FSorted;
 			tempY2 = y3FSorted;
+			xRightAccumulator = (float) x3Sorted;
 		}
 
 		// if after clipping this line exists within the screen, render the line
 		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
 		{
-			int tempX1Int = tempX1 * (m_FBWidth  - 1);
-			int tempY1Int = tempY1 * (m_FBHeight - 1);
-			int tempX2Int = tempX2 * (m_FBWidth  - 1);
-			int tempY2Int = tempY2 * (m_FBHeight - 1);
+			int unclippedLeftX = x1FSorted * ( m_FBWidth - 1 );
+			int tempX1Int = tempX1 * ( m_FBWidth  - 1 );
+			int tempY1Int = tempY1 * ( m_FBHeight - 1 );
+			int tempX2Int = tempX2 * ( m_FBWidth  - 1 );
+			int tempY2Int = tempY2 * ( m_FBHeight - 1 );
 
 			int tempXY1 = ( (tempY1Int * m_FBWidth) + tempX1Int );
 			int tempXY2 = ( (tempY2Int * m_FBWidth) + tempX2Int );
 
 			// setting the x values for gradients
-			float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - tempX1Int) * xInRelationIncr);
-			float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - tempX2Int) * xInRelationIncr);
+			float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator)
+							* xInRelationIncr);
+			float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xRightAccumulator)
+							* xInRelationIncr);
 			// get important distances
 			float xy1DistToXLeft = this->distance(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1);
 			float xy1DistToXRight = this->distance(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1);
@@ -958,12 +964,12 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 			float gEnd = triGradNormalizedDist(xy2DistToXRight, gEndEdgeDistT);
 			float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistT);
 			// linearly interpolate between the two values
-			float rIncr = (rEnd - rStart) / (tempX2Int - tempX1Int);
-			float rCurrent = rStart;
-			float gIncr = (gEnd - gStart) / (tempX2Int - tempX1Int);
-			float gCurrent = gStart;
-			float bIncr = (bEnd - bStart) / (tempX2Int - tempX1Int);
-			float bCurrent = bStart;
+			float rIncr = (rEnd - rStart) / (xRightAccumulator - xLeftAccumulator);
+			float rCurrent = rStart + ( rIncr * std::abs(std::min(unclippedLeftX, 0)) );
+			float gIncr = (gEnd - gStart) / (xRightAccumulator - xLeftAccumulator);
+			float gCurrent = gStart + ( gIncr * std::abs(std::min(unclippedLeftX, 0)) );
+			float bIncr = (bEnd - bStart) / (xRightAccumulator - xLeftAccumulator);
+			float bCurrent = bStart + ( bIncr * std::abs(std::min(unclippedLeftX, 0)) );
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
@@ -976,7 +982,6 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 			}
 		}
 
-		xRightAccumulator = (float) x2Sorted;
 		yInRelationToY1 += yInRelationIncr;
 	}
 	else
@@ -992,15 +997,19 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 			else if (row >= 0)
 			{
 				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+				int unclippedLeftX = std::round( xLeftAccumulator );
+				int unclippedRightX = std::round( xRightAccumulator );
+				unsigned int leftX  = std::min( std::max((int)unclippedLeftX, 0), (int)m_FBWidth - 1 );
+				unsigned int rightX = std::max( std::min((int)unclippedRightX, (int)m_FBWidth - 1), 0 );
 
 				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
 				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
 
 				// setting the x values for gradients
-				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator) * xInRelationIncr);
-				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xRightAccumulator) * xInRelationIncr);
+				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator)
+								* xInRelationIncr);
+				float xRightInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xRightAccumulator)
+								* xInRelationIncr);
 				// get important distances
 				float xy1DistToXLeft = this->distance(0.0f, 0.0f, xLeftInRelationToX1, yInRelationToY1);
 				float xy1DistToXRight = this->distance(0.0f, 0.0f, xRightInRelationToX1, yInRelationToY1);
@@ -1017,11 +1026,11 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 				float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistT);
 				// linearly interpolate between the two values
 				float rIncr = (rEnd - rStart) / (xRightAccumulator - xLeftAccumulator);
-				float rCurrent = rStart;
+				float rCurrent = rStart + ( rIncr * std::abs(std::min(unclippedLeftX, 0)) );
 				float gIncr = (gEnd - gStart) / (xRightAccumulator - xLeftAccumulator);
-				float gCurrent = gStart;
+				float gCurrent = gStart + ( gIncr * std::abs(std::min(unclippedLeftX, 0)) );
 				float bIncr = (bEnd - bStart) / (xRightAccumulator - xLeftAccumulator);
-				float bCurrent = bStart;
+				float bCurrent = bStart + ( bIncr * std::abs(std::min(unclippedLeftX, 0)) );
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
@@ -1078,7 +1087,6 @@ void SoftwareGraphics::drawTriangleGradient (float x1, float y1, float x2, float
 		}
 	}
 
-skip:
 	// rasterize up until the last vertice
 	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
 	{
@@ -1092,8 +1100,10 @@ skip:
 			else if ( row >= 0 )
 			{
 				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+				int unclippedLeftX = std::round( xLeftAccumulator );
+				int unclippedRightX = std::round( xRightAccumulator );
+				unsigned int leftX  = std::min( std::max((int)unclippedLeftX, 0), (int)m_FBWidth - 1 );
+				unsigned int rightX = std::max( std::min((int)unclippedRightX, (int)m_FBWidth - 1), 0 );
 
 				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
 				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
@@ -1117,11 +1127,11 @@ skip:
 				float bEnd = triGradNormalizedDist(xy3DistToXRight, bEndEdgeDistB);
 				// linearly interpolate between the two values
 				float rIncr = (rEnd - rStart) / (xRightAccumulator - xLeftAccumulator);
-				float rCurrent = rStart;
+				float rCurrent = rStart + ( rIncr * std::abs(std::min(unclippedLeftX, 0)) );
 				float gIncr = (gEnd - gStart) / (xRightAccumulator - xLeftAccumulator);
-				float gCurrent = gStart;
+				float gCurrent = gStart + ( gIncr * std::abs(std::min(unclippedLeftX, 0)) );
 				float bIncr = (bEnd - bStart) / (xRightAccumulator - xLeftAccumulator);
-				float bCurrent = bStart;
+				float bCurrent = bStart + ( bIncr * std::abs(std::min(unclippedLeftX, 0)) );
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
