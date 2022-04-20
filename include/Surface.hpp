@@ -15,6 +15,7 @@ enum class CP_FORMAT;
 
 class FrameBuffer;
 class ColorProfile;
+class SoftwareGraphics;
 class Graphics;
 
 class Surface
@@ -31,9 +32,13 @@ class Surface
 		virtual void draw() = 0;
 
 	protected:
-		FrameBuffer*   m_FrameBuffer;
-		ColorProfile*  m_ColorProfile;
-		Graphics*      m_Graphics;
+		FrameBuffer*   		m_FrameBuffer;
+		ColorProfile*  		m_ColorProfile;
+#ifdef SOFTWARE_RENDERING
+		SoftwareGraphics* 	m_Graphics;
+#else
+		Graphics*      		m_Graphics; // TODO if I ever implement hardware acceleration, this should be changed
+#endif
 };
 
 #endif // SURFACE_HPP

@@ -4,6 +4,8 @@
 
 #ifdef SOFTWARE_RENDERING
 #include "SoftwareGraphics.hpp"
+#else
+#include "SoftwareGraphics.hpp" // TODO if I ever implement hardware acceleration, this should be changed
 #endif // SOFTWARE_RENDERING
 
 Surface::Surface (unsigned int width, unsigned int height, const CP_FORMAT& format) :
@@ -11,6 +13,8 @@ Surface::Surface (unsigned int width, unsigned int height, const CP_FORMAT& form
 	m_ColorProfile( m_FrameBuffer->getColorProfile() ),
 #ifdef SOFTWARE_RENDERING
 	m_Graphics( new SoftwareGraphics(m_FrameBuffer) )
+#else
+	m_Graphics( new SoftwareGraphics(m_FrameBuffer) ) // TODO if I ever implement hardware acceleration, this should be changed
 #endif // SOFTWARE_RENDERING
 {
 }

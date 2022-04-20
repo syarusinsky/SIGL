@@ -1,5 +1,5 @@
 #ifndef ENGINE3D_HPP
-#define ENGING3D_HPP
+#define ENGINE3D_HPP
 
 /**************************************************************************
  * This Engine3D file defines the classes, structures, and functions
