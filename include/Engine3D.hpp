@@ -39,10 +39,10 @@ class Camera3D
 	public:
 		Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio);
 
-		Face projectFace (const Face& face);
+		void projectFace (Face& face) const;
 
 		// scales the x and y vertices to 0.0f -> 1.0f instead of projected -1.0f to 1.0f
-		void scaleXYToZeroToOne (Face& face);
+		void scaleXYToZeroToOne (Face& face) const;
 
 		float x() const;
 		float y() const;

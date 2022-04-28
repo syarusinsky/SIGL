@@ -171,21 +171,14 @@ void Camera3D::generateProjectionMatrix()
 	m_ProjectionMatrix.at(3, 3) = 0.0f;
 }
 
-Face Camera3D::projectFace (const Face& face)
+void Camera3D::projectFace (Face& face) const
 {
-	Face outFace;
-	outFace.vertices[0] = face.vertices[0];
-	outFace.vertices[1] = face.vertices[1];
-	outFace.vertices[2] = face.vertices[2];
-
-	outFace.vertices[0].vec = mulVector3DByMatrix4D( outFace.vertices[0].vec, m_ProjectionMatrix );
-	outFace.vertices[1].vec = mulVector3DByMatrix4D( outFace.vertices[1].vec, m_ProjectionMatrix );
-	outFace.vertices[2].vec = mulVector3DByMatrix4D( outFace.vertices[2].vec, m_ProjectionMatrix );
-
-	return outFace;
+	face.vertices[0].vec = mulVector3DByMatrix4D( face.vertices[0].vec, m_ProjectionMatrix );
+	face.vertices[1].vec = mulVector3DByMatrix4D( face.vertices[1].vec, m_ProjectionMatrix );
+	face.vertices[2].vec = mulVector3DByMatrix4D( face.vertices[2].vec, m_ProjectionMatrix );
 }
 
-void Camera3D::scaleXYToZeroToOne (Face& face)
+void Camera3D::scaleXYToZeroToOne (Face& face) const
 {
 	face.vertices[0].vec.x() = ( face.vertices[0].vec.x() + 1.0f ) * 0.5f; face.vertices[0].vec.y() = ( face.vertices[0].vec.y() + 1.0f ) * 0.5f;
 	face.vertices[1].vec.x() = ( face.vertices[1].vec.x() + 1.0f ) * 0.5f; face.vertices[1].vec.y() = ( face.vertices[1].vec.y() + 1.0f ) * 0.5f;

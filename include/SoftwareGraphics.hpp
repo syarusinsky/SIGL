@@ -28,10 +28,9 @@ class SoftwareGraphics 	: public Graphics
 		void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) override;
 		void drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3) override;
 		void drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3) override;
-		void drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3) override;
+		void drawTriangleShaded (Face& face, const Camera3D& camera) override;
 		void drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
 		void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
-		void drawQuadGradient (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
 		void drawCircle (float originX, float originY, float radius) override;
 		void drawCircleFilled (float originX, float originY, float radius) override;
 		void drawText (float xStart, float yStart, const char* text, float scaleFactor) override;

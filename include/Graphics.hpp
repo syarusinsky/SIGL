@@ -20,6 +20,8 @@
 
 class Font;
 class Sprite;
+class Camera3D;
+struct Face;
 
 class Graphics
 {
@@ -47,10 +49,9 @@ class Graphics
 		virtual void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) = 0;
 		virtual void drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
 		virtual void drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
-		virtual void drawTriangleGradient (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
+		virtual void drawTriangleShaded (Face& face, const Camera3D& camera) = 0;
 		virtual void drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
-		virtual void drawQuadGradient (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawCircle (float originX, float originY, float radius) = 0;
 		virtual void drawCircleFilled (float originX, float originY, float radius) = 0;
 		virtual void drawText (float xStart, float yStart, const char* text, float scaleFactor) = 0;
@@ -64,8 +65,22 @@ class Graphics
 		Font*                m_CurrentFont;
 		unsigned int         m_FBWidth;
 		unsigned int         m_FBHeight;
-		unsigned int         m_FBNumPixels; 
+		unsigned int         m_FBNumPixels;
 		uint8_t*             m_FBPixels;
+
+		// shaders (default vertex does nothing, default fragment is a rgb gradient)
+		void (*vertexShader)(Face& face) = [](Face& face) { return; };
+		void (*fragmentShader)(Color& color, Face& face, float x1Cur, float x2Cur, float x3Cur) =
+		[](Color& color, Face& face, float x1Cur, float x2Cur, float x3Cur)
+		{
+			color.m_R = x1Cur;
+			color.m_G = x2Cur;
+			color.m_B = x3Cur;
+			color.m_A = 1.0f;
+			color.m_M = false;
+			color.m_IsMonochrome = false;
+			color.m_HasAlpha = false;
+		};
 
 		Graphics (FrameBuffer* frameBuffer) :
 			m_FB( frameBuffer ),
