@@ -116,7 +116,7 @@ float& Vector<dimensions>::w()
 {
 	static_assert( dimensions == 4, "Vector dimensions must be 4D to use w()." );
 
-	return this->m_Vals[0][4];
+	return this->m_Vals[0][3];
 }
 
 template <unsigned int dimensions>
@@ -124,7 +124,7 @@ float Vector<dimensions>::w() const
 {
 	static_assert( dimensions == 4, "Vector dimensions must be 4D to use w()." );
 
-	return this->m_Vals[0][4];
+	return this->m_Vals[0][3];
 }
 
 #endif // VECTOR_HPP

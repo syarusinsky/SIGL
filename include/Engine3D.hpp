@@ -10,19 +10,19 @@
 #include <Matrix.hpp>
 #include <Vector.hpp>
 
-Vector<3> mulVector3DByMatrix4D (const Vector<3>& vector, const Matrix<4, 4>& matrix);
+Vector<4> mulVector4DByMatrix4D (const Vector<4>& vector, const Matrix<4, 4>& matrix);
 
 Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegrees);
 
 struct Vertex
 {
-	Vector<3> vec;
+	Vector<4> vec;
 };
 
 struct Face
 {
 	Vertex vertices[3];
-	Vector<3> normal;
+	Vector<4> normal;
 
 	void calcNormals();
 };
@@ -56,7 +56,7 @@ class Camera3D
 
 		Matrix<4, 4>	m_ProjectionMatrix;
 
-		Vector<3> 		m_Position;
+		Vector<4> 		m_Position;
 
 		void generateProjectionMatrix();
 };
