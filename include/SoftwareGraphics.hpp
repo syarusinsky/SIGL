@@ -36,9 +36,10 @@ class SoftwareGraphics 	: public Graphics
 		void drawText (float xStart, float yStart, const char* text, float scaleFactor) override;
 		void drawSprite (float xStart, float yStart, Sprite& sprite) override;
 
+		// TODO remove this after testing
+		void testTexture (Texture& texture) override;
+
 	protected:
-		// TODO make clipLine a static inline function and move to Graphics.hpp
-		bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
 
 		SoftwareGraphics (FrameBuffer* frameBuffer);

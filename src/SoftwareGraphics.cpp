@@ -2,10 +2,13 @@
 
 #include "Font.hpp"
 #include "Sprite.hpp"
+#include "Texture.hpp"
 #include "Engine3D.hpp"
 
 #include <algorithm>
 #include <limits>
+
+#include <iostream>
 
 SoftwareGraphics::SoftwareGraphics (FrameBuffer* frameBuffer) :
 	Graphics( frameBuffer )
@@ -214,7 +217,9 @@ void SoftwareGraphics::drawTriangle (float x1, float y1, float x2, float y2, flo
 
 static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSorted, float& y1FSorted,
 									int& x2Sorted, int& y2Sorted, float& x2FSorted, float& y2FSorted,
-									int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted )
+									int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted,
+									float& texCoordX1, float& texCoordY1, float& texCoordX2,
+									float& texCoordY2, float& texCoordX3, float& texCoordY3)
 {
 	// first sort by y values
 	if (y2Sorted > y3Sorted)
@@ -223,6 +228,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
+		float texCoordXTemp = texCoordX2;
+		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -231,6 +238,10 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
+		// texCoordX2 = texCoordX3;
+		// texCoordY2 = texCoordY3;
+		// texCoordX3 = texCoordXTemp;
+		// texCoordY3 = texCoordYTemp;
 	}
 	if (y1Sorted > y2Sorted)
 	{
@@ -238,6 +249,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y1Sorted;
 		float xFTemp = x1FSorted;
 		float yFTemp = y1FSorted;
+		float texCoordXTemp = texCoordX1;
+		float texCoordYTemp = texCoordY1;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xTemp;
@@ -246,6 +259,10 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y1FSorted = y2FSorted;
 		x2FSorted = xFTemp;
 		y2FSorted = yFTemp;
+		// texCoordX1 = texCoordX2;
+		// texCoordY1 = texCoordY2;
+		// texCoordX2 = texCoordXTemp;
+		// texCoordY2 = texCoordYTemp;
 	}
 	if (y2Sorted > y3Sorted)
 	{
@@ -253,6 +270,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
+		float texCoordXTemp = texCoordX2;
+		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -261,6 +280,10 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
+		// texCoordX2 = texCoordX3;
+		// texCoordY2 = texCoordY3;
+		// texCoordX3 = texCoordXTemp;
+		// texCoordY3 = texCoordYTemp;
 	}
 
 	// then sort by x values
@@ -270,6 +293,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
+		float texCoordXTemp = texCoordX2;
+		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -278,6 +303,10 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
+		// texCoordX2 = texCoordX3;
+		// texCoordY2 = texCoordY3;
+		// texCoordX3 = texCoordXTemp;
+		// texCoordY3 = texCoordYTemp;
 	}
 	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
 	{
@@ -285,6 +314,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y1Sorted;
 		float xFTemp = x1FSorted;
 		float yFTemp = y1FSorted;
+		float texCoordXTemp = texCoordX1;
+		float texCoordYTemp = texCoordY1;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xTemp;
@@ -293,6 +324,10 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y1FSorted = y2FSorted;
 		x2FSorted = xFTemp;
 		y2FSorted = yFTemp;
+		// texCoordX1 = texCoordX2;
+		// texCoordY1 = texCoordY2;
+		// texCoordX2 = texCoordXTemp;
+		// texCoordY2 = texCoordYTemp;
 	}
 	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
 	{
@@ -300,6 +335,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
+		float texCoordXTemp = texCoordX2;
+		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -308,6 +345,10 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
+		// texCoordX2 = texCoordX3;
+		// texCoordY2 = texCoordY3;
+		// texCoordX3 = texCoordXTemp;
+		// texCoordY3 = texCoordYTemp;
 	}
 }
 
@@ -333,10 +374,17 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 	float y2FSorted = y2;
 	float x3FSorted = x3;
 	float y3FSorted = y3;
+	float texCoordX1 = 0.0f;
+	float texCoordY1 = 0.0f;
+	float texCoordX2 = 0.0f;
+	float texCoordY2 = 0.0f;
+	float texCoordX3 = 0.0f;
+	float texCoordY3 = 0.0f;
 
 	// sorting vertices
 	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, x2Sorted, y2Sorted, x2FSorted, y2FSorted,
-						x3Sorted, y3Sorted, x3FSorted, y3FSorted );
+						x3Sorted, y3Sorted, x3FSorted, y3FSorted, texCoordX1,
+						texCoordY1, texCoordX2, texCoordY2, texCoordX3, texCoordY3 );
 
 	// getting the slope of each line
 	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
@@ -507,9 +555,9 @@ static inline float triGradNormalizedDist (float currentDistFromXY1, float endDi
 	return std::max( 1.0f - (currentDistFromXY1 / endDistFromXY1), 0.0f );
 }
 
-static inline void calcTriGradients( float& x1StartEdgeDistT, float& x1EndEdgeDistT, float& x1StartEdgeDistB, float& x1EndEdgeDistB,
-					float& x2StartEdgeDistT, float& x2EndEdgeDistT, float& x2StartEdgeDistB, float& x2EndEdgeDistB,
-					float& x3StartEdgeDistT, float &x3EndEdgeDistT, float& x3StartEdgeDistB, float& x3EndEdgeDistB,
+static inline void calcTriGradients( float& v1StartEdgeDistT, float& v1EndEdgeDistT, float& v1StartEdgeDistB, float& v1EndEdgeDistB,
+					float& v2StartEdgeDistT, float& v2EndEdgeDistT, float& v2StartEdgeDistB, float& v2EndEdgeDistB,
+					float& v3StartEdgeDistT, float &v3EndEdgeDistT, float& v3StartEdgeDistB, float& v3EndEdgeDistB,
 					const float& xy1DistToXy2, const float& xy1DistToXy3, const float& xy2DistToXy3, const int& y1UInt,
 					const int& y1Sorted, const int& y2Sorted, const int &y3Sorted, const int& x1Int, const int& x2Int,
 					const int& x3Int, const int& y2Int, const int& y3Int, const bool& needsSwapping, const float& zeroVal )
@@ -518,116 +566,116 @@ static inline void calcTriGradients( float& x1StartEdgeDistT, float& x1EndEdgeDi
 		(y1Sorted < y2Sorted || (y1Sorted == y2Sorted && x1Int < x2Int)) ) // xy1 is on top
 	{
 		// first assuming that xy2 is above and to the left of xy3
-		x1StartEdgeDistT = xy1DistToXy2;
-		x1EndEdgeDistT = xy1DistToXy3;
-		x2StartEdgeDistT = xy1DistToXy2;
-		x3EndEdgeDistT = xy1DistToXy3;
-		x1StartEdgeDistB = xy1DistToXy2;
-		x1EndEdgeDistB = xy1DistToXy3;
-		x2StartEdgeDistB = xy2DistToXy3;
-		x3StartEdgeDistB = xy2DistToXy3;
-		x3EndEdgeDistB = xy1DistToXy3;
+		v1StartEdgeDistT = xy1DistToXy2;
+		v1EndEdgeDistT = xy1DistToXy3;
+		v2StartEdgeDistT = xy1DistToXy2;
+		v3EndEdgeDistT = xy1DistToXy3;
+		v1StartEdgeDistB = xy1DistToXy2;
+		v1EndEdgeDistB = xy1DistToXy3;
+		v2StartEdgeDistB = xy2DistToXy3;
+		v3StartEdgeDistB = xy2DistToXy3;
+		v3EndEdgeDistB = xy1DistToXy3;
 
 		if ( x3Int < x2Int )
 		{
-			x1StartEdgeDistB = zeroVal;
-			x1EndEdgeDistB = xy1DistToXy3;
+			v1StartEdgeDistB = zeroVal;
+			v1EndEdgeDistB = xy1DistToXy3;
 
 			if ( y3Int < y2Int )
 			{
 				if ( needsSwapping )
 				{
-					x1StartEdgeDistB = xy1DistToXy2;
-					x1EndEdgeDistB = zeroVal;
-					x2StartEdgeDistB = xy1DistToXy2;
-					x2EndEdgeDistB = xy2DistToXy3;
-					x3StartEdgeDistB = zeroVal;
-					x3EndEdgeDistB = xy2DistToXy3;
+					v1StartEdgeDistB = xy1DistToXy2;
+					v1EndEdgeDistB = zeroVal;
+					v2StartEdgeDistB = xy1DistToXy2;
+					v2EndEdgeDistB = xy2DistToXy3;
+					v3StartEdgeDistB = zeroVal;
+					v3EndEdgeDistB = xy2DistToXy3;
 				}
 				else
 				{
-					x1StartEdgeDistT = xy1DistToXy3;
-					x1EndEdgeDistT = xy1DistToXy2;
-					x1StartEdgeDistB = zeroVal;
-					x1EndEdgeDistB = xy1DistToXy2;
-					x2StartEdgeDistT = zeroVal;
-					x2EndEdgeDistT = xy1DistToXy2;
-					x2EndEdgeDistB = xy1DistToXy2;
-					x3StartEdgeDistT = xy1DistToXy3;
-					x3EndEdgeDistT = zeroVal;
-					x3StartEdgeDistB = xy2DistToXy3;
-					x3EndEdgeDistB = zeroVal;
+					v1StartEdgeDistT = xy1DistToXy3;
+					v1EndEdgeDistT = xy1DistToXy2;
+					v1StartEdgeDistB = zeroVal;
+					v1EndEdgeDistB = xy1DistToXy2;
+					v2StartEdgeDistT = zeroVal;
+					v2EndEdgeDistT = xy1DistToXy2;
+					v2EndEdgeDistB = xy1DistToXy2;
+					v3StartEdgeDistT = xy1DistToXy3;
+					v3EndEdgeDistT = zeroVal;
+					v3StartEdgeDistB = xy2DistToXy3;
+					v3EndEdgeDistB = zeroVal;
 				}
 			}
 			else if ( needsSwapping )
 			{
-				x1StartEdgeDistT = xy1DistToXy3;
-				x1EndEdgeDistT = xy1DistToXy2;
-				x1StartEdgeDistB = xy1DistToXy3;
-				x1EndEdgeDistB = zeroVal;
-				x2StartEdgeDistT = zeroVal;
-				x2EndEdgeDistT = xy1DistToXy2;
-				x2StartEdgeDistB = zeroVal;
-				x2EndEdgeDistB = xy2DistToXy3;
-				x3StartEdgeDistT = xy1DistToXy3;
-				x3EndEdgeDistT = zeroVal;
-				x3StartEdgeDistB = xy1DistToXy3;
-				x3EndEdgeDistB = xy2DistToXy3;
+				v1StartEdgeDistT = xy1DistToXy3;
+				v1EndEdgeDistT = xy1DistToXy2;
+				v1StartEdgeDistB = xy1DistToXy3;
+				v1EndEdgeDistB = zeroVal;
+				v2StartEdgeDistT = zeroVal;
+				v2EndEdgeDistT = xy1DistToXy2;
+				v2StartEdgeDistB = zeroVal;
+				v2EndEdgeDistB = xy2DistToXy3;
+				v3StartEdgeDistT = xy1DistToXy3;
+				v3EndEdgeDistT = zeroVal;
+				v3StartEdgeDistB = xy1DistToXy3;
+				v3EndEdgeDistB = xy2DistToXy3;
 			}
 		}
 		else if ( y3Int < y2Int )
 		{
 			if ( needsSwapping )
 			{
-				x2StartEdgeDistB = xy1DistToXy2;
-				x2EndEdgeDistB = xy2DistToXy3;
-				x3StartEdgeDistB = zeroVal;
-				x3EndEdgeDistB = xy2DistToXy3;
+				v2StartEdgeDistB = xy1DistToXy2;
+				v2EndEdgeDistB = xy2DistToXy3;
+				v3StartEdgeDistB = zeroVal;
+				v3EndEdgeDistB = xy2DistToXy3;
 			}
 			else
 			{
-				x1StartEdgeDistT = xy1DistToXy3;
-				x1EndEdgeDistT = xy1DistToXy2;
-				x1StartEdgeDistB = zeroVal;
-				x1EndEdgeDistB = xy1DistToXy2;
-				x2StartEdgeDistT = zeroVal;
-				x2EndEdgeDistT = xy1DistToXy2;
-				x2StartEdgeDistB = xy2DistToXy3;
-				x2EndEdgeDistB = xy1DistToXy2;
-				x3StartEdgeDistT = xy1DistToXy3;
-				x3EndEdgeDistT = zeroVal;
-				x3StartEdgeDistB = xy2DistToXy3;
-				x3EndEdgeDistB = zeroVal;
+				v1StartEdgeDistT = xy1DistToXy3;
+				v1EndEdgeDistT = xy1DistToXy2;
+				v1StartEdgeDistB = zeroVal;
+				v1EndEdgeDistB = xy1DistToXy2;
+				v2StartEdgeDistT = zeroVal;
+				v2EndEdgeDistT = xy1DistToXy2;
+				v2StartEdgeDistB = xy2DistToXy3;
+				v2EndEdgeDistB = xy1DistToXy2;
+				v3StartEdgeDistT = xy1DistToXy3;
+				v3EndEdgeDistT = zeroVal;
+				v3StartEdgeDistB = xy2DistToXy3;
+				v3EndEdgeDistB = zeroVal;
 			}
 		}
 		else if ( needsSwapping )
 		{
-			x1StartEdgeDistT = xy1DistToXy3;
-			x1EndEdgeDistT = xy1DistToXy2;
-			x1StartEdgeDistB = xy1DistToXy3;
-			x1EndEdgeDistB = zeroVal;
-			x2StartEdgeDistT = zeroVal;
-			x2EndEdgeDistT = xy1DistToXy2;
-			x2StartEdgeDistB = zeroVal;
-			x2EndEdgeDistB = xy2DistToXy3;
-			x3StartEdgeDistT = xy1DistToXy3;
-			x3EndEdgeDistT = zeroVal;
-			x3StartEdgeDistB = xy1DistToXy3;
-			x3EndEdgeDistB = xy2DistToXy3;
+			v1StartEdgeDistT = xy1DistToXy3;
+			v1EndEdgeDistT = xy1DistToXy2;
+			v1StartEdgeDistB = xy1DistToXy3;
+			v1EndEdgeDistB = zeroVal;
+			v2StartEdgeDistT = zeroVal;
+			v2EndEdgeDistT = xy1DistToXy2;
+			v2StartEdgeDistB = zeroVal;
+			v2EndEdgeDistB = xy2DistToXy3;
+			v3StartEdgeDistT = xy1DistToXy3;
+			v3EndEdgeDistT = zeroVal;
+			v3StartEdgeDistB = xy1DistToXy3;
+			v3EndEdgeDistB = xy2DistToXy3;
 		}
 	}
 	else if ( y1UInt == y2Sorted &&
 		(y2Sorted < y3Sorted || (y2Sorted == y3Sorted && x1Int < x2Int)) ) // xy1 is in the middle
 	{
 		// first assuming that xy2 is above and to the left of xy3
-		x1StartEdgeDistT = xy1DistToXy2;
-		x2StartEdgeDistT = xy1DistToXy2;
-		x2EndEdgeDistT = xy2DistToXy3;
-		x3EndEdgeDistT = xy2DistToXy3;
-		x1StartEdgeDistB = xy1DistToXy3;
-		x2EndEdgeDistB = xy2DistToXy3;
-		x3StartEdgeDistB = xy1DistToXy3;
-		x3EndEdgeDistB = xy2DistToXy3;
+		v1StartEdgeDistT = xy1DistToXy2;
+		v2StartEdgeDistT = xy1DistToXy2;
+		v2EndEdgeDistT = xy2DistToXy3;
+		v3EndEdgeDistT = xy2DistToXy3;
+		v1StartEdgeDistB = xy1DistToXy3;
+		v2EndEdgeDistB = xy2DistToXy3;
+		v3StartEdgeDistB = xy1DistToXy3;
+		v3EndEdgeDistB = xy2DistToXy3;
 
 		if ( x3Int < x2Int )
 		{
@@ -635,98 +683,100 @@ static inline void calcTriGradients( float& x1StartEdgeDistT, float& x1EndEdgeDi
 			{
 				if ( needsSwapping )
 				{
-					x1StartEdgeDistT = zeroVal;
-					x1EndEdgeDistT = xy1DistToXy3;
-					x1StartEdgeDistB = zeroVal;
-					x1EndEdgeDistB = xy1DistToXy2;
-					x2StartEdgeDistT = xy2DistToXy3;
-					x2EndEdgeDistT = zeroVal;
-					x2StartEdgeDistB = xy2DistToXy3;
-					x2EndEdgeDistB = xy1DistToXy2;
-					x3StartEdgeDistT = xy2DistToXy3;
-					x3EndEdgeDistT = xy1DistToXy3;
-					x3StartEdgeDistB = xy2DistToXy3;
-					x3EndEdgeDistB = zeroVal;
+					v1StartEdgeDistT = zeroVal;
+					v1EndEdgeDistT = xy1DistToXy3;
+					v1StartEdgeDistB = zeroVal;
+					v1EndEdgeDistB = xy1DistToXy2;
+					v2StartEdgeDistT = xy2DistToXy3;
+					v2EndEdgeDistT = zeroVal;
+					v2StartEdgeDistB = xy2DistToXy3;
+					v2EndEdgeDistB = xy1DistToXy2;
+					v3StartEdgeDistT = xy2DistToXy3;
+					v3EndEdgeDistT = xy1DistToXy3;
+					v3StartEdgeDistB = xy2DistToXy3;
+					v3EndEdgeDistB = zeroVal;
 				}
 				else
 				{
-					x1StartEdgeDistT = xy1DistToXy3;
-					x1StartEdgeDistB = xy1DistToXy2;
-					x2StartEdgeDistB = xy1DistToXy2;
-					x3StartEdgeDistT = xy1DistToXy3;
-					x3StartEdgeDistB = zeroVal;
-					x3EndEdgeDistB = xy2DistToXy3;
+					v1StartEdgeDistT = xy1DistToXy3;
+					v1StartEdgeDistB = xy1DistToXy2;
+					v2StartEdgeDistT = zeroVal;
+					v2StartEdgeDistB = xy1DistToXy2;
+					v3StartEdgeDistT = xy1DistToXy3;
+					v3StartEdgeDistB = zeroVal;
+					v3EndEdgeDistB = xy2DistToXy3;
 				}
 			}
 			else if ( needsSwapping )
 			{
-				x1StartEdgeDistT = zeroVal;
-				x1EndEdgeDistT = xy1DistToXy2;
-				x1StartEdgeDistB = zeroVal;
-				x1EndEdgeDistB = xy1DistToXy3;
-				x2StartEdgeDistT = xy2DistToXy3;
-				x2EndEdgeDistT = xy1DistToXy2;
-				x2StartEdgeDistB = xy2DistToXy3;
-				x2EndEdgeDistB = zeroVal;
-				x3StartEdgeDistT = xy2DistToXy3;
-				x3EndEdgeDistT = zeroVal;
-				x3StartEdgeDistB = xy2DistToXy3;
-				x3EndEdgeDistB = xy1DistToXy3;
+				v1StartEdgeDistT = zeroVal;
+				v1EndEdgeDistT = xy1DistToXy2;
+				v1StartEdgeDistB = zeroVal;
+				v1EndEdgeDistB = xy1DistToXy3;
+				v2StartEdgeDistT = xy2DistToXy3;
+				v2EndEdgeDistT = xy1DistToXy2;
+				v2StartEdgeDistB = xy2DistToXy3;
+				v2EndEdgeDistB = zeroVal;
+				v3StartEdgeDistT = xy2DistToXy3;
+				v3EndEdgeDistT = zeroVal;
+				v3StartEdgeDistB = xy2DistToXy3;
+				v3EndEdgeDistB = xy1DistToXy3;
 			}
 		}
 		else if ( y3Int < y2Int )
 		{
 			if ( needsSwapping )
 			{
-				x1StartEdgeDistT = zeroVal;
-				x1EndEdgeDistT = xy1DistToXy3;
-				x1StartEdgeDistB = zeroVal;
-				x1EndEdgeDistB = xy1DistToXy2;
-				x2StartEdgeDistT = xy2DistToXy3;
-				x2EndEdgeDistT = zeroVal;
-				x2StartEdgeDistB = xy2DistToXy3;
-				x2EndEdgeDistB = xy1DistToXy2;
-				x3StartEdgeDistT = xy2DistToXy3;
-				x3EndEdgeDistT = xy1DistToXy3;
-				x3StartEdgeDistB = xy2DistToXy3;
-				x3EndEdgeDistB = zeroVal;
+				v1StartEdgeDistT = zeroVal;
+				v1EndEdgeDistT = xy1DistToXy3;
+				v1StartEdgeDistB = zeroVal;
+				v1EndEdgeDistB = xy1DistToXy2;
+				v2StartEdgeDistT = xy2DistToXy3;
+				v2EndEdgeDistT = zeroVal;
+				v2StartEdgeDistB = xy2DistToXy3;
+				v2EndEdgeDistB = xy1DistToXy2;
+				v3StartEdgeDistT = xy2DistToXy3;
+				v3EndEdgeDistT = xy1DistToXy3;
+				v3StartEdgeDistB = xy2DistToXy3;
+				v3EndEdgeDistB = zeroVal;
 			}
 			else
 			{
-				x1StartEdgeDistT = xy1DistToXy3;
-				x1StartEdgeDistB = xy1DistToXy2;
-				x2StartEdgeDistB = xy1DistToXy2;
-				x3StartEdgeDistT = xy1DistToXy3;
-				x3StartEdgeDistB = zeroVal;
+				v1StartEdgeDistT = xy1DistToXy3;
+				v1StartEdgeDistB = xy1DistToXy2;
+				v2StartEdgeDistT = zeroVal;
+				v2StartEdgeDistB = xy1DistToXy2;
+				v3StartEdgeDistT = xy1DistToXy3;
+				v3StartEdgeDistB = zeroVal;
 			}
 		}
 		else if ( needsSwapping )
 		{
-			x1StartEdgeDistT = zeroVal;
-			x1EndEdgeDistT = xy1DistToXy2;
-			x2StartEdgeDistT = xy2DistToXy3;
-			x2EndEdgeDistT = xy1DistToXy2;
-			x3StartEdgeDistT = xy2DistToXy3;
-			x3EndEdgeDistT = zeroVal;
-			x1StartEdgeDistB = zeroVal;
-			x1EndEdgeDistB = xy1DistToXy3;
-			x2StartEdgeDistB = xy2DistToXy3;
-			x2EndEdgeDistB = zeroVal;
-			x3StartEdgeDistB = xy2DistToXy3;
-			x3EndEdgeDistB = xy1DistToXy3;
+			v1StartEdgeDistT = zeroVal;
+			v1EndEdgeDistT = xy1DistToXy2;
+			v2StartEdgeDistT = xy2DistToXy3;
+			v2EndEdgeDistT = xy1DistToXy2;
+			v3StartEdgeDistT = xy2DistToXy3;
+			v3EndEdgeDistT = zeroVal;
+			v1StartEdgeDistB = zeroVal;
+			v1EndEdgeDistB = xy1DistToXy3;
+			v2StartEdgeDistB = xy2DistToXy3;
+			v2EndEdgeDistB = zeroVal;
+			v3StartEdgeDistB = xy2DistToXy3;
+			v3EndEdgeDistB = xy1DistToXy3;
 		}
 	}
 	else if ( y1UInt == y3Sorted ) // xy1 is on the bottom
 	{
 		// first assuming that xy2 is above and to the left of xy3
-		x1EndEdgeDistT = xy1DistToXy2;
-		x1StartEdgeDistB = xy1DistToXy3;
-		x1EndEdgeDistB = xy1DistToXy2;
-		x2StartEdgeDistT = xy2DistToXy3;
-		x2EndEdgeDistT = xy1DistToXy2;
-		x2EndEdgeDistB = xy1DistToXy2;
-		x3StartEdgeDistT = xy2DistToXy3;
-		x3StartEdgeDistB = xy1DistToXy3;
+		v1EndEdgeDistT = xy1DistToXy2;
+		v1StartEdgeDistB = xy1DistToXy3;
+		v1EndEdgeDistB = xy1DistToXy2;
+		v2StartEdgeDistT = xy2DistToXy3;
+		v2EndEdgeDistT = xy1DistToXy2;
+		v2EndEdgeDistB = xy1DistToXy2;
+		v3StartEdgeDistT = xy2DistToXy3;
+		v3StartEdgeDistB = xy1DistToXy3;
 
 		if ( x3Int < x2Int )
 		{
@@ -734,81 +784,81 @@ static inline void calcTriGradients( float& x1StartEdgeDistT, float& x1EndEdgeDi
 			{
 				if ( needsSwapping )
 				{
-					x1StartEdgeDistT = xy1DistToXy3;
-					x1EndEdgeDistT = zeroVal;
-					x2StartEdgeDistT = zeroVal;
-					x2EndEdgeDistT = xy2DistToXy3;
-					x2StartEdgeDistB = zeroVal;
-					x3StartEdgeDistT = xy1DistToXy3;
-					x3EndEdgeDistT = xy2DistToXy3;
-					x3EndEdgeDistB = zeroVal;
+					v1StartEdgeDistT = xy1DistToXy3;
+					v1EndEdgeDistT = zeroVal;
+					v2StartEdgeDistT = zeroVal;
+					v2EndEdgeDistT = xy2DistToXy3;
+					v2StartEdgeDistB = zeroVal;
+					v3StartEdgeDistT = xy1DistToXy3;
+					v3EndEdgeDistT = xy2DistToXy3;
+					v3EndEdgeDistB = zeroVal;
 				}
 				else
 				{
-					x1EndEdgeDistT = xy1DistToXy3;
-					x1StartEdgeDistB = xy1DistToXy2;
-					x1EndEdgeDistB = xy1DistToXy3;
-					x2EndEdgeDistT = zeroVal;
-					x2StartEdgeDistB = xy1DistToXy2;
-					x2EndEdgeDistB = zeroVal;
-					x3EndEdgeDistT = xy1DistToXy3;
-					x3StartEdgeDistB = zeroVal;
-					x3EndEdgeDistB = xy1DistToXy3;
+					v1EndEdgeDistT = xy1DistToXy3;
+					v1StartEdgeDistB = xy1DistToXy2;
+					v1EndEdgeDistB = xy1DistToXy3;
+					v2EndEdgeDistT = zeroVal;
+					v2StartEdgeDistB = xy1DistToXy2;
+					v2EndEdgeDistB = zeroVal;
+					v3EndEdgeDistT = xy1DistToXy3;
+					v3StartEdgeDistB = zeroVal;
+					v3EndEdgeDistB = xy1DistToXy3;
 				}
 			}
 			else if ( needsSwapping )
 			{
-				x1StartEdgeDistT = xy1DistToXy2;
-				x1EndEdgeDistT = zeroVal;
-				x1StartEdgeDistB = xy1DistToXy2;
-				x1EndEdgeDistB = xy1DistToXy3;
-				x2StartEdgeDistT = xy1DistToXy2;
-				x2EndEdgeDistT = xy2DistToXy3;
-				x2StartEdgeDistB = xy1DistToXy2;
-				x2EndEdgeDistB = zeroVal;
-				x3StartEdgeDistT = zeroVal;
-				x3EndEdgeDistT = xy2DistToXy3;
-				x3StartEdgeDistB = zeroVal;
-				x3EndEdgeDistB = xy1DistToXy3;
+				v1StartEdgeDistT = xy1DistToXy2;
+				v1EndEdgeDistT = zeroVal;
+				v1StartEdgeDistB = xy1DistToXy2;
+				v1EndEdgeDistB = xy1DistToXy3;
+				v2StartEdgeDistT = xy1DistToXy2;
+				v2EndEdgeDistT = xy2DistToXy3;
+				v2StartEdgeDistB = xy1DistToXy2;
+				v2EndEdgeDistB = zeroVal;
+				v3StartEdgeDistT = zeroVal;
+				v3EndEdgeDistT = xy2DistToXy3;
+				v3StartEdgeDistB = zeroVal;
+				v3EndEdgeDistB = xy1DistToXy3;
 			}
 		}
 		else if ( y3Int < y2Int )
 		{
 			if ( needsSwapping )
 			{
-				x1StartEdgeDistT = xy1DistToXy3;
-				x1EndEdgeDistT = zeroVal;
-				x2StartEdgeDistT = zeroVal;
-				x2EndEdgeDistT = xy2DistToXy3;
-				x3StartEdgeDistT = xy1DistToXy3;
-				x3EndEdgeDistT = xy2DistToXy3;
-				x3StartEdgeDistB = xy1DistToXy3;
-				x3EndEdgeDistB = zeroVal;
+				v1StartEdgeDistT = xy1DistToXy3;
+				v1EndEdgeDistT = zeroVal;
+				v2StartEdgeDistT = zeroVal;
+				v2EndEdgeDistT = xy2DistToXy3;
+				v3StartEdgeDistT = xy1DistToXy3;
+				v3EndEdgeDistT = xy2DistToXy3;
+				v3StartEdgeDistB = xy1DistToXy3;
+				v3EndEdgeDistB = zeroVal;
 			}
 			else
 			{
-				x2EndEdgeDistT = zeroVal;
-				x2StartEdgeDistB = xy1DistToXy2;
-				x2EndEdgeDistB = zeroVal;
-				x3EndEdgeDistT = xy1DistToXy3;
-				x3StartEdgeDistB = zeroVal;
-				x3EndEdgeDistB = xy1DistToXy3;
+				v2EndEdgeDistT = zeroVal;
+				v2StartEdgeDistB = xy1DistToXy2;
+				v2EndEdgeDistB = zeroVal;
+				v3EndEdgeDistT = xy1DistToXy3;
+				v3StartEdgeDistB = zeroVal;
+				v3EndEdgeDistB = xy1DistToXy3;
 			}
 		}
 		else if ( needsSwapping )
 		{
-			x1StartEdgeDistT = xy1DistToXy2;
-			x1EndEdgeDistT = zeroVal;
-			x1StartEdgeDistB = xy1DistToXy2;
-			x1EndEdgeDistB = xy1DistToXy3;
-			x2StartEdgeDistT = xy1DistToXy2;
-			x2EndEdgeDistT = xy2DistToXy3;
-			x2StartEdgeDistB = xy1DistToXy2;
-			x2EndEdgeDistB = zeroVal;
-			x3StartEdgeDistT = zeroVal;
-			x3EndEdgeDistT = xy2DistToXy3;
-			x3StartEdgeDistB = zeroVal;
-			x3EndEdgeDistB = xy1DistToXy3;
+			v1StartEdgeDistT = xy1DistToXy2;
+			v1EndEdgeDistT = zeroVal;
+			v1StartEdgeDistB = xy1DistToXy2;
+			v1EndEdgeDistB = xy1DistToXy3;
+			v2StartEdgeDistT = xy1DistToXy2;
+			v2EndEdgeDistT = xy2DistToXy3;
+			v2StartEdgeDistB = xy1DistToXy2;
+			v2EndEdgeDistB = zeroVal;
+			v3StartEdgeDistT = zeroVal;
+			v3EndEdgeDistT = xy2DistToXy3;
+			v3StartEdgeDistB = zeroVal;
+			v3EndEdgeDistB = xy1DistToXy3;
 		}
 	}
 }
@@ -824,7 +874,7 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 	// put through the vertex shader first
 	this->vertexShader( face );
 
-	// first determine if this triangle needs to be rendered
+	// first determine if this triangle needs to be rendered (back face culling)
 	face.calcNormals();
 	const Vector<4>& vertexVec = face.vertices[0].vec;
 	const Vector<4>& normal = face.normal;
@@ -867,10 +917,17 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 	float y2FSorted = y2;
 	float x3FSorted = x3;
 	float y3FSorted = y3;
+	float texCoordX1 = face.vertices[0].texCoords.x();
+	float texCoordY1 = face.vertices[0].texCoords.y();
+	float texCoordX2 = face.vertices[1].texCoords.x();
+	float texCoordY2 = face.vertices[1].texCoords.y();
+	float texCoordX3 = face.vertices[2].texCoords.x();
+	float texCoordY3 = face.vertices[2].texCoords.y();
 
 	// sorting vertices
 	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, x2Sorted, y2Sorted, x2FSorted, y2FSorted,
-						x3Sorted, y3Sorted, x3FSorted, y3FSorted );
+						x3Sorted, y3Sorted, x3FSorted, y3FSorted, texCoordX1,
+						texCoordY1, texCoordX2, texCoordY2, texCoordX3, texCoordY3 );
 
 	// getting the slope of each line
 	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
@@ -921,21 +978,21 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 	float xy2DistToXy3 = this->distance(x2InRelationToX1, y2InRelationToY1, x3InRelationToX1, y3InRelationToY1);
 	// setting these values to std::numeric_limits<float>::min() will result in triGradNormalizedDist returning 0.0f
 	const float zeroVal = std::numeric_limits<float>::min();
-	float x1StartEdgeDistT = zeroVal; // T for rendering the top half of the triangle
-	float x2StartEdgeDistT = zeroVal;
-	float x3StartEdgeDistT = zeroVal;
-	float x1EndEdgeDistT = zeroVal;
-	float x2EndEdgeDistT = zeroVal;
-	float x3EndEdgeDistT = zeroVal;
-	float x1StartEdgeDistB = zeroVal; // B for rendering the bottom half of the triangle
-	float x2StartEdgeDistB = zeroVal;
-	float x3StartEdgeDistB = zeroVal;
-	float x1EndEdgeDistB = zeroVal;
-	float x2EndEdgeDistB = zeroVal;
-	float x3EndEdgeDistB = zeroVal;
+	float v1StartEdgeDistT = zeroVal; // T for rendering the top half of the triangle
+	float v2StartEdgeDistT = zeroVal;
+	float v3StartEdgeDistT = zeroVal;
+	float v1EndEdgeDistT = zeroVal;
+	float v2EndEdgeDistT = zeroVal;
+	float v3EndEdgeDistT = zeroVal;
+	float v1StartEdgeDistB = zeroVal; // B for rendering the bottom half of the triangle
+	float v2StartEdgeDistB = zeroVal;
+	float v3StartEdgeDistB = zeroVal;
+	float v1EndEdgeDistB = zeroVal;
+	float v2EndEdgeDistB = zeroVal;
+	float v3EndEdgeDistB = zeroVal;
 	// swap start and end values based on vertex positions
-	calcTriGradients( x1StartEdgeDistT, x1EndEdgeDistT, x1StartEdgeDistB, x1EndEdgeDistB, x2StartEdgeDistT, x2EndEdgeDistT,
-						x2StartEdgeDistB, x2EndEdgeDistB, x3StartEdgeDistT, x3EndEdgeDistT, x3StartEdgeDistB, x3EndEdgeDistB,
+	calcTriGradients( v1StartEdgeDistT, v1EndEdgeDistT, v1StartEdgeDistB, v1EndEdgeDistB, v2StartEdgeDistT, v2EndEdgeDistT,
+						v2StartEdgeDistB, v2EndEdgeDistB, v3StartEdgeDistT, v3EndEdgeDistT, v3StartEdgeDistB, v3EndEdgeDistB,
 						xy1DistToXy2, xy1DistToXy3, xy2DistToXy3, y1Int, y1Sorted, y2Sorted, y3Sorted, x1Int, x2Int,
 						x3Int, y2Int, y3Int, needsSwapping, zeroVal );
 
@@ -987,29 +1044,32 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 			float xy3DistToXLeft = this->distance(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
 			float xy3DistToXRight = this->distance(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1);
 			// compute the starting and ending color values for each scanline
-			float x1Start = triGradNormalizedDist(xy1DistToXLeft, x1StartEdgeDistT);
-			float x2Start = triGradNormalizedDist(xy2DistToXLeft, x2StartEdgeDistT);
-			float x3Start = triGradNormalizedDist(xy3DistToXLeft, x3StartEdgeDistT);
-			float x1End = triGradNormalizedDist(xy1DistToXRight, x1EndEdgeDistT);
-			float x2End = triGradNormalizedDist(xy2DistToXRight, x2EndEdgeDistT);
-			float x3End = triGradNormalizedDist(xy3DistToXRight, x3EndEdgeDistT);
+			float v1Start = triGradNormalizedDist(xy1DistToXLeft, v1StartEdgeDistT);
+			float v2Start = triGradNormalizedDist(xy2DistToXLeft, v2StartEdgeDistT);
+			float v3Start = triGradNormalizedDist(xy3DistToXLeft, v3StartEdgeDistT);
+			float v1End = triGradNormalizedDist(xy1DistToXRight, v1EndEdgeDistT);
+			float v2End = triGradNormalizedDist(xy2DistToXRight, v2EndEdgeDistT);
+			float v3End = triGradNormalizedDist(xy3DistToXRight, v3EndEdgeDistT);
 			// linearly interpolate between the two values
-			float x1Incr = (x1End - x1Start) / (xRightAccumulator - xLeftAccumulator);
-			float x1Current = x1Start + ( x1Incr * std::abs(std::min(unclippedLeftX, 0)) );
-			float x2Incr = (x2End - x2Start) / (xRightAccumulator - xLeftAccumulator);
-			float x2Current = x2Start + ( x2Incr * std::abs(std::min(unclippedLeftX, 0)) );
-			float x3Incr = (x3End - x3Start) / (xRightAccumulator - xLeftAccumulator);
-			float x3Current = x3Start + ( x3Incr * std::abs(std::min(unclippedLeftX, 0)) );
+			float v1Incr = (v1End - v1Start) / (xRightAccumulator - xLeftAccumulator);
+			float v1Current = v1Start + ( v1Incr * std::abs(std::min(unclippedLeftX, 0)) );
+			float v2Incr = (v2End - v2Start) / (xRightAccumulator - xLeftAccumulator);
+			float v2Current = v2Start + ( v2Incr * std::abs(std::min(unclippedLeftX, 0)) );
+			float v3Incr = (v3End - v3Start) / (xRightAccumulator - xLeftAccumulator);
+			float v3Current = v3Start + ( v3Incr * std::abs(std::min(unclippedLeftX, 0)) );
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
-				this->fragmentShader( currentColor, face, x1Current, x2Current, x3Current );
+				float texCoordX = ( v1Current * texCoordX1 ) + ( v2Current * texCoordX2 ) + ( v3Current * texCoordX3 );
+				float texCoordY = ( v1Current * texCoordY1 ) + ( v2Current * texCoordY2 ) + ( v3Current * texCoordY3 );
+				this->fragmentShader( currentColor, face, m_CurrentTexture, v1Current, v2Current, v3Current, texCoordX,
+							texCoordY );
 				m_ColorProfile->setColor( currentColor );
 				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
-				x1Current += x1Incr;
-				x2Current += x2Incr;
-				x3Current += x3Incr;
+				v1Current += v1Incr;
+				v2Current += v2Incr;
+				v3Current += v3Incr;
 			}
 		}
 
@@ -1049,29 +1109,32 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				float xy3DistToXLeft = this->distance(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
 				float xy3DistToXRight = this->distance(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1);
 				// compute the starting and ending color values for each scanline
-				float x1Start = triGradNormalizedDist(xy1DistToXLeft, x1StartEdgeDistT);
-				float x2Start = triGradNormalizedDist(xy2DistToXLeft, x2StartEdgeDistT);
-				float x3Start = triGradNormalizedDist(xy3DistToXLeft, x3StartEdgeDistT);
-				float x1End = triGradNormalizedDist(xy1DistToXRight, x1EndEdgeDistT);
-				float x2End = triGradNormalizedDist(xy2DistToXRight, x2EndEdgeDistT);
-				float x3End = triGradNormalizedDist(xy3DistToXRight, x3EndEdgeDistT);
+				float v1Start = triGradNormalizedDist(xy1DistToXLeft, v1StartEdgeDistT);
+				float v2Start = triGradNormalizedDist(xy2DistToXLeft, v2StartEdgeDistT);
+				float v3Start = triGradNormalizedDist(xy3DistToXLeft, v3StartEdgeDistT);
+				float v1End = triGradNormalizedDist(xy1DistToXRight, v1EndEdgeDistT);
+				float v2End = triGradNormalizedDist(xy2DistToXRight, v2EndEdgeDistT);
+				float v3End = triGradNormalizedDist(xy3DistToXRight, v3EndEdgeDistT);
 				// linearly interpolate between the two values
-				float x1Incr = (x1End - x1Start) / (xRightAccumulator - xLeftAccumulator);
-				float x1Current = x1Start + ( x1Incr * std::abs(std::min(unclippedLeftX, 0)) );
-				float x2Incr = (x2End - x2Start) / (xRightAccumulator - xLeftAccumulator);
-				float x2Current = x2Start + ( x2Incr * std::abs(std::min(unclippedLeftX, 0)) );
-				float x3Incr = (x3End - x3Start) / (xRightAccumulator - xLeftAccumulator);
-				float x3Current = x3Start + ( x3Incr * std::abs(std::min(unclippedLeftX, 0)) );
+				float v1Incr = (v1End - v1Start) / (xRightAccumulator - xLeftAccumulator);
+				float v1Current = v1Start + ( v1Incr * std::abs(std::min(unclippedLeftX, 0)) );
+				float v2Incr = (v2End - v2Start) / (xRightAccumulator - xLeftAccumulator);
+				float v2Current = v2Start + ( v2Incr * std::abs(std::min(unclippedLeftX, 0)) );
+				float v3Incr = (v3End - v3Start) / (xRightAccumulator - xLeftAccumulator);
+				float v3Current = v3Start + ( v3Incr * std::abs(std::min(unclippedLeftX, 0)) );
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					this->fragmentShader( currentColor, face, x1Current, x2Current, x3Current );
+					float texCoordX = ( v1Current * texCoordX1 ) + ( v2Current * texCoordX2 ) + ( v3Current * texCoordX3 );
+					float texCoordY = ( v1Current * texCoordY1 ) + ( v2Current * texCoordY2 ) + ( v3Current * texCoordY3 );
+					this->fragmentShader( currentColor, face, m_CurrentTexture, v1Current, v2Current, v3Current, texCoordX,
+								texCoordY );
 					m_ColorProfile->setColor( currentColor );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
-					x1Current += x1Incr;
-					x2Current += x2Incr;
-					x3Current += x3Incr;
+					v1Current += v1Incr;
+					v2Current += v2Incr;
+					v3Current += v3Incr;
 				}
 
 				// increment accumulators
@@ -1151,29 +1214,32 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				float xy3DistToXLeft = this->distance(x3InRelationToX1, y3InRelationToY1, xLeftInRelationToX1, yInRelationToY1);
 				float xy3DistToXRight = this->distance(x3InRelationToX1, y3InRelationToY1, xRightInRelationToX1, yInRelationToY1);
 				// compute the starting and ending color values for each scanline
-				float x1Start = triGradNormalizedDist(xy1DistToXLeft, x1StartEdgeDistB);
-				float x2Start = triGradNormalizedDist(xy2DistToXLeft, x2StartEdgeDistB);
-				float x3Start = triGradNormalizedDist(xy3DistToXLeft, x3StartEdgeDistB);
-				float x1End = triGradNormalizedDist(xy1DistToXRight, x1EndEdgeDistB);
-				float x2End = triGradNormalizedDist(xy2DistToXRight, x2EndEdgeDistB);
-				float x3End = triGradNormalizedDist(xy3DistToXRight, x3EndEdgeDistB);
+				float v1Start = triGradNormalizedDist(xy1DistToXLeft, v1StartEdgeDistB);
+				float v2Start = triGradNormalizedDist(xy2DistToXLeft, v2StartEdgeDistB);
+				float v3Start = triGradNormalizedDist(xy3DistToXLeft, v3StartEdgeDistB);
+				float v1End = triGradNormalizedDist(xy1DistToXRight, v1EndEdgeDistB);
+				float v2End = triGradNormalizedDist(xy2DistToXRight, v2EndEdgeDistB);
+				float v3End = triGradNormalizedDist(xy3DistToXRight, v3EndEdgeDistB);
 				// linearly interpolate between the two values
-				float x1Incr = (x1End - x1Start) / (xRightAccumulator - xLeftAccumulator);
-				float x1Current = x1Start + ( x1Incr * std::abs(std::min(unclippedLeftX, 0)) );
-				float x2Incr = (x2End - x2Start) / (xRightAccumulator - xLeftAccumulator);
-				float x2Current = x2Start + ( x2Incr * std::abs(std::min(unclippedLeftX, 0)) );
-				float x3Incr = (x3End - x3Start) / (xRightAccumulator - xLeftAccumulator);
-				float x3Current = x3Start + ( x3Incr * std::abs(std::min(unclippedLeftX, 0)) );
+				float v1Incr = (v1End - v1Start) / (xRightAccumulator - xLeftAccumulator);
+				float v1Current = v1Start + ( v1Incr * std::abs(std::min(unclippedLeftX, 0)) );
+				float v2Incr = (v2End - v2Start) / (xRightAccumulator - xLeftAccumulator);
+				float v2Current = v2Start + ( v2Incr * std::abs(std::min(unclippedLeftX, 0)) );
+				float v3Incr = (v3End - v3Start) / (xRightAccumulator - xLeftAccumulator);
+				float v3Current = v3Start + ( v3Incr * std::abs(std::min(unclippedLeftX, 0)) );
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					this->fragmentShader( currentColor, face, x1Current, x2Current, x3Current );
+					float texCoordX = ( v1Current * texCoordX1 ) + ( v2Current * texCoordX2 ) + ( v3Current * texCoordX3 );
+					float texCoordY = ( v1Current * texCoordY1 ) + ( v2Current * texCoordY2 ) + ( v3Current * texCoordY3 );
+					this->fragmentShader( currentColor, face, m_CurrentTexture, v1Current, v2Current, v3Current, texCoordX,
+								texCoordY );
 					m_ColorProfile->setColor( currentColor );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
-					x1Current += x1Incr;
-					x2Current += x2Incr;
-					x3Current += x3Incr;
+					v1Current += v1Incr;
+					v2Current += v2Incr;
+					v3Current += v3Incr;
 				}
 
 				// increment accumulators
@@ -1627,267 +1693,17 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 	}
 }
 
-bool SoftwareGraphics::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
+void SoftwareGraphics::testTexture (Texture& texture)
 {
-	// cache points
-	float xStartClipped = *xStart;
-	float yStartClipped = *yStart;
-	float xEndClipped   = *xEnd;
-	float yEndClipped   = *yEnd;
+	const unsigned int height = texture.getHeight();
+	const unsigned int width = texture.getWidth();
 
-	// regions
-	const unsigned int INSIDE = 0b0000;
-	const unsigned int LEFT   = 0b0001;
-	const unsigned int RIGHT  = 0b0010;
-	const unsigned int BOTTOM = 0b0100;
-	const unsigned int TOP    = 0b1000;
-
-	// initialize point regions as being inside screen rect
-	unsigned int point1Region = INSIDE;
-	unsigned int point2Region = INSIDE;
-
-	// determine regions of point 1
-	if (xStartClipped < 0.0f)
+	for ( unsigned int row = 0; row < height; row++ )
 	{
-		point1Region |= LEFT;
-	}
-	else if (xStartClipped > 1.0f)
-	{
-		point1Region |= RIGHT;
-	}
-	if (yStartClipped < 0.0f)
-	{
-		point1Region |= TOP;
-	}
-	else if (yStartClipped > 1.0f)
-	{
-		point1Region |= BOTTOM;
-	}
-
-	// determine regions of point 2
-	if (xEndClipped < 0.0f)
-	{
-		point2Region |= LEFT;
-	}
-	else if (xEndClipped > 1.0f)
-	{
-		point2Region |= RIGHT;
-	}
-	if (yEndClipped < 0.0f)
-	{
-		point2Region |= TOP;
-	}
-	else if (yEndClipped > 1.0f)
-	{
-		point2Region |= BOTTOM;
-	}
-
-	if ( (point1Region == INSIDE) && (point2Region == INSIDE) ) // if both points exist inside the screen rect
-	{
-		return true;
-	}
-	else if ( point1Region & point2Region ) // if both points exist outside the screen rect in the same region
-	{
-		return false;
-	}
-	else // if at least one point exists outside of the screen rect and points exist in different regions
-	{
-		float tempX1 = xStartClipped;
-		float tempY1 = yStartClipped;
-		float tempX2 = xEndClipped;
-		float tempY2 = yEndClipped;
-
-		if (point1Region != INSIDE)
+		for ( unsigned int column = 0; column < width; column++ )
 		{
-			// clip point1 based on region
-			if (point1Region & TOP)
-			{
-				if (point1Region & RIGHT)
-				{
-					tempX1 = 1.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
-						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-					if (tempY1 < 0.0f) // if the line is still outside, clip again
-					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
-							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY1 = 0.0f;
-					}
-				}
-				else if (point1Region & LEFT)
-				{
-					tempX1 = 0.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
-						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
-					if (tempY1 < 0.0f) // if the line is still outside, clip again
-					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
-							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY1 = 0.0f;
-					}
-				}
-				else
-				{
-					tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
-						(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
-					tempY1 = 0.0f;
-				}
-			}
-			else if (point1Region & BOTTOM)
-			{
-				if (point1Region & RIGHT)
-				{
-					tempX1 = 1.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
-						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-					if (tempY1 > 1.0f) // if the line is still outside, clip again
-					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
-							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY1 = 1.0f;
-					}
-				}
-				else if (point1Region & LEFT)
-				{
-					tempX1 = 0.0f;
-					tempY1 = yStartClipped + (yEndClipped - yStartClipped) *
-						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-					if (tempY1 > 1.0f) // if the line is still outside, clip again
-					{
-						tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
-							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY1 = 1.0f;
-					}
-				}
-				else
-				{
-					tempX1 = xStartClipped + (xEndClipped - xStartClipped) *
-						(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
-					tempY1 = 1.0f;
-				}
-			}
-			else if (point1Region & RIGHT)
-			{
-				tempY1 = yStartClipped + (yEndClipped - yStartClipped) * (1.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-				tempX1 = 1.0f;
-			}
-			else if (point1Region & LEFT)
-			{
-				tempY1 = yStartClipped + (yEndClipped - yStartClipped) * (0.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-				tempX1 = 0.0f;
-			}
+			m_ColorProfile->setColor( texture.getColorProfile()->getPixel(texture.getPixels(), width * height, (row * width) + column) );
+			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, (row * m_FBWidth) + column );
 		}
-
-		if (point2Region != INSIDE)
-		{
-			// clip point2 based on region
-			if (point2Region & TOP)
-			{
-				if (point2Region & RIGHT)
-				{
-					tempX2 = 1.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
-						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-					if (tempY2 < 0.0f) // if the line is still outside, clip again
-					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
-							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY2 = 0.0f;
-					}
-				}
-				else if (point2Region & LEFT)
-				{
-					tempX2 = 0.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
-						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
-					if (tempY2 < 0.0f) // if the line is still outside, clip again
-					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
-							(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY2 = 0.0f;
-					}
-				}
-				else
-				{
-					tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
-						(0.0f - yStartClipped) / (yEndClipped - yStartClipped);
-					tempY2 = 0.0f;
-				}
-			}
-			else if (point2Region & BOTTOM)
-			{
-				if (point2Region & RIGHT)
-				{
-					tempX2 = 1.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
-						(1.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-					if (tempY2 > 1.0f) // if the line is still outside, clip again
-					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
-							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY2 = 1.0f;
-					}
-				}
-				else if (point2Region & LEFT)
-				{
-					tempX2 = 0.0f;
-					tempY2 = yStartClipped + (yEndClipped - yStartClipped) *
-						(0.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-					if (tempY2 > 1.0f) // if the line is still outside, clip again
-					{
-						tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
-							(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
-						tempY2 = 1.0f;
-					}
-				}
-				else
-				{
-					tempX2 = xStartClipped + (xEndClipped - xStartClipped) *
-						(1.0f - yStartClipped) / (yEndClipped - yStartClipped);
-					tempY2 = 1.0f;
-				}
-			}
-			else if (point2Region & RIGHT)
-			{
-				tempY2 = yStartClipped + (yEndClipped - yStartClipped) * (1.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-				tempX2 = 1.0f;
-			}
-			else if (point2Region & LEFT)
-			{
-				tempY2 = yStartClipped + (yEndClipped - yStartClipped) * (0.0f - xStartClipped) / (xEndClipped - xStartClipped);
-
-				tempX2 = 0.0f;
-			}
-		}
-
-		// if x1 is still negative or over one, the entire line is off screen
-		if (tempX1 < 0.0f || tempX1 > 1.0f) return false;
-
-		// if y1 is still negative or over one, the entire line is off screen
-		if (tempY1 < 0.0f || tempX1 > 1.0f) return false;
-
-		xStartClipped = tempX1;
-		yStartClipped = tempY1;
-		xEndClipped   = tempX2;
-		yEndClipped   = tempY2;
 	}
-
-	// replace original points with clipped points
-	*xStart = xStartClipped;
-	*yStart = yStartClipped;
-	*xEnd   = xEndClipped;
-	*yEnd   = yEndClipped;
-
-	return true;
 }
-
-

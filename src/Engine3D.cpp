@@ -31,28 +31,28 @@ Mesh createCubeMesh()
 	cube.faces =
 	{
 		// front face
-		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f})}} },
-		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f})}} },
+		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}} },
+		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 0.0f})}} },
 
-		// rig{ht face
-		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f})}} },
-		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f})}} },
+		// right face
+		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}} },
+		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 0.0f})}} },
 
-		// bac{k face
-		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f})}} },
-		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f})}} },
+		// back face
+		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}} },
+		Face{ {Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 0.0f})}} },
 
-		// lef{t face
-		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f})}} },
-		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f})}} },
+		// left face
+		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}} },
+		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 0.0f})}} },
 
-		// top{ face
-		Face{ {Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f})}} },
-		Face{ {Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f})}} },
+		// top face
+		Face{ {Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({0.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}} },
+		Face{ {Vertex{Vector<4>({0.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 1.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 0.0f})}} },
 
-		// bot{tom face
-		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f})}} },
-		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f})}} }
+		// bottom face
+		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({0.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({0.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}} },
+		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f}), Vector<2>({1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f}), Vector<2>({1.0f, 0.0f})}} }
 	};
 
 	return cube;

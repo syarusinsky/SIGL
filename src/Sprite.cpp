@@ -2,35 +2,6 @@
 
 #include <math.h>
 
-class FormatInitializer
-{
-	public:
-		FormatInitializer (uint8_t format)
-		{
-			if ( format == 0 )
-			{
-				m_Format = CP_FORMAT::RGB_24BIT;
-			}
-			else if ( format == 1 )
-			{
-				m_Format = CP_FORMAT::RGBA_32BIT;
-			}
-			else if ( format == 2 )
-			{
-				m_Format = CP_FORMAT::MONOCHROME_1BIT;
-			}
-			else
-			{
-				m_Format = CP_FORMAT::RGB_24BIT;
-			}
-		}
-
-		CP_FORMAT getFormat() { return m_Format; }
-
-	private:
-		CP_FORMAT m_Format;
-};
-
 Sprite::Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format) :
 	FrameBuffer( width, height, format ),
 	m_ScaleFactor( 1.0f ),
@@ -41,8 +12,8 @@ Sprite::Sprite (unsigned int width, unsigned int height, const CP_FORMAT& format
 }
 
 Sprite::Sprite (uint8_t* data) :
-	FrameBuffer( (data[1] << 3) | (data[2] << 2) | (data[3] << 1) | data[4],
-			(data[5] << 3) | (data[6] << 2) | (data[7] << 1) | data[8],
+	FrameBuffer( (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4],
+			(data[5] << 24) | (data[6] << 16) | (data[7] << 8) | data[8],
 			FormatInitializer( data[0] ).getFormat(),
 			&data[9] ),
 	m_ScaleFactor( 1.0f ),

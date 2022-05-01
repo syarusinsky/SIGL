@@ -10,6 +10,35 @@
 #include <stdint.h>
 #include "ColorProfile.hpp"
 
+class FormatInitializer
+{
+	public:
+		FormatInitializer (uint8_t format)
+		{
+			if ( format == 0 )
+			{
+				m_Format = CP_FORMAT::RGB_24BIT;
+			}
+			else if ( format == 1 )
+			{
+				m_Format = CP_FORMAT::RGBA_32BIT;
+			}
+			else if ( format == 2 )
+			{
+				m_Format = CP_FORMAT::MONOCHROME_1BIT;
+			}
+			else
+			{
+				m_Format = CP_FORMAT::RGB_24BIT;
+			}
+		}
+
+		CP_FORMAT getFormat() { return m_Format; }
+
+	private:
+		CP_FORMAT m_Format;
+};
+
 class FrameBuffer
 {
 	public:

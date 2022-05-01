@@ -20,13 +20,15 @@ class Vector : public Matrix<1, dimensions>
 		float& at (unsigned int pos);
 		float at (unsigned int pos) const;
 
-		// specifically for 3D or 4D vectors
+		// specifically for 2D, 3D, or 4D vectors
 		float& x();
 		float x() const;
 		float& y();
 		float y() const;
+		// specifically for 3D or 4D vectors
 		float& z();
 		float z() const;
+		// specifically for 4D vectors
 		float& w();
 		float w() const;
 
@@ -66,7 +68,7 @@ float Vector<dimensions>::at (unsigned int pos) const
 template <unsigned int dimensions>
 float& Vector<dimensions>::x()
 {
-	static_assert( dimensions == 3 || dimensions == 4, "Vector dimensions must be 3D or 4D to use x()." );
+	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use x()." );
 
 	return this->m_Vals[0][0];
 }
@@ -74,7 +76,7 @@ float& Vector<dimensions>::x()
 template <unsigned int dimensions>
 float Vector<dimensions>::x() const
 {
-	static_assert( dimensions == 3 || dimensions == 4, "Vector dimensions must be 3D or 4D to use x()." );
+	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use x()." );
 
 	return this->m_Vals[0][0];
 }
@@ -82,7 +84,7 @@ float Vector<dimensions>::x() const
 template <unsigned int dimensions>
 float& Vector<dimensions>::y()
 {
-	static_assert( dimensions == 3 || dimensions == 4, "Vector dimensions must be 3D or 4D to use y()." );
+	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use y()." );
 
 	return this->m_Vals[0][1];
 }
@@ -90,7 +92,7 @@ float& Vector<dimensions>::y()
 template <unsigned int dimensions>
 float Vector<dimensions>::y() const
 {
-	static_assert( dimensions == 3 || dimensions == 4, "Vector dimensions must be 3D or 4D to use y()." );
+	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use y()." );
 
 	return this->m_Vals[0][1];
 }
