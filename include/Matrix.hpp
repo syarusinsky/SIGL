@@ -32,7 +32,7 @@ class Matrix
 
 template <unsigned int rows, unsigned int columns>
 Matrix<rows, columns>::Matrix (float initVal) :
-	m_Vals{ initVal }
+	m_Vals{ {initVal} }
 {
 	static_assert( rows > 0 && columns > 0, "Matrices must have at least one row and at least one column" );
 }

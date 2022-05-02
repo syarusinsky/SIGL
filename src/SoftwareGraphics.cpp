@@ -217,9 +217,7 @@ void SoftwareGraphics::drawTriangle (float x1, float y1, float x2, float y2, flo
 
 static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSorted, float& y1FSorted,
 									int& x2Sorted, int& y2Sorted, float& x2FSorted, float& y2FSorted,
-									int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted,
-									float& texCoordX1, float& texCoordY1, float& texCoordX2,
-									float& texCoordY2, float& texCoordX3, float& texCoordY3)
+									int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted )
 {
 	// first sort by y values
 	if (y2Sorted > y3Sorted)
@@ -228,8 +226,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float texCoordXTemp = texCoordX2;
-		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -238,10 +234,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		// texCoordX2 = texCoordX3;
-		// texCoordY2 = texCoordY3;
-		// texCoordX3 = texCoordXTemp;
-		// texCoordY3 = texCoordYTemp;
 	}
 	if (y1Sorted > y2Sorted)
 	{
@@ -249,8 +241,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y1Sorted;
 		float xFTemp = x1FSorted;
 		float yFTemp = y1FSorted;
-		float texCoordXTemp = texCoordX1;
-		float texCoordYTemp = texCoordY1;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xTemp;
@@ -259,10 +249,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y1FSorted = y2FSorted;
 		x2FSorted = xFTemp;
 		y2FSorted = yFTemp;
-		// texCoordX1 = texCoordX2;
-		// texCoordY1 = texCoordY2;
-		// texCoordX2 = texCoordXTemp;
-		// texCoordY2 = texCoordYTemp;
 	}
 	if (y2Sorted > y3Sorted)
 	{
@@ -270,8 +256,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float texCoordXTemp = texCoordX2;
-		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -280,10 +264,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		// texCoordX2 = texCoordX3;
-		// texCoordY2 = texCoordY3;
-		// texCoordX3 = texCoordXTemp;
-		// texCoordY3 = texCoordYTemp;
 	}
 
 	// then sort by x values
@@ -293,8 +273,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float texCoordXTemp = texCoordX2;
-		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -303,10 +281,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		// texCoordX2 = texCoordX3;
-		// texCoordY2 = texCoordY3;
-		// texCoordX3 = texCoordXTemp;
-		// texCoordY3 = texCoordYTemp;
 	}
 	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
 	{
@@ -314,8 +288,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y1Sorted;
 		float xFTemp = x1FSorted;
 		float yFTemp = y1FSorted;
-		float texCoordXTemp = texCoordX1;
-		float texCoordYTemp = texCoordY1;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xTemp;
@@ -324,10 +296,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y1FSorted = y2FSorted;
 		x2FSorted = xFTemp;
 		y2FSorted = yFTemp;
-		// texCoordX1 = texCoordX2;
-		// texCoordY1 = texCoordY2;
-		// texCoordX2 = texCoordXTemp;
-		// texCoordY2 = texCoordYTemp;
 	}
 	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
 	{
@@ -335,8 +303,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		int yTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float texCoordXTemp = texCoordX2;
-		float texCoordYTemp = texCoordY2;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -345,10 +311,6 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		// texCoordX2 = texCoordX3;
-		// texCoordY2 = texCoordY3;
-		// texCoordX3 = texCoordXTemp;
-		// texCoordY3 = texCoordYTemp;
 	}
 }
 
@@ -374,17 +336,10 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 	float y2FSorted = y2;
 	float x3FSorted = x3;
 	float y3FSorted = y3;
-	float texCoordX1 = 0.0f;
-	float texCoordY1 = 0.0f;
-	float texCoordX2 = 0.0f;
-	float texCoordY2 = 0.0f;
-	float texCoordX3 = 0.0f;
-	float texCoordY3 = 0.0f;
 
 	// sorting vertices
 	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, x2Sorted, y2Sorted, x2FSorted, y2FSorted,
-						x3Sorted, y3Sorted, x3FSorted, y3FSorted, texCoordX1,
-						texCoordY1, texCoordX2, texCoordY2, texCoordX3, texCoordY3 );
+				x3Sorted, y3Sorted, x3FSorted, y3FSorted );
 
 	// getting the slope of each line
 	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
@@ -926,8 +881,7 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 
 	// sorting vertices
 	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, x2Sorted, y2Sorted, x2FSorted, y2FSorted,
-						x3Sorted, y3Sorted, x3FSorted, y3FSorted, texCoordX1,
-						texCoordY1, texCoordX2, texCoordY2, texCoordX3, texCoordY3 );
+						x3Sorted, y3Sorted, x3FSorted, y3FSorted );
 
 	// getting the slope of each line
 	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
@@ -990,6 +944,9 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 	float v1EndEdgeDistB = zeroVal;
 	float v2EndEdgeDistB = zeroVal;
 	float v3EndEdgeDistB = zeroVal;
+	float v1PerspMul = 1.0f / face.vertices[0].vec.w();
+	float v2PerspMul = 1.0f / face.vertices[1].vec.w();
+	float v3PerspMul = 1.0f / face.vertices[2].vec.w();
 	// swap start and end values based on vertex positions
 	calcTriGradients( v1StartEdgeDistT, v1EndEdgeDistT, v1StartEdgeDistB, v1EndEdgeDistB, v2StartEdgeDistT, v2EndEdgeDistT,
 						v2StartEdgeDistB, v2EndEdgeDistB, v3StartEdgeDistT, v3EndEdgeDistT, v3StartEdgeDistB, v3EndEdgeDistB,
@@ -1060,9 +1017,15 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
-				float texCoordX = ( v1Current * texCoordX1 ) + ( v2Current * texCoordX2 ) + ( v3Current * texCoordX3 );
-				float texCoordY = ( v1Current * texCoordY1 ) + ( v2Current * texCoordY2 ) + ( v3Current * texCoordY3 );
-				this->fragmentShader( currentColor, face, m_CurrentTexture, v1Current, v2Current, v3Current, texCoordX,
+				float perspInterp = ( v1Current * v1PerspMul ) + ( v2Current * v2PerspMul ) + ( v3Current * v3PerspMul );
+				perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping
+				perspInterp = 1.0f / perspInterp;
+				float v1CurPersp = v1Current * ( v1PerspMul * perspInterp );
+				float v2CurPersp = v2Current * ( v2PerspMul * perspInterp );
+				float v3CurPersp = v3Current * ( v3PerspMul * perspInterp );
+				float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
+				float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
+				this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
 							texCoordY );
 				m_ColorProfile->setColor( currentColor );
 				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
@@ -1125,9 +1088,15 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					float texCoordX = ( v1Current * texCoordX1 ) + ( v2Current * texCoordX2 ) + ( v3Current * texCoordX3 );
-					float texCoordY = ( v1Current * texCoordY1 ) + ( v2Current * texCoordY2 ) + ( v3Current * texCoordY3 );
-					this->fragmentShader( currentColor, face, m_CurrentTexture, v1Current, v2Current, v3Current, texCoordX,
+					float perspInterp = ( v1Current * v1PerspMul ) + ( v2Current * v2PerspMul ) + ( v3Current * v3PerspMul );
+					perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping
+					perspInterp = 1.0f / perspInterp;
+					float v1CurPersp = v1Current * ( v1PerspMul * perspInterp );
+					float v2CurPersp = v2Current * ( v2PerspMul * perspInterp );
+					float v3CurPersp = v3Current * ( v3PerspMul * perspInterp );
+					float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
+					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
+					this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
 								texCoordY );
 					m_ColorProfile->setColor( currentColor );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
@@ -1230,9 +1199,15 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					float texCoordX = ( v1Current * texCoordX1 ) + ( v2Current * texCoordX2 ) + ( v3Current * texCoordX3 );
-					float texCoordY = ( v1Current * texCoordY1 ) + ( v2Current * texCoordY2 ) + ( v3Current * texCoordY3 );
-					this->fragmentShader( currentColor, face, m_CurrentTexture, v1Current, v2Current, v3Current, texCoordX,
+					float perspInterp = ( v1Current * v1PerspMul ) + ( v2Current * v2PerspMul ) + ( v3Current * v3PerspMul );
+					perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping
+					perspInterp = 1.0f / perspInterp;
+					float v1CurPersp = v1Current * ( v1PerspMul * perspInterp );
+					float v2CurPersp = v2Current * ( v2PerspMul * perspInterp );
+					float v3CurPersp = v3Current * ( v3PerspMul * perspInterp );
+					float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
+					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
+					this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
 								texCoordY );
 					m_ColorProfile->setColor( currentColor );
 					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
