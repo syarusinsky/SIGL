@@ -1018,7 +1018,7 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
 				float perspInterp = ( v1Current * v1PerspMul ) + ( v2Current * v2PerspMul ) + ( v3Current * v3PerspMul );
-				perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping
+				perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping (hacky)
 				perspInterp = 1.0f / perspInterp;
 				float v1CurPersp = v1Current * ( v1PerspMul * perspInterp );
 				float v2CurPersp = v2Current * ( v2PerspMul * perspInterp );
@@ -1089,7 +1089,7 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
 					float perspInterp = ( v1Current * v1PerspMul ) + ( v2Current * v2PerspMul ) + ( v3Current * v3PerspMul );
-					perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping
+					perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping (hacky)
 					perspInterp = 1.0f / perspInterp;
 					float v1CurPersp = v1Current * ( v1PerspMul * perspInterp );
 					float v2CurPersp = v2Current * ( v2PerspMul * perspInterp );
@@ -1200,7 +1200,7 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
 					float perspInterp = ( v1Current * v1PerspMul ) + ( v2Current * v2PerspMul ) + ( v3Current * v3PerspMul );
-					perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping
+					perspInterp += 1.0f - ( v1Current + v2Current + v3Current ); // offset to protect from warping (hacky)
 					perspInterp = 1.0f / perspInterp;
 					float v1CurPersp = v1Current * ( v1PerspMul * perspInterp );
 					float v2CurPersp = v2Current * ( v2PerspMul * perspInterp );
