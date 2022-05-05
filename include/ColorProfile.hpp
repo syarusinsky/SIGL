@@ -9,6 +9,8 @@
 **************************************************************************/
 
 #include <stdint.h>
+#include <array>
+#include <math.h>
 
 struct Color
 {
@@ -29,18 +31,168 @@ enum class CP_FORMAT
 	RGBA_32BIT
 };
 
-class SoftwareGraphics;
-
-class ColorProfile
+class ColorProfileCommon
 {
-	friend SoftwareGraphics;
-
 	public:
-		ColorProfile (const CP_FORMAT& format);
-		~ColorProfile();
+		ColorProfileCommon() :
+			m_RValue( 0 ),
+			m_GValue( 0 ),
+			m_BValue( 0 ),
+			m_AValue( 255 ),
+			m_MValue( false ) {}
 
-		void putPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigned int pixelNum);
-		Color getPixel (uint8_t* fbStart, unsigned int fbNumPixels, unsigned int pixelNum) const;
+	protected:
+		uint8_t m_RValue;
+		uint8_t m_GValue;
+		uint8_t m_BValue;
+		uint8_t m_AValue;
+		bool    m_MValue; // for monochrome
+};
+
+template <CP_FORMAT format>
+class ColorProfileMonochrome : ColorProfileCommon
+{
+	public:
+		template <unsigned int width, unsigned int height>
+		void putPixel (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+			unsigned int byteNum = std::floor( pixelNum / 8 );
+			unsigned int pixelIndex = 7 - (pixelNum % 8);
+			uint8_t bitmask = ( 1 << pixelIndex );
+			if ( m_MValue == true && m_AValue > 0 )
+			{
+				pixelArray[byteNum] = pixelArray[byteNum] | bitmask;
+			}
+			else if ( m_AValue > 0 )
+			{
+				pixelArray[byteNum] = pixelArray[byteNum] & ~(bitmask);
+			}
+		}
+
+		template <unsigned int width, unsigned int height>
+		Color getPixel (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelNum)
+		{
+			Color color;
+
+			color.m_IsMonochrome = true;
+
+			unsigned int byteNum = std::floor( pixelNum / 8 );
+			unsigned int pixelIndex = 7 - (pixelNum % 8);
+			uint8_t bitmask = ( 1 << pixelIndex );
+
+			uint8_t byte = pixelArray[byteNum];
+
+			if ( (byte & bitmask) >> pixelIndex )
+			{
+				color.m_M = true;
+				color.m_R = 1.0f;
+				color.m_G = 1.0f;
+				color.m_B = 1.0f;
+				color.m_A = 1.0f;
+			}
+			else
+			{
+				color.m_M = false;
+				color.m_R = 0.0f;
+				color.m_G = 0.0f;
+				color.m_B = 0.0f;
+				color.m_A = 0.0f;
+			}
+
+			color.m_HasAlpha = false;
+
+			return color;
+		}
+};
+
+template <CP_FORMAT format>
+class ColorProfileRGB : ColorProfileCommon
+{
+	public:
+
+		template <unsigned int width, unsigned int height>
+		void putPixel (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+
+			// TODO this needs to actually incorporate alpha blending
+			pixelArray[(pixelNum * 3) + 0] = m_RValue; // Red
+			pixelArray[(pixelNum * 3) + 1] = m_GValue; // Green
+			pixelArray[(pixelNum * 3) + 2] = m_BValue; // Blue
+		}
+
+		template <unsigned int width, unsigned int height>
+		Color getPixel (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
+		{
+			Color color;
+
+			color.m_IsMonochrome = false;
+
+			color.m_R = static_cast<float>( pixelArray[(pixelNum * 3 ) + 0]) * (1.0f / 255.0f);
+			color.m_G = static_cast<float>( pixelArray[(pixelNum * 3 ) + 1]) * (1.0f / 255.0f);
+			color.m_B = static_cast<float>( pixelArray[(pixelNum * 3 ) + 2]) * (1.0f / 255.0f);
+			color.m_A = 1.0f;
+			color.m_M = true;
+
+			color.m_HasAlpha = false;
+
+			return color;
+		}
+};
+
+template <CP_FORMAT format>
+class ColorProfileRGBA : ColorProfileCommon
+{
+	public:
+		template <unsigned int width, unsigned int height>
+		void putPixel (std::array<uint8_t, width * height * 4>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+
+			// TODO this needs to actually incorporate alpha blending
+			pixelArray[(pixelNum * 4) + 0] = m_RValue; // Red
+			pixelArray[(pixelNum * 4) + 1] = m_GValue; // Green
+			pixelArray[(pixelNum * 4) + 2] = m_BValue; // Blue
+			pixelArray[(pixelNum * 4) + 3] = m_AValue; // Alpha
+		}
+
+		template <unsigned int width, unsigned int height>
+		Color getPixel (std::array<uint8_t, width * height * 4>& pixelArray, unsigned int pixelNum)
+		{
+			Color color;
+
+			color.m_IsMonochrome = false;
+
+			color.m_R = static_cast<float>( pixelArray[(pixelNum * 4 ) + 0]) * (1.0f / 255.0f);
+			color.m_G = static_cast<float>( pixelArray[(pixelNum * 4 ) + 1]) * (1.0f / 255.0f);
+			color.m_B = static_cast<float>( pixelArray[(pixelNum * 4 ) + 2]) * (1.0f / 255.0f);
+			color.m_A = static_cast<float>( pixelArray[(pixelNum * 4 ) + 3]) * (1.0f / 255.0f);
+			color.m_M = true;
+
+			color.m_HasAlpha = true;
+
+			return color;
+		}
+};
+
+template <CP_FORMAT format>
+class ColorProfile : std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
+
+			typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
+			ColorProfileRGBA<format>>::type
+
+			>::type
+{
+	public:
+		ColorProfile();
+		~ColorProfile();
 
 		void setColor (float rValue, float gValue, float bValue);
 		void setColor (float rValue, float gValue, float bValue, float aValue);
@@ -48,16 +200,121 @@ class ColorProfile
 		void setColor (const Color& color);
 		Color getColor() const;
 
-		const CP_FORMAT getFormat() const;
-
-	private:
-		const CP_FORMAT m_Format;
-
-		uint8_t m_RValue;
-		uint8_t m_GValue;
-		uint8_t m_BValue;
-		uint8_t m_AValue;
-		bool    m_MValue; // for monochrome
+		CP_FORMAT getFormat() { return format; }
 };
+
+template <CP_FORMAT format>
+ColorProfile<format>::ColorProfile() :
+	std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
+
+	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
+	ColorProfileRGBA<format>>::type
+
+	>::type()
+{
+}
+
+template <CP_FORMAT format>
+ColorProfile<format>::~ColorProfile()
+{
+}
+
+template <CP_FORMAT format>
+void ColorProfile<format>::setColor (float rValue, float gValue, float bValue)
+{
+	if ( rValue > 1.0f ) rValue = 1.0f; if ( rValue < 0.0f ) rValue = 0.0f;
+	if ( gValue > 1.0f ) gValue = 1.0f; if ( gValue < 0.0f ) gValue = 0.0f;
+	if ( bValue > 1.0f ) bValue = 1.0f; if ( bValue < 0.0f ) bValue = 0.0f;
+
+	ColorProfileCommon::m_RValue = std::round( 255 * rValue );
+	ColorProfileCommon::m_GValue = std::round( 255 * gValue );
+	ColorProfileCommon::m_BValue = std::round( 255 * bValue );
+	ColorProfileCommon::m_AValue = 255;
+
+	if ( ColorProfileCommon::m_RValue > 0.0f || ColorProfileCommon::m_GValue > 0.0f || ColorProfileCommon::m_BValue > 0.0f )
+	{
+		ColorProfileCommon::m_MValue = true;
+	}
+	else
+	{
+		ColorProfileCommon::m_MValue = false;
+	}
+}
+
+template <CP_FORMAT format>
+void ColorProfile<format>::setColor (float rValue, float gValue, float bValue, float aValue)
+{
+	if ( rValue > 1.0f ) rValue = 1.0f; if ( rValue < 0.0f ) rValue = 0.0f;
+	if ( gValue > 1.0f ) gValue = 1.0f; if ( gValue < 0.0f ) gValue = 0.0f;
+	if ( bValue > 1.0f ) bValue = 1.0f; if ( bValue < 0.0f ) bValue = 0.0f;
+	if ( aValue > 1.0f ) aValue = 1.0f; if ( aValue < 0.0f ) aValue = 0.0f;
+
+	ColorProfileCommon::m_RValue = std::round( 255 * rValue );
+	ColorProfileCommon::m_GValue = std::round( 255 * gValue );
+	ColorProfileCommon::m_BValue = std::round( 255 * bValue );
+	ColorProfileCommon::m_AValue = std::round( 255 * aValue );
+
+	if ( ColorProfileCommon::m_RValue > 0.0f || ColorProfileCommon::m_GValue > 0.0f || ColorProfileCommon::m_BValue > 0.0f )
+	{
+		ColorProfileCommon::m_MValue = true;
+	}
+	else
+	{
+		ColorProfileCommon::m_MValue = false;
+	}
+}
+
+template <CP_FORMAT format>
+void ColorProfile<format>::setColor (bool mValue, bool useAlpha)
+{
+	ColorProfileCommon::m_MValue = mValue;
+
+	if ( mValue )
+	{
+		ColorProfileCommon::m_RValue = 255;
+		ColorProfileCommon::m_GValue = 255;
+		ColorProfileCommon::m_BValue = 255;
+		ColorProfileCommon::m_AValue = 255;
+	}
+	else if ( !mValue && useAlpha )
+	{
+		ColorProfileCommon::m_RValue = 0;
+		ColorProfileCommon::m_GValue = 0;
+		ColorProfileCommon::m_BValue = 0;
+		ColorProfileCommon::m_AValue = 0;
+	}
+	else
+	{
+		ColorProfileCommon::m_RValue = 0;
+		ColorProfileCommon::m_GValue = 0;
+		ColorProfileCommon::m_BValue = 0;
+		ColorProfileCommon::m_AValue = 255;
+	}
+}
+
+template <CP_FORMAT format>
+void ColorProfile<format>::setColor (const Color& color)
+{
+	ColorProfileCommon::m_RValue = 255 * color.m_R;
+	ColorProfileCommon::m_GValue = 255 * color.m_G;
+	ColorProfileCommon::m_BValue = 255 * color.m_B;
+	ColorProfileCommon::m_AValue = 255 * color.m_A;
+	ColorProfileCommon::m_MValue = color.m_M;
+}
+
+template <CP_FORMAT format>
+Color ColorProfile<format>::getColor() const
+{
+	Color currentColor;
+	currentColor.m_R = ((float)ColorProfileCommon::m_RValue * (1.0f / 255.0f));
+	currentColor.m_G = ((float)ColorProfileCommon::m_GValue * (1.0f / 255.0f));
+	currentColor.m_B = ((float)ColorProfileCommon::m_BValue * (1.0f / 255.0f));
+	currentColor.m_A = ((float)ColorProfileCommon::m_AValue * (1.0f / 255.0f));
+	currentColor.m_M = ColorProfileCommon::m_MValue;
+	currentColor.m_IsMonochrome = ( format == CP_FORMAT::MONOCHROME_1BIT ) ? true : false;
+	currentColor.m_HasAlpha = ( format == CP_FORMAT::RGBA_32BIT ) ? true : false;
+
+	return currentColor;
+}
 
 #endif // COLOR_PROFILE_HPP

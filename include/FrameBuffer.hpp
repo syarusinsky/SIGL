@@ -8,6 +8,7 @@
 **************************************************************************/
 
 #include <stdint.h>
+#include <array>
 #include "ColorProfile.hpp"
 
 class FormatInitializer
@@ -39,25 +40,63 @@ class FormatInitializer
 		CP_FORMAT m_Format;
 };
 
-class FrameBuffer
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+class FrameBufferRGB
 {
 	public:
-		FrameBuffer (unsigned int width, unsigned int height, const CP_FORMAT& format);
-		FrameBuffer (unsigned int width, unsigned int height, const CP_FORMAT& format, uint8_t* pixels);
-		virtual ~FrameBuffer();
-
-		uint8_t* getPixels() const;
-		unsigned int getWidth() const;
-		unsigned int getHeight() const;
-
-		ColorProfile* getColorProfile();
+		std::array<uint8_t, width * height * 3>& getPixels() const { return m_Pixels; }
 
 	protected:
-		ColorProfile m_ColorProfile;
-		uint8_t*     m_Pixels;
-
-		unsigned int m_Width;
-		unsigned int m_Height;
+		std::array<uint8_t, width * height * 3>     m_Pixels;
 };
+
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+class FrameBufferRGBA
+{
+	public:
+		std::array<uint8_t, width * height * 4>& getPixels() const { return m_Pixels; }
+
+	protected:
+		std::array<uint8_t, width * height * 4>     m_Pixels;
+};
+
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+class FrameBufferMonochrome
+{
+	public:
+		std::array<uint8_t, ( width * height ) / 8>& getPixels() const { return m_Pixels; }
+
+	protected:
+		std::array<uint8_t, ( width * height ) / 8> 	m_Pixels;
+};
+
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+class FrameBuffer : std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGB<width, height, format>,
+
+				typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochrome<width, height, format>,
+				FrameBufferRGBA<width, height, format>>::type
+
+				>::type
+{
+	public:
+		FrameBuffer();
+		virtual ~FrameBuffer();
+
+		unsigned int getWidth() const { return width; }
+		unsigned int getHeight() const { return height; }
+
+		ColorProfile<format> getColorProfile() { return format; }
+};
+
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+FrameBuffer<width, height, format>::FrameBuffer() :
+	std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGB<width, height, format>,
+
+	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochrome<width, height, format>,
+	FrameBufferRGBA<width, height, format>>::type
+
+	>::type()
+{
+}
 
 #endif // FRAME_BUFFER_HPP

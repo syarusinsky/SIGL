@@ -18,10 +18,11 @@ class ColorProfile;
 class SoftwareGraphics;
 class Graphics;
 
+template <unsigned int width, unsigned int height, CP_FORMAT format>
 class Surface
 {
 	public:
-		Surface (unsigned int width, unsigned int height, const CP_FORMAT& format);
+		Surface();
 		virtual ~Surface();
 
 		FrameBuffer*  getFrameBuffer();

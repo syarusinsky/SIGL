@@ -21,25 +21,15 @@
 class Font;
 class Sprite;
 class Camera3D;
+class Texture;
 struct Face;
 
-// TODO remove this after testing
-class Texture;
-
+template <unsigned int width, unsigned int height, CP_FORMAT format>
 class Graphics
 {
 	public:
-		void setFrameBuffer (FrameBuffer* frameBuffer)
-		{
-			m_FB = frameBuffer;
-			m_ColorProfile = frameBuffer->getColorProfile();
-			m_FBWidth = frameBuffer->getWidth();
-			m_FBHeight = frameBuffer->getHeight();
-			m_FBPixels = frameBuffer->getPixels();
-		}
-
-		inline unsigned int convertXPercentageToUInt (float x) { return x * (m_FBWidth  - 1); }
-		inline unsigned int convertYPercentageToUInt (float y) { return y * (m_FBHeight - 1); }
+		inline unsigned int convertXPercentageToUInt (float x) { return x * (width  - 1); }
+		inline unsigned int convertYPercentageToUInt (float y) { return y * (height - 1); }
 
 		virtual void setColor (float r, float g, float b) = 0;
 		virtual void setColor (bool val) = 0;
@@ -74,14 +64,10 @@ class Graphics
 		virtual void testTexture (Texture& texture) = 0;
 
 	protected:
-		FrameBuffer* 		m_FB;
-		ColorProfile* 		m_ColorProfile;
-		Font* 			m_CurrentFont;
-		unsigned int 		m_FBWidth;
-		unsigned int 		m_FBHeight;
-		unsigned int 		m_FBNumPixels;
-		uint8_t* 		m_FBPixels;
-		Texture* 		m_CurrentTexture;
+		FrameBuffer<width, height, format> 	m_FB;
+		ColorProfile<format>& 			m_ColorProfile;
+		Font* 					m_CurrentFont;
+		Texture* 				m_CurrentTexture;
 
 		// TODO this is probably not the right way to handle shaders, for testing purposes only now
 		// shaders (default vertex does nothing, default fragment is a rgb gradient)
@@ -102,18 +88,17 @@ class Graphics
 		// helpers
 		static inline bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected
 
-		Graphics (FrameBuffer* frameBuffer) :
+		Graphics (FrameBuffer<width, height, format> frameBuffer) :
 			m_FB( frameBuffer ),
-			m_ColorProfile( frameBuffer->getColorProfile() ),
-			m_FBWidth( frameBuffer->getWidth() ),
-			m_FBHeight( frameBuffer->getHeight() ),
-			m_FBNumPixels( m_FBWidth * m_FBHeight ),
-			m_FBPixels( frameBuffer->getPixels() ) {}
+			m_ColorProfile( m_FB.getColorProfile() ),
+			m_CurrentFont( nullptr ),
+			m_CurrentTexture( nullptr ) {}
 		virtual ~Graphics() {}
 
 };
 
-inline bool Graphics::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+inline bool Graphics<width, height, format>::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
 {
 	// cache points
 	float xStartClipped = *xStart;
