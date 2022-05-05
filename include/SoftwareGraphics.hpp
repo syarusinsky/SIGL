@@ -12,6 +12,11 @@
 
 #include "Graphics.hpp"
 
+#define m_ColorProfile Graphics<width, height, format>::m_ColorProfile
+#define m_CurrentFont Graphics<width, height, format>::m_CurrentFont
+#define m_Pixels Graphics<width, height, format>::m_Pixels
+#define m_NumPixels Graphics<width, height, format>::m_NumPixels;
+
 #include "Font.hpp"
 #include "Sprite.hpp"
 #include "Texture.hpp"
@@ -71,35 +76,27 @@ SoftwareGraphics<width, height, format>::~SoftwareGraphics()
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 void SoftwareGraphics<width, height, format>::setColor (float r, float g, float b)
 {
-	Graphics<width, height, format>::m_ColorProfile.setColor( r, g, b );
+	m_ColorProfile.setColor( r, g, b );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 void SoftwareGraphics<width, height, format>::setColor (bool val)
 {
-	Graphics<width, height, format>::m_ColorProfile->setColor( val );
+	m_ColorProfile.setColor( val );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 void SoftwareGraphics<width, height, format>::setFont (Font* font)
 {
-	Graphics<width, height, format>::m_CurrentFont = font;
+	m_CurrentFont = font;
 }
 
-void SoftwareGraphics::fill()
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::fill()
 {
-	for (unsigned int pixel = 0; pixel < (m_FBWidth * m_FBHeight); pixel++)
+	for ( unsigned int pixelNum = 0; pixelNum <  )
 	{
-		m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
-	}
-
-	const unsigned int numPixels = m_FBWidth * m_FBHeight;
-#pragma omp simd
-	for ( unsigned int pixel = 0; pixel < numPixels; pixel++ )
-	{
-		m_FBPixels[pixel * 3 + 0] = pixel + 1;
-		m_FBPixels[pixel * 3 + 1] = pixel + 2;
-		m_FBPixels[pixel * 3 + 2] = pixel + 3;
+		m_ColorProfile.putPixel<width, height>( m_Pixels, pixelNum );
 	}
 }
 

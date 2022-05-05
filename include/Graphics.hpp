@@ -50,13 +50,11 @@ class Graphics
 		virtual void drawText (float xStart, float yStart, const char* text, float scaleFactor) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite& sprite) = 0;
 
-		// TODO this is probably not the right way to handle textures, for testing purposes only now
-		virtual void setTexture (Texture* texture) { m_CurrentTexture = texture; }
-
 		// TODO this is probably not the right way to handle shaders, for testing purposes only now
-		virtual void setVertexShader (void (*vShader)(Face& face)) { vertexShader = vShader; }
-		virtual void setFragmentShader (void (*fShader)(Color& color, Face& face, Texture* tex, float v1Cur, float v2Cur, float v3Cur,
-							float texCoordX, float texCoordY)) { fragmentShader = fShader; }
+		void setVertexShader (void (*vShader)(Face& face)) { vertexShader = vShader; }
+		template <unsigned int texWidth, unsigned int texHeight, CP_FORMAT texFormat>
+		void setFragmentShader (void (*fShader)(Color& color, Face& face, Texture<texWidth, texHeight, texFormat>& tex, float v1Cur,
+							float v2Cur, float v3Cur, float texCoordX, float texCoordY)) { fragmentShader = fShader; }
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
@@ -67,7 +65,7 @@ class Graphics
 		FrameBuffer<width, height, format> 	m_FB;
 		ColorProfile<format>& 			m_ColorProfile;
 		Font* 					m_CurrentFont;
-		Texture* 				m_CurrentTexture;
+		const unsigned int 			m_NumPixels;
 
 		// TODO this is probably not the right way to handle shaders, for testing purposes only now
 		// shaders (default vertex does nothing, default fragment is a rgb gradient)
@@ -92,7 +90,7 @@ class Graphics
 			m_FB( frameBuffer ),
 			m_ColorProfile( m_FB.getColorProfile() ),
 			m_CurrentFont( nullptr ),
-			m_CurrentTexture( nullptr ) {}
+			m_NumPixels( m_FB.getNumPixels() ) {}
 		virtual ~Graphics() {}
 
 };
