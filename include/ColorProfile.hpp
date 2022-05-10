@@ -50,7 +50,7 @@ class ColorProfileCommon
 };
 
 template <CP_FORMAT format>
-class ColorProfileMonochrome : ColorProfileCommon
+class ColorProfileMonochrome : public ColorProfileCommon
 {
 	public:
 		template <unsigned int width, unsigned int height>
@@ -109,7 +109,7 @@ class ColorProfileMonochrome : ColorProfileCommon
 };
 
 template <CP_FORMAT format>
-class ColorProfileRGB : ColorProfileCommon
+class ColorProfileRGB : public ColorProfileCommon
 {
 	public:
 
@@ -146,7 +146,7 @@ class ColorProfileRGB : ColorProfileCommon
 };
 
 template <CP_FORMAT format>
-class ColorProfileRGBA : ColorProfileCommon
+class ColorProfileRGBA : public ColorProfileCommon
 {
 	public:
 		template <unsigned int width, unsigned int height>
@@ -183,12 +183,12 @@ class ColorProfileRGBA : ColorProfileCommon
 };
 
 template <CP_FORMAT format>
-class ColorProfile : std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
+class ColorProfile : public std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
 
-			typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
-			ColorProfileRGBA<format>>::type
+				typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
+				ColorProfileRGBA<format>>::type
 
-			>::type
+				>::type
 {
 	public:
 		ColorProfile();
@@ -200,7 +200,7 @@ class ColorProfile : std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfi
 		void setColor (const Color& color);
 		Color getColor() const;
 
-		CP_FORMAT getFormat() { return format; }
+		const CP_FORMAT getFormat() const { return format; }
 };
 
 template <CP_FORMAT format>

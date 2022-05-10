@@ -12,10 +12,10 @@
 
 #include "Graphics.hpp"
 
-#define m_ColorProfile Graphics<width, height, format>::m_ColorProfile
+#define m_CP Graphics<width, height, format>::m_ColorProfile
 #define m_CurrentFont Graphics<width, height, format>::m_CurrentFont
-#define m_Pixels Graphics<width, height, format>::m_Pixels
-#define m_NumPixels Graphics<width, height, format>::m_NumPixels;
+#define m_Pxls Graphics<width, height, format>::m_FB.getPixels()
+#define m_NumPxls Graphics<width, height, format>::m_FB.getNumPixels()
 
 #include "Font.hpp"
 #include "Sprite.hpp"
@@ -44,16 +44,16 @@ class SoftwareGraphics 	: public Graphics<width, height, format>
 		void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) override;
 		void drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3) override;
 		void drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3) override;
-		void drawTriangleShaded (Face& face, const Camera3D& camera) override;
+		// void drawTriangleShaded (Face& face, const Camera3D& camera) override;
 		void drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
 		void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
 		void drawCircle (float originX, float originY, float radius) override;
 		void drawCircleFilled (float originX, float originY, float radius) override;
 		void drawText (float xStart, float yStart, const char* text, float scaleFactor) override;
-		void drawSprite (float xStart, float yStart, Sprite& sprite) override;
+		// void drawSprite (float xStart, float yStart, Sprite& sprite) override;
 
 		// TODO remove this after testing
-		void testTexture (Texture& texture) override;
+		// void testTexture (Texture& texture) override;
 
 	protected:
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
@@ -76,13 +76,13 @@ SoftwareGraphics<width, height, format>::~SoftwareGraphics()
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 void SoftwareGraphics<width, height, format>::setColor (float r, float g, float b)
 {
-	m_ColorProfile.setColor( r, g, b );
+	m_CP.setColor( r, g, b );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 void SoftwareGraphics<width, height, format>::setColor (bool val)
 {
-	m_ColorProfile.setColor( val );
+	m_CP.setColor( val );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
@@ -94,26 +94,27 @@ void SoftwareGraphics<width, height, format>::setFont (Font* font)
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 void SoftwareGraphics<width, height, format>::fill()
 {
-	for ( unsigned int pixelNum = 0; pixelNum <  )
+	for ( unsigned int pixelNum = 0; pixelNum < m_NumPxls; pixelNum++ )
 	{
-		m_ColorProfile.putPixel<width, height>( m_Pixels, pixelNum );
+		m_CP.template putPixel<width, height>( m_Pxls, pixelNum );
 	}
 }
 
-void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
 	// clip line and return if line is off screen
-	if ( !clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
+	if ( !Graphics<width, height, format>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
 
-	unsigned int xStartUInt = xStart * (m_FBWidth  - 1);
-	unsigned int yStartUInt = yStart * (m_FBHeight - 1);
-	unsigned int xEndUInt   = xEnd   * (m_FBWidth  - 1);
-	unsigned int yEndUInt   = yEnd   * (m_FBHeight - 1);
+	unsigned int xStartUInt = xStart * (width  - 1);
+	unsigned int yStartUInt = yStart * (height - 1);
+	unsigned int xEndUInt   = xEnd   * (width  - 1);
+	unsigned int yEndUInt   = yEnd   * (height - 1);
 
 	float slope = ((float) yEndUInt - yStartUInt) / ((float)xEndUInt - xStartUInt);
 
-	unsigned int pixelStart = ( (m_FBWidth * yStartUInt) + xStartUInt );
-	unsigned int pixelEnd   = ( (m_FBWidth * yEndUInt  ) + xEndUInt   );
+	unsigned int pixelStart = ( (width * yStartUInt) + xStartUInt );
+	unsigned int pixelEnd   = ( (width * yEndUInt  ) + xEndUInt   );
 
 	if (pixelStart > pixelEnd)
 	{
@@ -134,13 +135,13 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			// x stride
 			if (std::isinf(slope)) // don't stride along the x-axis at all
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 			}
 			else if (slope < 1.0f) // stride along x-axis across multiple pixels
 			{
 				while (xAccumulator < 1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					xAccumulator += slope;
 					pixel += 1;
@@ -149,7 +150,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			}
 			else // stride along x-axis by one pixel
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 				pixel += 1;
 			}
@@ -159,16 +160,16 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			{
 				while (yAccumulator >= 1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					yAccumulator -= 1.0f;
-					pixel += m_FBWidth;
+					pixel += width;
 				}
 				yAccumulator += slope;
 			}
 			else // stride along the y-axis by one pixel
 			{
-				pixel += m_FBWidth;
+				pixel += width;
 			}
 		}
 	}
@@ -179,13 +180,13 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			// x stride
 			if (std::isinf(slope)) // don't stride along the x-axis at all
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 			}
 			else if (slope > -1.0f) // stride along x-axis across multiple pixels
 			{
 				while (xAccumulator > -1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					xAccumulator += slope;
 					pixel -= 1;
@@ -194,7 +195,7 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			}
 			else // stride along x-axis by one pixel
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 				pixel -= 1;
 			}
@@ -204,24 +205,25 @@ void SoftwareGraphics::drawLine (float xStart, float yStart, float xEnd, float y
 			{
 				while (yAccumulator <= 1.0f && pixel <= pixelEnd)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					yAccumulator += 1.0f;
-					pixel += m_FBWidth;
+					pixel += width;
 				}
 				yAccumulator += slope;
 			}
 			else // stride along the y-axis by one pixel
 			{
-				pixel += m_FBWidth;
+				pixel += width;
 
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 			}
 		}
 	}
 }
 
-void SoftwareGraphics::drawBox (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawBox (float xStart, float yStart, float xEnd, float yEnd)
 {
 	drawLine( xStart, yStart, xEnd,   yStart );
 	drawLine( xEnd,   yStart, xEnd,   yEnd   );
@@ -229,23 +231,24 @@ void SoftwareGraphics::drawBox (float xStart, float yStart, float xEnd, float yE
 	drawLine( xStart, yEnd,   xStart, yStart );
 }
 
-void SoftwareGraphics::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
 {
-	int xStartUInt = xStart * (m_FBWidth  - 1);
-	int yStartUInt = yStart * (m_FBHeight - 1);
-	int xEndUInt   = xEnd   * (m_FBWidth  - 1);
-	int yEndUInt   = yEnd   * (m_FBHeight - 1);
+	int xStartUInt = xStart * (width  - 1);
+	int yStartUInt = yStart * (height - 1);
+	int xEndUInt   = xEnd   * (width  - 1);
+	int yEndUInt   = yEnd   * (height - 1);
 
 	// clipping
-	xStartUInt = std::min( std::max(xStartUInt, 0), (int)m_FBWidth );
-	yStartUInt = std::min( std::max(yStartUInt, 0), (int)m_FBHeight );
-	xEndUInt   = std::min( std::max(xEndUInt,   0), (int)m_FBWidth );
-	yEndUInt   = std::min( std::max(yEndUInt,   0), (int)m_FBHeight );
+	xStartUInt = std::min( std::max(xStartUInt, 0), (int)width );
+	yStartUInt = std::min( std::max(yStartUInt, 0), (int)height );
+	xEndUInt   = std::min( std::max(xEndUInt,   0), (int)width );
+	yEndUInt   = std::min( std::max(yEndUInt,   0), (int)height );
 
 	unsigned int pixelRowStride = abs( (int)xEndUInt - (int)xStartUInt );
 
-	unsigned int pixelStart = ( (m_FBWidth * yStartUInt) + xStartUInt );
-	unsigned int pixelEnd   = ( (m_FBWidth * yEndUInt  ) + xEndUInt   );
+	unsigned int pixelStart = ( (width * yStartUInt) + xStartUInt );
+	unsigned int pixelEnd   = ( (width * yEndUInt  ) + xEndUInt   );
 
 	if (pixelStart > pixelEnd)
 	{
@@ -255,18 +258,19 @@ void SoftwareGraphics::drawBoxFilled (float xStart, float yStart, float xEnd, fl
 		pixelEnd   = temp;
 	}
 
-	for (unsigned int pixel = pixelStart; pixel < pixelEnd; pixel += m_FBWidth)
+	for (unsigned int pixel = pixelStart; pixel < pixelEnd; pixel += width)
 	{
 		unsigned int pixelRowEnd = pixel + pixelRowStride;
 
 		for (unsigned int rowPixel = pixel; rowPixel < pixelRowEnd; rowPixel += 1)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, rowPixel );
+			m_CP.template putPixel<width, height>( m_Pxls, rowPixel );
 		}
 	}
 }
 
-void SoftwareGraphics::drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	drawLine( x1, y1, x2, y2 );
 	drawLine( x2, y2, x3, y3 );
@@ -372,15 +376,16 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 	}
 }
 
-void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	// getting the pixel values of the vertices
-	int x1UInt = x1 * (m_FBWidth  - 1);
-	int y1UInt = y1 * (m_FBHeight - 1);
-	int x2UInt = x2 * (m_FBWidth  - 1);
-	int y2UInt = y2 * (m_FBHeight - 1);
-	int x3UInt = x3 * (m_FBWidth  - 1);
-	int y3UInt = y3 * (m_FBHeight - 1);
+	int x1UInt = x1 * (width  - 1);
+	int y1UInt = y1 * (height - 1);
+	int x2UInt = x2 * (width  - 1);
+	int y2UInt = y2 * (height - 1);
+	int x3UInt = x3 * (width  - 1);
+	int y3UInt = y3 * (height - 1);
 
 	int x1Sorted = x1UInt;
 	int y1Sorted = y1UInt;
@@ -449,19 +454,19 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 		}
 
 		// if after clipping this line exists within the screen, render the line
-		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
+		if ( Graphics<width, height, format>::clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
 		{
-			int tempX1Int = tempX1 * (m_FBWidth  - 1);
-			int tempY1Int = tempY1 * (m_FBHeight - 1);
-			int tempX2Int = tempX2 * (m_FBWidth  - 1);
-			int tempY2Int = tempY2 * (m_FBHeight - 1);
+			int tempX1Int = tempX1 * (width  - 1);
+			int tempY1Int = tempY1 * (height - 1);
+			int tempX2Int = tempX2 * (width  - 1);
+			int tempY2Int = tempY2 * (height - 1);
 
-			int tempXY1 = ( (tempY1Int * m_FBWidth) + tempX1Int );
-			int tempXY2 = ( (tempY2Int * m_FBWidth) + tempX2Int );
+			int tempXY1 = ( (tempY1Int * width) + tempX1Int );
+			int tempXY2 = ( (tempY2Int * width) + tempX2Int );
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 			}
 		}
 	}
@@ -471,22 +476,22 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 		for (int row = y1Sorted; row <= y2Sorted; row++)
 		{
 			// clip vertically if row is off screen
-			if (row >= (int)m_FBHeight)
+			if (row >= (int)height)
 			{
 				break;
 			}
 			else if (row >= 0)
 			{
 				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)width - 1 );
+				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)width - 1), 0 );
 
-				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
-				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+				unsigned int tempXY1 = ( (row * width) + leftX  );
+				unsigned int tempXY2 = ( (row * width) + rightX );
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 				}
 
 				// increment accumulators
@@ -538,22 +543,22 @@ void SoftwareGraphics::drawTriangleFilled (float x1, float y1, float x2, float y
 		for (int row = y2Sorted + 1; row <= y3Sorted; row++)
 		{
 			// clip vertically if row is off screen
-			if (row >= (int)m_FBHeight)
+			if (row >= (int)height)
 			{
 				break;
 			}
 			else if ( row >= 0 )
 			{
 				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)m_FBWidth - 1), 0 );
+				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)width - 1 );
+				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)width - 1), 0 );
 
-				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
-				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+				unsigned int tempXY1 = ( (row * width) + leftX  );
+				unsigned int tempXY2 = ( (row * width) + rightX );
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 				}
 
 				// increment accumulators
@@ -876,13 +881,14 @@ static inline void calcTriGradients( float& v1StartEdgeDistT, float& v1EndEdgeDi
 	}
 }
 
+/*
 void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 {
 	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_ColorProfile->getColor();
+	const Color previousColor = m_CP->getColor();
 
 	// a color to store for fragment shading
-	Color currentColor = m_ColorProfile->getColor();
+	Color currentColor = m_CP->getColor();
 
 	// put through the vertex shader first
 	this->vertexShader( face );
@@ -1085,8 +1091,8 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 				this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
 							texCoordY );
-				m_ColorProfile->setColor( currentColor );
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				m_CP->setColor( currentColor );
+				m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 				v1Current += v1Incr;
 				v2Current += v2Incr;
@@ -1156,8 +1162,8 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 					this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
 								texCoordY );
-					m_ColorProfile->setColor( currentColor );
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP->setColor( currentColor );
+					m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					v1Current += v1Incr;
 					v2Current += v2Incr;
@@ -1267,8 +1273,8 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 					this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
 								texCoordY );
-					m_ColorProfile->setColor( currentColor );
-					m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					m_CP->setColor( currentColor );
+					m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixel );
 
 					v1Current += v1Incr;
 					v2Current += v2Incr;
@@ -1285,10 +1291,12 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 	}
 
 	// set the previously used color back since we're done with the gradients
-	m_ColorProfile->setColor( previousColor );
+	m_CP->setColor( previousColor );
 }
+*/
 
-void SoftwareGraphics::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
 	drawLine( x1, y1, x2, y2 );
 	drawLine( x2, y2, x3, y3 );
@@ -1296,13 +1304,15 @@ void SoftwareGraphics::drawQuad (float x1, float y1, float x2, float y2, float x
 	drawLine( x4, y4, x1, y1 );
 }
 
-void SoftwareGraphics::drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
 	drawTriangleFilled( x1, y1, x2, y2, x3, y3 );
 	drawTriangleFilled( x1, y1, x4, y4, x3, y3 );
 }
 
-void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y, bool filled)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawCircleHelper (int originX, int originY, int x, int y, bool filled)
 {
 	int x1_3 = originX + x;
 	int y1_2 = originY + y;
@@ -1318,97 +1328,98 @@ void SoftwareGraphics::drawCircleHelper (int originX, int originY, int x, int y,
 	if (x2_4 < 0) x2_4 = 0;
 	if (x5_7 < 0) x5_7 = 0;
 	if (x6_8 < 0) x6_8 = 0;
-	if (x1_3 > (int)m_FBWidth) x1_3 = m_FBWidth;
-	if (x2_4 > (int)m_FBWidth) x2_4 = m_FBWidth;
-	if (x5_7 > (int)m_FBWidth) x5_7 = m_FBWidth;
-	if (x6_8 > (int)m_FBWidth) x6_8 = m_FBWidth;
+	if (x1_3 > (int)width) x1_3 = width;
+	if (x2_4 > (int)width) x2_4 = width;
+	if (x5_7 > (int)width) x5_7 = width;
+	if (x6_8 > (int)width) x6_8 = width;
 
-	int pixel1 = ( (y1_2 * m_FBWidth) + x1_3  );
-	int pixel2 = ( (y1_2 * m_FBWidth) + x2_4  );
-	int pixel3 = ( (y3_4 * m_FBWidth) + x1_3  );
-	int pixel4 = ( (y3_4 * m_FBWidth) + x2_4  );
-	int pixel5 = ( (y5_6 * m_FBWidth) + x5_7  );
-	int pixel6 = ( (y5_6 * m_FBWidth) + x6_8  );
-	int pixel7 = ( (y7_8 * m_FBWidth) + x5_7  );
-	int pixel8 = ( (y7_8 * m_FBWidth) + x6_8  );
+	int pixel1 = ( (y1_2 * width) + x1_3  );
+	int pixel2 = ( (y1_2 * width) + x2_4  );
+	int pixel3 = ( (y3_4 * width) + x1_3  );
+	int pixel4 = ( (y3_4 * width) + x2_4  );
+	int pixel5 = ( (y5_6 * width) + x5_7  );
+	int pixel6 = ( (y5_6 * width) + x6_8  );
+	int pixel7 = ( (y7_8 * width) + x5_7  );
+	int pixel8 = ( (y7_8 * width) + x6_8  );
 
 	if (filled)
 	{
 		// span from pixel2 to pixel1
 		int tempPixel = pixel2;
-		if (y1_2 >= 0 && y1_2 < (int)m_FBHeight)
+		if (y1_2 >= 0 && y1_2 < (int)height)
 		{
 			while (tempPixel < pixel1)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
+				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
 				tempPixel += 1;
 			}
 		}
 
 		// span from pixel4 to pixel3
-		if (y3_4 >= 0 && y3_4 < (int)m_FBHeight)
+		if (y3_4 >= 0 && y3_4 < (int)height)
 		{
 			tempPixel = pixel4;
 			while (tempPixel < pixel3)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
+				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
 				tempPixel += 1;
 			}
 		}
 
 		// span from pixel6 to pixel5
-		if (y5_6 >= 0 && y5_6 < (int)m_FBHeight)
+		if (y5_6 >= 0 && y5_6 < (int)height)
 		{
 			tempPixel = pixel6;
 			while (tempPixel < pixel5)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
+				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
 				tempPixel += 1;
 			}
 		}
 
 		// span form pixel8 to pixel7
-		if (y7_8 >= 0 && y7_8 < (int)m_FBHeight)
+		if (y7_8 >= 0 && y7_8 < (int)height)
 		{
 			tempPixel = pixel8;
 			while (tempPixel < pixel7)
 			{
-				m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, tempPixel );
+				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
 				tempPixel += 1;
 			}
 		}
 	}
 	else
 	{
-		if (y1_2 >= 0 && y1_2 < (int)m_FBHeight)
+		if (y1_2 >= 0 && y1_2 < (int)height)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel1 );
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel2 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel1 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel2 );
 		}
-		if (y3_4 >= 0 && y3_4 < (int)m_FBHeight)
+		if (y3_4 >= 0 && y3_4 < (int)height)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel3 );
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel4 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel3 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel4 );
 		}
-		if (y5_6 >= 0 && y5_6 < (int)m_FBHeight)
+		if (y5_6 >= 0 && y5_6 < (int)height)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel5 );
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel6 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel5 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel6 );
 		}
-		if (y7_8 >= 0 && y7_8 < (int)m_FBHeight)
+		if (y7_8 >= 0 && y7_8 < (int)height)
 		{
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel7 );
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixel8 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel7 );
+			m_CP.template putPixel<width, height>( m_Pxls, pixel8 );
 		}
 	}
 }
 
-void SoftwareGraphics::drawCircle (float originX, float originY, float radius)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawCircle (float originX, float originY, float radius)
 {
 	// getting the pixel values of the vertices
-	int originXUInt = originX * (m_FBWidth  - 1);
-	int originYUInt = originY * (m_FBHeight - 1);
-	int radiusUInt = radius * (m_FBWidth - 1);
+	int originXUInt = originX * (width  - 1);
+	int originYUInt = originY * (height - 1);
+	int radiusUInt = radius * (width - 1);
 
 	// bresenham's algorithm
 	int x = 0;
@@ -1434,14 +1445,13 @@ void SoftwareGraphics::drawCircle (float originX, float originY, float radius)
 	}
 }
 
-
-
-void SoftwareGraphics::drawCircleFilled (float originX, float originY, float radius)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawCircleFilled (float originX, float originY, float radius)
 {
 	// getting the pixel values of the vertices
-	int originXUInt = originX * (m_FBWidth  - 1);
-	int originYUInt = originY * (m_FBHeight - 1);
-	int radiusUInt = radius * (m_FBWidth - 1);
+	int originXUInt = originX * (width  - 1);
+	int originYUInt = originY * (height - 1);
+	int radiusUInt = radius * (width - 1);
 
 	// bresenham's algorithm
 	int x = 0;
@@ -1467,7 +1477,8 @@ void SoftwareGraphics::drawCircleFilled (float originX, float originY, float rad
 	}
 }
 
-void SoftwareGraphics::drawText (float xStart, float yStart, const char* text, float scaleFactor)
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawText (float xStart, float yStart, const char* text, float scaleFactor)
 {
 	// TODO text doesn't render if scale factor isn't an integer beyond 1.0f, fix later?
 	if ( scaleFactor > 1.0f )
@@ -1476,9 +1487,9 @@ void SoftwareGraphics::drawText (float xStart, float yStart, const char* text, f
 	}
 
 	// getting the pixel values of the vertices
-	int currentXInt = xStart * (m_FBWidth  - 1);
-	int currentYInt = yStart * (m_FBHeight - 1);
-	int currentPixel = (currentYInt * m_FBWidth) + currentXInt;
+	int currentXInt = xStart * (width  - 1);
+	int currentYInt = yStart * (height - 1);
+	int currentPixel = (currentYInt * width) + currentXInt;
 
 	// widths and heights from the font
 	unsigned int characterWidth = m_CurrentFont->getCharacterWidth();
@@ -1504,18 +1515,18 @@ void SoftwareGraphics::drawText (float xStart, float yStart, const char* text, f
 	unsigned int numXPixelsToSkip = 0;
 	if ( xStart < 0.0f )
 	{
-		numXPixelsToSkip = std::abs( xStart ) * m_FBWidth;
+		numXPixelsToSkip = std::abs( xStart ) * width;
 	}
 
 	// for right border clipping
 	int rightBorderPixel = 0;
 	if ( yStart >= 0.0f )
 	{
-		rightBorderPixel = m_FBWidth * ( std::floor(static_cast<float>(currentYInt * m_FBWidth) / m_FBWidth) + 1 );
+		rightBorderPixel = width * ( std::floor(static_cast<float>(currentYInt * width) / width) + 1 );
 	}
 	else
 	{
-		rightBorderPixel = -1 * ( std::abs(currentYInt + 1) * m_FBWidth );
+		rightBorderPixel = -1 * ( std::abs(currentYInt + 1) * width );
 	}
 
 	// go through each character and translate the pixels in the font to the frame buffer
@@ -1533,11 +1544,11 @@ void SoftwareGraphics::drawText (float xStart, float yStart, const char* text, f
 			int rightClipX = 0;
 			if ( scaleFactor >= 1.0f )
 			{
-				rightClipX = rightBorderPixel + ( m_FBWidth * std::floor(row * scaleFactor) );
+				rightClipX = rightBorderPixel + ( width * std::floor(row * scaleFactor) );
 			}
 			else
 			{
-				rightClipX = rightBorderPixel + ( m_FBWidth * row );
+				rightClipX = rightBorderPixel + ( width * row );
 			}
 
 			for ( unsigned int pixel = 0; pixel < characterWidth; pixel += bitmapPixelTravel )
@@ -1551,23 +1562,23 @@ void SoftwareGraphics::drawText (float xStart, float yStart, const char* text, f
 
 					while ( nNCurrentY < nNYTravel )
 					{
-						int pixelToWrite = currentPixel + ( m_FBWidth * std::floor(nNCurrentY) );
+						int pixelToWrite = currentPixel + ( width * std::floor(nNCurrentY) );
 
 						if ( pixelOn
 								&& pixelToWrite >= 0
-								&& pixelToWrite < static_cast<int>( m_FBWidth * m_FBHeight )
+								&& pixelToWrite < static_cast<int>( width * height )
 								&& xPixelsSkipped >= numXPixelsToSkip
 								&& pixelToWrite < rightClipX )
 						{
-							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixelToWrite );
+							m_CP.template putPixel<width, height>( m_Pxls, pixelToWrite );
 						}
 
-						rightClipX += m_FBWidth;
+						rightClipX += width;
 						nNCurrentY += 1.0f;
 						pixelsMovedDown++;
 					}
 
-					rightClipX -= ( m_FBWidth * pixelsMovedDown );
+					rightClipX -= ( width * pixelsMovedDown );
 					nNCurrentX += 1.0f;
 					nNCurrentY = 0;
 					currentPixel++;
@@ -1587,22 +1598,24 @@ void SoftwareGraphics::drawText (float xStart, float yStart, const char* text, f
 			charByteIndex = std::floor( static_cast<float>(charPixelIndex) / 8.0f );
 			nNCurrentX = 0.0f;
 			nNCurrentY = std::fmod( nNCurrentY, nNYTravel );
-			currentPixel += ( (m_FBWidth * pixelsMovedDown) - pixelsMovedRight );
+			currentPixel += ( (width * pixelsMovedDown) - pixelsMovedRight );
 			pixelsMovedRight = 0;
 		}
 
 		// reset the y-index back to the top, move the x-index to the right of the last char
-		currentYInt = yStart * (m_FBHeight - 1);
+		currentYInt = yStart * (height - 1);
 		currentXInt += static_cast<unsigned int>( characterWidth * scaleFactor );
-		currentPixel = ( currentYInt * m_FBWidth ) + currentXInt;
+		currentPixel = ( currentYInt * width ) + currentXInt;
 	}
 }
 
-void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
+/*
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+void SoftwareGraphics<width, height, format>::drawSprite (float xStart, float yStart, Sprite& sprite)
 {
 	// getting the pixel values of the vertices
-	int startXInt = xStart * (m_FBWidth  - 1);
-	int startYInt = yStart * (m_FBWidth - 1);
+	int startXInt = xStart * (width - 1);
+	int startYInt = yStart * (width - 1);
 	int currentXInt = startXInt;
 	int currentYInt = startYInt;
 
@@ -1677,33 +1690,31 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 							xTranslatedBack < m_FBWidth && // right clipping
 							! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					{
-							m_ColorProfile->setColor( color );
-							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, pixelToWrite );
+							m_CP->setColor( color );
+							m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixelToWrite );
 					}
 
 					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
 					// but it works,.. maybe fix later?
 					// TODO update: commenting out for now because of how outrageously smoothbrain it is
-					/*
-					int sbPixelRight = pixelToWrite + 1;
-					if ( sbPixelRight >= 0 &&  // top clipping
-							sbPixelRight < fbSize && // bottom clipping
-							xTranslatedBack + 1 >= 0 && // left clipping
-							xTranslatedBack + 1 < m_FBWidth && // right clipping
-							! (color.m_IsMonochrome && color.m_M == 0.0f) )
-					{
-							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelRight );
-					}
-					int sbPixelDown = pixelToWrite + m_FBWidth;
-					if ( sbPixelDown >= 0 &&  // top clipping
-							sbPixelDown < fbSize && // bottom clipping
-							xTranslatedBack >= 0 && // left clipping
-							xTranslatedBack < m_FBWidth && // right clipping
-							! (color.m_IsMonochrome && color.m_M == 0.0f) )
-					{
-							m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelDown );
-					}
-					*/
+					// int sbPixelRight = pixelToWrite + 1;
+					// if ( sbPixelRight >= 0 &&  // top clipping
+					// 		sbPixelRight < fbSize && // bottom clipping
+					// 		xTranslatedBack + 1 >= 0 && // left clipping
+					// 		xTranslatedBack + 1 < m_FBWidth && // right clipping
+					// 		! (color.m_IsMonochrome && color.m_M == 0.0f) )
+					// {
+					// 		m_CP->putPixel( m_FBPixels, m_FBNumPixels, sbPixelRight );
+					// }
+					// int sbPixelDown = pixelToWrite + m_FBWidth;
+					// if ( sbPixelDown >= 0 &&  // top clipping
+					// 		sbPixelDown < fbSize && // bottom clipping
+					// 		xTranslatedBack >= 0 && // left clipping
+					// 		xTranslatedBack < m_FBWidth && // right clipping
+					// 		! (color.m_IsMonochrome && color.m_M == 0.0f) )
+					// {
+					// 		m_CP->putPixel( m_FBPixels, m_FBNumPixels, sbPixelDown );
+					// }
 
 					nNCurrentY += 1.0f;
 					pixelsMovedDown++;
@@ -1725,7 +1736,9 @@ void SoftwareGraphics::drawSprite (float xStart, float yStart, Sprite& sprite)
 		currentYInt += pixelsMovedDown;
 	}
 }
+*/
 
+/*
 void SoftwareGraphics::testTexture (Texture& texture)
 {
 	const unsigned int height = texture.getHeight();
@@ -1735,10 +1748,11 @@ void SoftwareGraphics::testTexture (Texture& texture)
 	{
 		for ( unsigned int column = 0; column < width; column++ )
 		{
-			m_ColorProfile->setColor( texture.getColorProfile()->getPixel(texture.getPixels(), width * height, (row * width) + column) );
-			m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, (row * m_FBWidth) + column );
+			m_CP->setColor( texture.getColorProfile()->getPixel(texture.getPixels(), width * height, (row * width) + column) );
+			m_CP->putPixel( m_FBPixels, m_FBNumPixels, (row * m_FBWidth) + column );
 		}
 	}
 }
+*/
 
 #endif // SOFTWARE_GRAPHICS_HPP

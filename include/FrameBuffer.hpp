@@ -44,7 +44,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format>
 class FrameBufferRGB
 {
 	public:
-		std::array<uint8_t, width * height * 3>& getPixels() const { return m_Pixels; }
+		std::array<uint8_t, width * height * 3>& getPixels() { return m_Pixels; }
 		const unsigned int getNumPixels() const { return m_NumPixels; }
 		const float getPixelWidth() const { return m_PixelWidth; }
 
@@ -58,7 +58,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format>
 class FrameBufferRGBA
 {
 	public:
-		std::array<uint8_t, width * height * 4>& getPixels() const { return m_Pixels; }
+		std::array<uint8_t, width * height * 4>& getPixels() { return m_Pixels; }
 		const unsigned int getNumPixels() const { return m_NumPixels; }
 		const float getPixelWidth() const { return m_PixelWidth; }
 
@@ -72,7 +72,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format>
 class FrameBufferMonochrome
 {
 	public:
-		std::array<uint8_t, ( width * height ) / 8>& getPixels() const { return m_Pixels; }
+		std::array<uint8_t, ( width * height ) / 8>& getPixels() { return m_Pixels; }
 		const unsigned int getNumPixels() const { return m_NumPixels; }
 		const float getPixelWidth() const { return m_PixelWidth; }
 
@@ -83,7 +83,7 @@ class FrameBufferMonochrome
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
-class FrameBuffer : std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGB<width, height, format>,
+class FrameBuffer : public std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGB<width, height, format>,
 
 				typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochrome<width, height, format>,
 				FrameBufferRGBA<width, height, format>>::type
@@ -93,12 +93,12 @@ class FrameBuffer : std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBuffer
 	public:
 		FrameBuffer();
 		FrameBuffer (uint8_t* pixelData);
-		virtual ~FrameBuffer();
+		virtual ~FrameBuffer() {}
 
 		unsigned int getWidth() const { return width; }
 		unsigned int getHeight() const { return height; }
 
-		ColorProfile<format> getColorProfile() { return format; }
+		const ColorProfile<format> getColorProfile() const { return format; }
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>

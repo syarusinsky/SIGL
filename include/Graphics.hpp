@@ -19,12 +19,12 @@
 #include <math.h>
 
 class Font;
-class Sprite;
+// class Sprite;
 class Camera3D;
-class Texture;
+// class Texture;
 struct Face;
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
+template <unsigned int width, unsigned int height, CP_FORMAT format, typename... Textures>
 class Graphics
 {
 	public:
@@ -42,61 +42,61 @@ class Graphics
 		virtual void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) = 0;
 		virtual void drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
 		virtual void drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
-		virtual void drawTriangleShaded (Face& face, const Camera3D& camera) = 0;
+		// virtual void drawTriangleShaded (Face& face, const Camera3D& camera) = 0;
 		virtual void drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawCircle (float originX, float originY, float radius) = 0;
 		virtual void drawCircleFilled (float originX, float originY, float radius) = 0;
 		virtual void drawText (float xStart, float yStart, const char* text, float scaleFactor) = 0;
-		virtual void drawSprite (float xStart, float yStart, Sprite& sprite) = 0;
+		// virtual void drawSprite (float xStart, float yStart, Sprite& sprite) = 0;
 
 		// TODO this is probably not the right way to handle shaders, for testing purposes only now
-		void setVertexShader (void (*vShader)(Face& face)) { vertexShader = vShader; }
-		template <unsigned int texWidth, unsigned int texHeight, CP_FORMAT texFormat>
-		void setFragmentShader (void (*fShader)(Color& color, Face& face, Texture<texWidth, texHeight, texFormat>& tex, float v1Cur,
-							float v2Cur, float v3Cur, float texCoordX, float texCoordY)) { fragmentShader = fShader; }
+		// void setVertexShader (void (*vShader)(Face& face)) { vertexShader = vShader; }
+		// template <unsigned int texWidth, unsigned int texHeight, CP_FORMAT texFormat>
+		// void setFragmentShader (void (*fShader)(Color& color, Face& face, Texture<texWidth, texHeight, texFormat>& tex, float v1Cur,
+		// 					float v2Cur, float v3Cur, float texCoordX, float texCoordY)) { fragmentShader = fShader; }
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
 		// TODO remove this after testing
-		virtual void testTexture (Texture& texture) = 0;
+		// virtual void testTexture (Texture texture) = 0;
 
 	protected:
 		FrameBuffer<width, height, format> 	m_FB;
-		ColorProfile<format>& 			m_ColorProfile;
+		ColorProfile<format> 			m_ColorProfile;
 		Font* 					m_CurrentFont;
 		const unsigned int 			m_NumPixels;
 
 		// TODO this is probably not the right way to handle shaders, for testing purposes only now
 		// shaders (default vertex does nothing, default fragment is a rgb gradient)
-		void (*vertexShader)(Face& face) = [](Face& face) { return; };
-		void (*fragmentShader)(Color& color, Face& face, Texture* tex, float v1Cur, float v2Cur, float v3Cur, float texCoordX,
-					float texCoordY) =
-			[](Color& color, Face& face, Texture* tex, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY)
-			{
-				color.m_R = v1Cur;
-				color.m_G = v2Cur;
-				color.m_B = v3Cur;
-				color.m_A = 1.0f;
-				color.m_M = false;
-				color.m_IsMonochrome = false;
-				color.m_HasAlpha = false;
-			};
+		// void (*vertexShader)(Face& face) = [](Face& face) { return; };
+		// void (*fragmentShader)(Color& color, Face& face, Texture* tex, float v1Cur, float v2Cur, float v3Cur, float texCoordX,
+		// 			float texCoordY) =
+		// 	[](Color& color, Face& face, Texture* tex, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY)
+		// 	{
+		// 		color.m_R = v1Cur;
+		// 		color.m_G = v2Cur;
+		// 		color.m_B = v3Cur;
+		// 		color.m_A = 1.0f;
+		// 		color.m_M = false;
+		// 		color.m_IsMonochrome = false;
+		// 		color.m_HasAlpha = false;
+		// 	};
 
 		// helpers
 		static inline bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected
 
-		Graphics (FrameBuffer<width, height, format> frameBuffer) :
-			m_FB( frameBuffer ),
-			m_ColorProfile( m_FB.getColorProfile() ),
+		Graphics() :
+			m_FB(),
+			m_ColorProfile(),
 			m_CurrentFont( nullptr ),
 			m_NumPixels( m_FB.getNumPixels() ) {}
 		virtual ~Graphics() {}
 
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-inline bool Graphics<width, height, format>::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, typename... Texture>
+inline bool Graphics<width, height, format, Texture...>::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
 {
 	// cache points
 	float xStartClipped = *xStart;

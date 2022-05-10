@@ -11,34 +11,58 @@
  * This can be done in the makefile with CPP_FLAGS, ect.
 **************************************************************************/
 
-enum class CP_FORMAT;
+#include "ColorProfile.hpp"
+#include "FrameBuffer.hpp"
 
-class FrameBuffer;
-class ColorProfile;
-class SoftwareGraphics;
-class Graphics;
+#ifdef SOFTWARE_RENDERING
+#include "SoftwareGraphics.hpp"
+#else
+#include "SoftwareGraphics.hpp" // TODO if I ever implement hardware acceleration, this should be changed
+#endif // SOFTWARE_RENDERING
+
+enum class CP_FORMAT;
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 class Surface
 {
 	public:
-		Surface();
-		virtual ~Surface();
+		Surface() :
+			m_FrameBuffer(),
+			m_ColorProfile(),
+#ifdef SOFTWARE_RENDERING
+			m_Graphics( new SoftwareGraphics<width, height, format>() )
+#else
+			m_Graphics( new SoftwareGraphics<width, height, format>() ) // TODO if I ever implement hardware acceleration, this should be changed
+#endif // SOFTWARE_RENDERING
+		{
+		}
+		virtual ~Surface() {}
 
-		FrameBuffer*  getFrameBuffer();
-		ColorProfile* getColorProfile();
+		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FrameBuffer; }
+		ColorProfile<format>& getColorProfile() { return m_ColorProfile; }
 
-		unsigned int  getPixelWidthInBits() const;
+		unsigned int getPixelWidthInBits() const
+		{
+			switch ( m_ColorProfile.getFormat() )
+			{
+				case CP_FORMAT::RGB_24BIT:
+					return 24;
+				case CP_FORMAT::MONOCHROME_1BIT:
+					return 1;
+				default:
+					return 0;
+			}
+		}
 
 		virtual void draw() = 0;
 
 	protected:
-		FrameBuffer*   		m_FrameBuffer;
-		ColorProfile*  		m_ColorProfile;
+		FrameBuffer<width, height, format>   		m_FrameBuffer;
+		ColorProfile<format>  				m_ColorProfile;
 #ifdef SOFTWARE_RENDERING
-		SoftwareGraphics* 	m_Graphics;
+		SoftwareGraphics<width, height, format>* 	m_Graphics;
 #else
-		Graphics*      		m_Graphics; // TODO if I ever implement hardware acceleration, this should be changed
+		Graphics<width, height, format>*      		m_Graphics; // TODO if I ever implement hardware acceleration, this should be changed
 #endif
 };
 

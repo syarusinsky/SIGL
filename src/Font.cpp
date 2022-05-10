@@ -14,7 +14,6 @@ Font::Font (uint8_t* data) :
 	m_CharacterWidth( data[CHAR_WIDTH_INDEX] ),
 	m_Width( (data[WIDTH_INDEX_1] << 24) | (data[WIDTH_INDEX_2] << 16) | (data[WIDTH_INDEX_3] << 8) | data[WIDTH_INDEX_4] ),
 	m_Height( data[HEIGHT_INDEX] ),
-	m_MappingStart( &data[MAPPING_START_INDEX] ),
 	m_BitmapStartIndex( data[BITMAP_START_INDEX_INDEX] ),
 	m_BitmapStart( &data[m_BitmapStartIndex] ),
 	m_CharMap()

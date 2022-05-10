@@ -28,7 +28,6 @@ class Font
 		const unsigned int      m_CharacterWidth;
 		const unsigned int      m_Width;
 		const unsigned int      m_Height;
-		const uint8_t*          m_MappingStart;
 		const unsigned int      m_BitmapStartIndex;
 		const uint8_t*          m_BitmapStart;
 		std::map<char, uint8_t> m_CharMap;
