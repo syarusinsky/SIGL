@@ -94,7 +94,7 @@ void SoftwareGraphics<width, height, format>::setFont (Font* font)
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 void SoftwareGraphics<width, height, format>::fill()
 {
-	for ( unsigned int pixelNum = 0; pixelNum < m_NumPxls; pixelNum++ )
+	for ( unsigned int pixelNum = 0; pixelNum < width * height; pixelNum++ )
 	{
 		m_CP.template putPixel<width, height>( m_Pxls, pixelNum );
 	}
@@ -245,7 +245,7 @@ void SoftwareGraphics<width, height, format>::drawBoxFilled (float xStart, float
 	xEndUInt   = std::min( std::max(xEndUInt,   0), (int)width );
 	yEndUInt   = std::min( std::max(yEndUInt,   0), (int)height );
 
-	unsigned int pixelRowStride = abs( (int)xEndUInt - (int)xStartUInt );
+	const unsigned int pixelRowStride = abs( (int)xEndUInt - (int)xStartUInt );
 
 	unsigned int pixelStart = ( (width * yStartUInt) + xStartUInt );
 	unsigned int pixelEnd   = ( (width * yEndUInt  ) + xEndUInt   );
@@ -258,9 +258,12 @@ void SoftwareGraphics<width, height, format>::drawBoxFilled (float xStart, float
 		pixelEnd   = temp;
 	}
 
-	for (unsigned int pixel = pixelStart; pixel < pixelEnd; pixel += width)
+	const unsigned int pStart = pixelStart;
+	const unsigned int pEnd = pixelEnd;
+
+	for (unsigned int pixel = pStart; pixel < pEnd; pixel += width)
 	{
-		unsigned int pixelRowEnd = pixel + pixelRowStride;
+		const unsigned int pixelRowEnd = pixel + pixelRowStride;
 
 		for (unsigned int rowPixel = pixel; rowPixel < pixelRowEnd; rowPixel += 1)
 		{
@@ -461,8 +464,8 @@ void SoftwareGraphics<width, height, format>::drawTriangleFilled (float x1, floa
 			int tempX2Int = tempX2 * (width  - 1);
 			int tempY2Int = tempY2 * (height - 1);
 
-			int tempXY1 = ( (tempY1Int * width) + tempX1Int );
-			int tempXY2 = ( (tempY2Int * width) + tempX2Int );
+			const int tempXY1 = ( (tempY1Int * width) + tempX1Int );
+			const int tempXY2 = ( (tempY2Int * width) + tempX2Int );
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
