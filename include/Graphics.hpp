@@ -61,6 +61,9 @@ class Graphics
 		// TODO remove this after testing
 		// virtual void testTexture (Texture texture) = 0;
 
+		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FB; }
+		const ColorProfile<format>& getColorProfile() const { return m_ColorProfile; }
+
 	protected:
 		FrameBuffer<width, height, format> 	m_FB;
 		ColorProfile<format> 			m_ColorProfile;

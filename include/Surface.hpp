@@ -27,8 +27,6 @@ class Surface
 {
 	public:
 		Surface() :
-			m_FrameBuffer(),
-			m_ColorProfile(),
 #ifdef SOFTWARE_RENDERING
 			m_Graphics( new SoftwareGraphics<width, height, format>() )
 #else
@@ -38,12 +36,12 @@ class Surface
 		}
 		virtual ~Surface() {}
 
-		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FrameBuffer; }
-		ColorProfile<format>& getColorProfile() { return m_ColorProfile; }
+		FrameBuffer<width, height, format>& getFrameBuffer() { return m_Graphics->getFrameBuffer(); }
+		const ColorProfile<format>& getColorProfile() const { return m_Graphics->getColorProfile(); }
 
 		unsigned int getPixelWidthInBits() const
 		{
-			switch ( m_ColorProfile.getFormat() )
+			switch ( this->getColorProfile().getFormat() )
 			{
 				case CP_FORMAT::RGB_24BIT:
 					return 24;
@@ -57,8 +55,6 @@ class Surface
 		virtual void draw() = 0;
 
 	protected:
-		FrameBuffer<width, height, format>   		m_FrameBuffer;
-		ColorProfile<format>  				m_ColorProfile;
 #ifdef SOFTWARE_RENDERING
 		SoftwareGraphics<width, height, format>* 	m_Graphics;
 #else
