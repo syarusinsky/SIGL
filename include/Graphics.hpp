@@ -24,7 +24,7 @@ class Camera3D;
 // class Texture;
 struct Face;
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, typename... Textures>
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Textures>
 class Graphics
 {
 	public:
@@ -68,7 +68,6 @@ class Graphics
 		FrameBuffer<width, height, format> 	m_FB;
 		ColorProfile<format> 			m_ColorProfile;
 		Font* 					m_CurrentFont;
-		const unsigned int 			m_NumPixels;
 
 		// TODO this is probably not the right way to handle shaders, for testing purposes only now
 		// shaders (default vertex does nothing, default fragment is a rgb gradient)
@@ -92,14 +91,13 @@ class Graphics
 		Graphics() :
 			m_FB(),
 			m_ColorProfile(),
-			m_CurrentFont( nullptr ),
-			m_NumPixels( m_FB.getNumPixels() ) {}
+			m_CurrentFont( nullptr ) {}
 		virtual ~Graphics() {}
 
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, typename... Texture>
-inline bool Graphics<width, height, format, Texture...>::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Texture>
+inline bool Graphics<width, height, format, bufferSize, Texture...>::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
 {
 	// cache points
 	float xStartClipped = *xStart;
