@@ -58,9 +58,10 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 	public:
 		SurfaceThreaded() :
 			m_GraphicsBuffer { nullptr },
-			m_GraphicsBufferWriteIncr( bufferSize - 1 ),
 			m_GraphicsBufferReadIncr( 0 ),
-			m_GraphicsRead( m_GraphicsBuffer[0] )
+			m_GraphicsBufferWriteIncr( bufferSize - 1 ),
+			m_GraphicsRead( m_GraphicsBuffer[0] ),
+			m_GraphicsThreadsDone{ false }
 		{
 			SurfaceBase<width, height, format, bufferSize>::m_Graphics = m_GraphicsBuffer[bufferSize - 1];
 			for ( unsigned int bufferNum = 0; bufferNum < bufferSize; bufferNum++ )
@@ -95,30 +96,37 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 			}
 
 			// launch a new thread to render the frame
+			m_GraphicsThreadsDone[m_GraphicsBufferWriteIncr] = false;
 			m_GraphicsThreads[m_GraphicsBufferWriteIncr] = std::thread(
-					&SurfaceThreaded::draw, this, SurfaceBase<width, height, format, bufferSize>::m_Graphics );
+					&SurfaceThreaded::drawWrapper, this, SurfaceBase<width, height, format, bufferSize>::m_Graphics,
+					m_GraphicsBufferWriteIncr );
 
 			return true;
 		}
 
 	protected:
 		virtual void draw(GRAPHICS* graphics) = 0;
+
+	private:
+		std::array<GRAPHICS*, bufferSize> 	m_GraphicsBuffer;
+		unsigned int 				m_GraphicsBufferReadIncr;
+		unsigned int 				m_GraphicsBufferWriteIncr;
+		std::array<std::thread, bufferSize>	m_GraphicsThreads;
+		std::array<bool, bufferSize> 		m_GraphicsThreadsDone;
+		using 		SurfaceBase<width, height, format, bufferSize>::m_Graphics;
+		GRAPHICS* 	m_GraphicsRead;
+
+		void drawWrapper(GRAPHICS* graphics, unsigned int bufferNum)
+		{
+			this->draw( graphics );
+			m_GraphicsThreadsDone[bufferNum] = true;
+		}
+
 		void updateGraphicsRead()
 		{
 			m_GraphicsBufferReadIncr = ( m_GraphicsBufferReadIncr + 1 ) % bufferSize;
-
 			m_GraphicsRead = m_GraphicsBuffer[m_GraphicsBufferReadIncr];
 		}
-
-		std::array<GRAPHICS*, bufferSize> 	m_GraphicsBuffer;
-		unsigned int 				m_GraphicsBufferWriteIncr;
-		unsigned int 				m_GraphicsBufferReadIncr;
-
-		std::array<std::thread, bufferSize>	m_GraphicsThreads;
-
-	private:
-		using 		SurfaceBase<width, height, format, bufferSize>::m_Graphics;
-		GRAPHICS* 	m_GraphicsRead;
 
 		void advanceGraphicsWritePointer()
 		{
