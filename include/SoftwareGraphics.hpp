@@ -45,19 +45,26 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 		void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) override;
 		void drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3) override;
 		void drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3) override;
-		// void drawTriangleShaded (Face& face, const Camera3D& camera) override;
 		void drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
 		void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) override;
 		void drawCircle (float originX, float originY, float radius) override;
 		void drawCircleFilled (float originX, float originY, float radius) override;
 		void drawText (float xStart, float yStart, const char* text, float scaleFactor) override;
-		// void drawSprite (float xStart, float yStart, Sprite& sprite) override;
+
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
+
+		// void drawTriangleShaded (Face& face, const Camera3D& camera) override;
 
 		// TODO remove this after testing
 		// void testTexture (Texture& texture) override;
 
 	protected:
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
+
+		template <typename S>
+		void drawSpriteHelper (float xStart, float yStart, S& sprite);
 
 		SoftwareGraphics();
 		~SoftwareGraphics() override;
@@ -1613,9 +1620,27 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawText (float xStart
 	}
 }
 
-/*
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xStart, float yStart, Sprite& sprite)
+void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite)
+{
+	this->drawSpriteHelper<Sprite<CP_FORMAT::MONOCHROME_1BIT>>( xStart, yStart, sprite );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite)
+{
+	this->drawSpriteHelper<Sprite<CP_FORMAT::RGBA_32BIT>>( xStart, yStart, sprite );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite)
+{
+	this->drawSpriteHelper<Sprite<CP_FORMAT::RGB_24BIT>>( xStart, yStart, sprite );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+template <typename S>
+void SoftwareGraphics<width, height, format, bufferSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
 {
 	// getting the pixel values of the vertices
 	int startXInt = xStart * (width - 1);
@@ -1623,10 +1648,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xSta
 	int currentXInt = startXInt;
 	int currentYInt = startYInt;
 
-	int spriteWidth = sprite.getWidth();
-	int spriteHeight = sprite.getHeight();
-	ColorProfile* spriteCP = sprite.getColorProfile();
-	uint8_t* spritePixels = sprite.getPixels();
+	const int spriteWidth = sprite.getWidth();
+	const int spriteHeight = sprite.getHeight();
 
 	float scaleFactor = sprite.getScaleFactor();
 
@@ -1637,10 +1660,10 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xSta
 		spriteRowTravel = spriteRowTravel / scaleFactor;
 		spritePixelTravel = spritePixelTravel / scaleFactor;
 	}
-	unsigned int scaledHeight = sprite.getScaledHeight();
-	unsigned int scaledWidth  = sprite.getScaledWidth();
-	float nNXTravel = static_cast<float>( scaledWidth ) / static_cast<float>( spriteWidth ); // nearest neighbor scaling vars
-	float nNYTravel = static_cast<float>( scaledHeight ) / static_cast<float>( spriteHeight );
+	const unsigned int scaledHeight = sprite.getScaledHeight();
+	const unsigned int scaledWidth  = sprite.getScaledWidth();
+	const float nNXTravel = static_cast<float>( scaledWidth ) / static_cast<float>( spriteWidth ); // nearest neighbor scaling vars
+	const float nNYTravel = static_cast<float>( scaledHeight ) / static_cast<float>( spriteHeight );
 	float nNCurrentX = 0.0f; // these vars keep a 'running total' for upscaling
 	float nNCurrentY = 0.0f;
 	float nNYLeftOver = 0.0f;
@@ -1651,7 +1674,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xSta
 	int spriteRotPointY = std::round( sprite.getRotationPointY() * scaleFactor );
 
 	// for bottom clipping
-	int fbSize = m_FBWidth * m_FBHeight;
+	const int fbSize = width * height;
 
 	for ( float row = 0; row < spriteHeight; row += spriteRowTravel )
 	{
@@ -1661,7 +1684,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xSta
 
 		for ( float pixel = 0; pixel < spriteWidth; pixel += spritePixelTravel )
 		{
-			Color color = spriteCP->getPixel( spritePixels, m_FBNumPixels, (std::floor(row) * spriteWidth) + std::floor(pixel) );
+			Color color = sprite.getColor( static_cast<unsigned int>(std::floor(pixel)), static_cast<unsigned int>(std::floor(row)) );
 
 			while ( nNCurrentX < nNXTravel )
 			{
@@ -1686,16 +1709,18 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xSta
 					int xTranslatedBack = xRotated + translationPointX;
 					int yTranslatedBack = yRotated + translationPointY;
 
-					int pixelToWrite = (yTranslatedBack * m_FBWidth) + xTranslatedBack;
+					int pixelToWrite = (yTranslatedBack * width) + xTranslatedBack;
 
 					if ( pixelToWrite >= 0 &&  // top clipping
 							pixelToWrite < fbSize && // bottom clipping
 							xTranslatedBack >= 0 && // left clipping
-							xTranslatedBack < m_FBWidth && // right clipping
-							! (color.m_IsMonochrome && color.m_M == 0.0f) )
+							xTranslatedBack < width && // right clipping
+							! (color.m_IsMonochrome && color.m_M == 0.0f) && // monochrome transparency
+							! (color.m_A == 0.0f) // color transparency
+							)
 					{
-							m_CP->setColor( color );
-							m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixelToWrite );
+							m_CP.setColor( color );
+							m_CP.template putPixel<width, height>( m_Pxls, pixelToWrite );
 					}
 
 					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
@@ -1740,7 +1765,6 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xSta
 		currentYInt += pixelsMovedDown;
 	}
 }
-*/
 
 /*
 void SoftwareGraphics::testTexture (Texture& texture)

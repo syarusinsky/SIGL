@@ -106,6 +106,40 @@ class ColorProfileMonochrome : public ColorProfileCommon
 
 			return color;
 		}
+
+		Color getPixel (uint8_t* pixels, unsigned int pixelNum)
+		{
+			Color color;
+
+			color.m_IsMonochrome = true;
+
+			unsigned int byteNum = std::floor( pixelNum / 8 );
+			unsigned int pixelIndex = 7 - (pixelNum % 8);
+			uint8_t bitmask = ( 1 << pixelIndex );
+
+			uint8_t byte = pixels[byteNum];
+
+			if ( (byte & bitmask) >> pixelIndex )
+			{
+				color.m_M = true;
+				color.m_R = 1.0f;
+				color.m_G = 1.0f;
+				color.m_B = 1.0f;
+				color.m_A = 1.0f;
+			}
+			else
+			{
+				color.m_M = false;
+				color.m_R = 0.0f;
+				color.m_G = 0.0f;
+				color.m_B = 0.0f;
+				color.m_A = 0.0f;
+			}
+
+			color.m_HasAlpha = false;
+
+			return color;
+		}
 };
 
 template <CP_FORMAT format>
@@ -136,6 +170,23 @@ class ColorProfileRGB : public ColorProfileCommon
 			color.m_R = static_cast<float>( pixelArray[(pixelNum * 3 ) + 0]) * (1.0f / 255.0f);
 			color.m_G = static_cast<float>( pixelArray[(pixelNum * 3 ) + 1]) * (1.0f / 255.0f);
 			color.m_B = static_cast<float>( pixelArray[(pixelNum * 3 ) + 2]) * (1.0f / 255.0f);
+			color.m_A = 1.0f;
+			color.m_M = true;
+
+			color.m_HasAlpha = false;
+
+			return color;
+		}
+
+		Color getPixel (uint8_t* pixels, unsigned int pixelNum)
+		{
+			Color color;
+
+			color.m_IsMonochrome = false;
+
+			color.m_R = static_cast<float>( pixels[(pixelNum * 3 ) + 0]) * (1.0f / 255.0f);
+			color.m_G = static_cast<float>( pixels[(pixelNum * 3 ) + 1]) * (1.0f / 255.0f);
+			color.m_B = static_cast<float>( pixels[(pixelNum * 3 ) + 2]) * (1.0f / 255.0f);
 			color.m_A = 1.0f;
 			color.m_M = true;
 
@@ -174,6 +225,23 @@ class ColorProfileRGBA : public ColorProfileCommon
 			color.m_G = static_cast<float>( pixelArray[(pixelNum * 4 ) + 1]) * (1.0f / 255.0f);
 			color.m_B = static_cast<float>( pixelArray[(pixelNum * 4 ) + 2]) * (1.0f / 255.0f);
 			color.m_A = static_cast<float>( pixelArray[(pixelNum * 4 ) + 3]) * (1.0f / 255.0f);
+			color.m_M = true;
+
+			color.m_HasAlpha = true;
+
+			return color;
+		}
+
+		Color getPixel (uint8_t* pixels, unsigned int pixelNum)
+		{
+			Color color;
+
+			color.m_IsMonochrome = false;
+
+			color.m_R = static_cast<float>( pixels[(pixelNum * 4 ) + 0]) * (1.0f / 255.0f);
+			color.m_G = static_cast<float>( pixels[(pixelNum * 4 ) + 1]) * (1.0f / 255.0f);
+			color.m_B = static_cast<float>( pixels[(pixelNum * 4 ) + 2]) * (1.0f / 255.0f);
+			color.m_A = static_cast<float>( pixels[(pixelNum * 4 ) + 3]) * (1.0f / 255.0f);
 			color.m_M = true;
 
 			color.m_HasAlpha = true;

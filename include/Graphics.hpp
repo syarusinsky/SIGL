@@ -15,11 +15,11 @@
 
 #include "FrameBuffer.hpp"
 #include "ColorProfile.hpp"
+#include "Sprite.hpp"
 #include <string>
 #include <math.h>
 
 class Font;
-// class Sprite;
 class Camera3D;
 // class Texture;
 struct Face;
@@ -42,13 +42,17 @@ class Graphics
 		virtual void drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd) = 0;
 		virtual void drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
 		virtual void drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3) = 0;
-		// virtual void drawTriangleShaded (Face& face, const Camera3D& camera) = 0;
 		virtual void drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4) = 0;
 		virtual void drawCircle (float originX, float originY, float radius) = 0;
 		virtual void drawCircleFilled (float originX, float originY, float radius) = 0;
 		virtual void drawText (float xStart, float yStart, const char* text, float scaleFactor) = 0;
-		// virtual void drawSprite (float xStart, float yStart, Sprite& sprite) = 0;
+
+		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite) = 0;
+		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) = 0;
+		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) = 0;
+
+		// virtual void drawTriangleShaded (Face& face, const Camera3D& camera) = 0;
 
 		// TODO this is probably not the right way to handle shaders, for testing purposes only now
 		// void setVertexShader (void (*vShader)(Face& face)) { vertexShader = vShader; }

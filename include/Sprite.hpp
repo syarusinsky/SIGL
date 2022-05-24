@@ -12,11 +12,11 @@
 
 #include <math.h>
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-class Sprite : public FrameBuffer<width, height, format>
+template <CP_FORMAT format>
+class Sprite : public FrameBufferDynamic<format>
 {
 	public:
-		Sprite();
+		Sprite (const unsigned int width, const unsigned int height);
 		Sprite (uint8_t* data);
 
 		unsigned int getScaledWidth() const;
@@ -37,14 +37,11 @@ class Sprite : public FrameBuffer<width, height, format>
 		int   m_RotationDegrees;
 		int   m_RotPointX;
 		int   m_RotPointY;
-
-	private:
-		ColorProfile<format> m_ColorProfile;
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-Sprite<width, height, format>::Sprite() :
-	FrameBuffer<width, height, format>(),
+template <CP_FORMAT format>
+Sprite<format>::Sprite (const unsigned int width, const unsigned int height) :
+	FrameBufferDynamic<format>( width, height ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
 	m_RotPointX( width / 2 ),
@@ -52,47 +49,43 @@ Sprite<width, height, format>::Sprite() :
 {
 }
 
-// for sif files,...
-// width: (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4]
-// height: (data[5] << 24) | (data[6] << 16) | (data[7] << 8) | data[8]
-// format: FormatInitializer( data[0] ).getFormat()
-// pixels: &data[9]
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-Sprite<width, height, format>::Sprite (uint8_t* data) :
-	FrameBuffer<width, height, format>( &data[9] ),
+template <CP_FORMAT format>
+Sprite<format>::Sprite (uint8_t* data) :
+	FrameBufferDynamic<format>( (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4],
+					(data[5] << 24) | (data[6] << 16) | (data[7] << 8) | data[8], &data[9] ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
-	m_RotPointX( width / 2 ),
-	m_RotPointY( height / 2 )
+	m_RotPointX( this->getWidth() / 2 ),
+	m_RotPointY( this->getHeight() / 2 )
 {
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-unsigned int Sprite<width, height, format>::getScaledWidth() const
+template <CP_FORMAT format>
+unsigned int Sprite<format>::getScaledWidth() const
 {
-	return std::floor( width * m_ScaleFactor );
+	return std::floor( this->getWidth() * m_ScaleFactor );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-unsigned int Sprite<width, height, format>::getScaledHeight() const
+template <CP_FORMAT format>
+unsigned int Sprite<format>::getScaledHeight() const
 {
-	return std::floor( height * m_ScaleFactor );
+	return std::floor( this->getHeight() * m_ScaleFactor );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-void Sprite<width, height, format>::setScaleFactor (float scaleFactor)
+template <CP_FORMAT format>
+void Sprite<format>::setScaleFactor (float scaleFactor)
 {
 	m_ScaleFactor = scaleFactor;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-float Sprite<width, height, format>::getScaleFactor() const
+template <CP_FORMAT format>
+float Sprite<format>::getScaleFactor() const
 {
 	return m_ScaleFactor;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-void Sprite<width, height, format>::setRotationAngle (int degrees)
+template <CP_FORMAT format>
+void Sprite<format>::setRotationAngle (int degrees)
 {
 	if ( degrees < 0 )
 	{
@@ -105,32 +98,32 @@ void Sprite<width, height, format>::setRotationAngle (int degrees)
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-int Sprite<width, height, format>::getRotationAngle() const
+template <CP_FORMAT format>
+int Sprite<format>::getRotationAngle() const
 {
 	return m_RotationDegrees;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-void Sprite<width, height, format>::setRotationPointX (float x)
+template <CP_FORMAT format>
+void Sprite<format>::setRotationPointX (float x)
 {
-	m_RotPointX = ( width - 1 ) * x;
+	m_RotPointX = ( this->getWidth() - 1 ) * x;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-int Sprite<width, height, format>::getRotationPointX() const
+template <CP_FORMAT format>
+int Sprite<format>::getRotationPointX() const
 {
 	return m_RotPointX;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-void Sprite<width, height, format>::setRotationPointY (float y)
+template <CP_FORMAT format>
+void Sprite<format>::setRotationPointY (float y)
 {
-	m_RotPointY = ( height - 1 ) * y;
+	m_RotPointY = ( this->getHeight() - 1 ) * y;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-int Sprite<width, height, format>::getRotationPointY() const
+template <CP_FORMAT format>
+int Sprite<format>::getRotationPointY() const
 {
 	return m_RotPointY;
 }
