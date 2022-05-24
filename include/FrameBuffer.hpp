@@ -97,8 +97,6 @@ class FrameBuffer : public std::conditional<format == CP_FORMAT::RGB_24BIT, Fram
 
 		unsigned int getWidth() const { return width; }
 		unsigned int getHeight() const { return height; }
-
-		const ColorProfile<format> getColorProfile() const { return format; }
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>

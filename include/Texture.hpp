@@ -13,11 +13,13 @@ template <unsigned int width, unsigned int height, CP_FORMAT format>
 class Texture : public FrameBuffer<width, height, format>
 {
 	public:
-		// Texture (unsigned int width, unsigned int height, const CP_FORMAT& format);
 		Texture();
 		Texture (uint8_t* data);
 
-		const Color getColor (float texCoordX, float texCoordY) const;
+		const Color getColor (float texCoordX, float texCoordY);
+
+	private:
+		ColorProfile<format> m_ColorProfile;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
@@ -38,7 +40,7 @@ Texture<width, height, format>::Texture (uint8_t* data) :
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
-const Color Texture<width, height, format>::getColor (float texCoordX, float texCoordY) const
+const Color Texture<width, height, format>::getColor (float texCoordX, float texCoordY)
 {
 	// wrap texture coordinates from 0 to 1
 	texCoordX = std::remainder( texCoordX, 1.0f );
@@ -50,7 +52,7 @@ const Color Texture<width, height, format>::getColor (float texCoordX, float tex
 	const unsigned int yUInt = texCoordY * ( height - 1 );
 	const unsigned int pixelNum = (yUInt * width) + xUInt;
 
-	return FrameBuffer<width, height, format>::m_ColorProfile.getPixel<width, height>( FrameBuffer<width, height, format>::m_Pixels, pixelNum );
+	return m_ColorProfile.template getPixel<width, height>( FrameBuffer<width, height, format>::m_Pixels, pixelNum );
 }
 
 #endif // TEXTURE_HPP

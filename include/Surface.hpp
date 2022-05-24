@@ -46,6 +46,8 @@ class SurfaceBase
 			}
 		}
 
+		virtual void setFont (Font* font) = 0;
+
 	protected:
 		GRAPHICS* 	m_Graphics;
 
@@ -75,6 +77,14 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 			updateGraphicsRead();
 			FrameBuffer<width, height, format>& fb = m_GraphicsRead->getFrameBuffer();
 			return fb;
+		}
+
+		void setFont (Font* font) override
+		{
+			for ( unsigned int bufferNum = 0; bufferNum < bufferSize; bufferNum++ )
+			{
+				m_GraphicsBuffer[bufferNum]->setFont( font );
+			}
 		}
 
 		bool render() // returns false if there is no more free frames available for threading
@@ -148,6 +158,11 @@ class SurfaceSingleCore : public SurfaceBase<width, height, format, bufferSize>
 		FrameBuffer<width, height, format>& advanceFrameBuffer()
 		{
 			return SurfaceBase<width, height, format, bufferSize>::m_Graphics->getFrameBuffer();
+		}
+
+		void setFont (Font* font) override
+		{
+			SurfaceBase<width, height, format, bufferSize>::m_Graphics->setFont( font );
 		}
 
 		bool render()

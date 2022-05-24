@@ -37,6 +37,9 @@ class Sprite : public FrameBuffer<width, height, format>
 		int   m_RotationDegrees;
 		int   m_RotPointX;
 		int   m_RotPointY;
+
+	private:
+		ColorProfile<format> m_ColorProfile;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
