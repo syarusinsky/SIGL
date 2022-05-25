@@ -55,16 +55,21 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) override;
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
 
-		// void drawTriangleShaded (Face& face, const Camera3D& camera) override;
+		void drawTriangleShaded (TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData) override;
+		void drawTriangleShaded (TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData) override;
+		void drawTriangleShaded (TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData) override;
 
 		// TODO remove this after testing
-		// void testTexture (Texture& texture) override;
+		void testTexture (Texture<CP_FORMAT::RGBA_32BIT>* texture) override;
 
 	protected:
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
 
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
+
+		template <CP_FORMAT texFormat>
+		void drawTriangleShadedHelper (TriShaderData<texFormat>& shaderData);
 
 		SoftwareGraphics();
 		~SoftwareGraphics() override;
@@ -892,17 +897,40 @@ static inline void calcTriGradients( float& v1StartEdgeDistT, float& v1EndEdgeDi
 	}
 }
 
-/*
-void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData)
 {
+	this->drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( shaderData );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData)
+{
+	this->drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( shaderData );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData)
+{
+	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( shaderData );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+template <CP_FORMAT texFormat>
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelper (TriShaderData<texFormat>& shaderData)
+{
+	Face& face = shaderData.face;
+	Camera3D& camera = shaderData.camera;
+
 	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_CP->getColor();
+	const Color previousColor = m_CP.template getColor();
 
 	// a color to store for fragment shading
-	Color currentColor = m_CP->getColor();
+	Color currentColor = m_CP.template getColor();
 
 	// put through the vertex shader first
-	this->vertexShader( face );
+	( *shaderData.vShader )( shaderData );
 
 	// first determine if this triangle needs to be rendered (back face culling)
 	face.calcNormals();
@@ -928,12 +956,12 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 	float y3 = face.vertices[2].vec.y();
 
 	// getting the pixel values of the vertices
-	int x1Int = x1 * (m_FBWidth  - 1);
-	int y1Int = y1 * (m_FBHeight - 1);
-	int x2Int = x2 * (m_FBWidth  - 1);
-	int y2Int = y2 * (m_FBHeight - 1);
-	int x3Int = x3 * (m_FBWidth  - 1);
-	int y3Int = y3 * (m_FBHeight - 1);
+	int x1Int = x1 * (width  - 1);
+	int y1Int = y1 * (height - 1);
+	int x2Int = x2 * (width  - 1);
+	int y2Int = y2 * (height - 1);
+	int x3Int = x3 * (width  - 1);
+	int y3Int = y3 * (height - 1);
 
 	int x1Sorted = x1Int;
 	int y1Sorted = y1Int;
@@ -959,9 +987,9 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 						x3Sorted, y3Sorted, x3FSorted, y3FSorted );
 
 	// getting the slope of each line
-	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
-	float line2Slope = ((float) y3Sorted - y1Sorted) / ((float) x3Sorted - x1Sorted);
-	float line3Slope = ((float) y3Sorted - y2Sorted) / ((float) x3Sorted - x2Sorted);
+	const float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
+	const float line2Slope = ((float) y3Sorted - y1Sorted) / ((float) x3Sorted - x1Sorted);
+	const float line3Slope = ((float) y3Sorted - y2Sorted) / ((float) x3Sorted - x2Sorted);
 
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
 	float xLeftAccumulator  = (float) x1Sorted;
@@ -1052,16 +1080,16 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 		}
 
 		// if after clipping this line exists within the screen, render the line
-		if ( clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
+		if ( Graphics<width, height, format, bufferSize>::clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
 		{
-			int unclippedLeftX = x1FSorted * ( m_FBWidth - 1 );
-			int tempX1Int = tempX1 * ( m_FBWidth  - 1 );
-			int tempY1Int = tempY1 * ( m_FBHeight - 1 );
-			int tempX2Int = tempX2 * ( m_FBWidth  - 1 );
-			int tempY2Int = tempY2 * ( m_FBHeight - 1 );
+			int unclippedLeftX = x1FSorted * ( width - 1 );
+			int tempX1Int = tempX1 * ( width  - 1 );
+			int tempY1Int = tempY1 * ( height - 1 );
+			int tempX2Int = tempX2 * ( width  - 1 );
+			int tempY2Int = tempY2 * ( height - 1 );
 
-			int tempXY1 = ( (tempY1Int * m_FBWidth) + tempX1Int );
-			int tempXY2 = ( (tempY2Int * m_FBWidth) + tempX2Int );
+			const int tempXY1 = ( (tempY1Int * width) + tempX1Int );
+			const int tempXY2 = ( (tempY2Int * width) + tempX2Int );
 
 			// setting the x values for gradients
 			float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator)
@@ -1100,10 +1128,9 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				float v3CurPersp = v3Current * ( v3PerspMul * perspInterp );
 				float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
 				float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
-				this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
-							texCoordY );
-				m_CP->setColor( currentColor );
-				m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+				( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY );
+				m_CP.template setColor( currentColor );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 				v1Current += v1Incr;
 				v2Current += v2Incr;
@@ -1119,7 +1146,7 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 		for (int row = y1Sorted; row <= y2Sorted; row++)
 		{
 			// clip vertically if row is off screen
-			if (row >= (int)m_FBHeight)
+			if (row >= (int)height)
 			{
 				break;
 			}
@@ -1128,11 +1155,11 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				// rounding the points and clipping horizontally
 				int unclippedLeftX = std::round( xLeftAccumulator );
 				int unclippedRightX = std::round( xRightAccumulator );
-				unsigned int leftX  = std::min( std::max((int)unclippedLeftX, 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)unclippedRightX, (int)m_FBWidth - 1), 0 );
+				unsigned int leftX  = std::min( std::max((int)unclippedLeftX, 0), (int)width - 1 );
+				unsigned int rightX = std::max( std::min((int)unclippedRightX, (int)width - 1), 0 );
 
-				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
-				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+				unsigned int tempXY1 = ( (row * width) + leftX  );
+				unsigned int tempXY2 = ( (row * width) + rightX );
 
 				// setting the x values for gradients
 				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator)
@@ -1171,10 +1198,9 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 					float v3CurPersp = v3Current * ( v3PerspMul * perspInterp );
 					float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
 					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
-					this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
-								texCoordY );
-					m_CP->setColor( currentColor );
-					m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY );
+					m_CP.template setColor( currentColor );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					v1Current += v1Incr;
 					v2Current += v2Incr;
@@ -1232,7 +1258,7 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 		for (int row = y2Sorted + 1; row <= y3Sorted; row++)
 		{
 			// clip vertically if row is off screen
-			if (row >= (int)m_FBHeight)
+			if (row >= (int)height)
 			{
 				break;
 			}
@@ -1241,11 +1267,11 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 				// rounding the points and clipping horizontally
 				int unclippedLeftX = std::round( xLeftAccumulator );
 				int unclippedRightX = std::round( xRightAccumulator );
-				unsigned int leftX  = std::min( std::max((int)unclippedLeftX, 0), (int)m_FBWidth - 1 );
-				unsigned int rightX = std::max( std::min((int)unclippedRightX, (int)m_FBWidth - 1), 0 );
+				unsigned int leftX  = std::min( std::max((int)unclippedLeftX, 0), (int)width - 1 );
+				unsigned int rightX = std::max( std::min((int)unclippedRightX, (int)width - 1), 0 );
 
-				unsigned int tempXY1 = ( (row * m_FBWidth) + leftX  );
-				unsigned int tempXY2 = ( (row * m_FBWidth) + rightX );
+				unsigned int tempXY1 = ( (row * width) + leftX  );
+				unsigned int tempXY2 = ( (row * width) + rightX );
 
 				// setting the x values for gradients
 				float xLeftInRelationToX1 = (1.0f - x1InRelationToXLeft) - ((xInRelationRightmost - xLeftAccumulator) * xInRelationIncr);
@@ -1282,10 +1308,9 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 					float v3CurPersp = v3Current * ( v3PerspMul * perspInterp );
 					float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
 					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
-					this->fragmentShader( currentColor, face, m_CurrentTexture, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX,
-								texCoordY );
-					m_CP->setColor( currentColor );
-					m_CP->putPixel( m_FBPixels, m_FBNumPixels, pixel );
+					( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY );
+					m_CP.template setColor( currentColor );
+					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					v1Current += v1Incr;
 					v2Current += v2Incr;
@@ -1302,9 +1327,8 @@ void SoftwareGraphics::drawTriangleShaded (Face& face, const Camera3D& camera)
 	}
 
 	// set the previously used color back since we're done with the gradients
-	m_CP->setColor( previousColor );
+	m_CP.template setColor( previousColor );
 }
-*/
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 void SoftwareGraphics<width, height, format, bufferSize>::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
@@ -1766,22 +1790,21 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSpriteHelper (floa
 	}
 }
 
-/*
-void SoftwareGraphics::testTexture (Texture& texture)
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+void SoftwareGraphics<width, height, format, bufferSize>::testTexture (Texture<CP_FORMAT::RGBA_32BIT>* texture)
 {
-	const unsigned int height = texture.getHeight();
-	const unsigned int width = texture.getWidth();
+	const unsigned int texHeight = texture->getHeight();
+	const unsigned int texWidth = texture->getWidth();
 
-	for ( unsigned int row = 0; row < height; row++ )
+	for ( unsigned int row = 0; row < texHeight; row++ )
 	{
-		for ( unsigned int column = 0; column < width; column++ )
+		for ( unsigned int column = 0; column < texWidth; column++ )
 		{
-			m_CP->setColor( texture.getColorProfile()->getPixel(texture.getPixels(), width * height, (row * width) + column) );
-			m_CP->putPixel( m_FBPixels, m_FBNumPixels, (row * m_FBWidth) + column );
+			m_CP.template setColor( texture->getColor(column, row) );
+			m_CP.template putPixel<width, height>( m_Pxls, (row * width) + column );
 		}
 	}
 }
-*/
 
 #undef m_CP
 #undef m_CurrentFont

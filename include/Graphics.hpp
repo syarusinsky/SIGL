@@ -16,13 +16,24 @@
 #include "FrameBuffer.hpp"
 #include "ColorProfile.hpp"
 #include "Sprite.hpp"
+#include "Texture.hpp"
 #include <string>
 #include <math.h>
 
 class Font;
 class Camera3D;
-// class Texture;
 struct Face;
+
+template <CP_FORMAT format>
+struct TriShaderData
+{
+	std::array<Texture<format>*, 5>& textures;
+	Face& face;
+	Camera3D& camera;
+	void (*vShader)(TriShaderData<format>& vShaderData);
+	void (*fShader)(Color& colorOut, TriShaderData<format>& fShaderData, float v1Cur, float v2Cur, float v3Cur,
+			float texCoordX, float texCoordY);
+};
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Textures>
 class Graphics
@@ -52,18 +63,14 @@ class Graphics
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) = 0;
 
-		// virtual void drawTriangleShaded (Face& face, const Camera3D& camera) = 0;
-
-		// TODO this is probably not the right way to handle shaders, for testing purposes only now
-		// void setVertexShader (void (*vShader)(Face& face)) { vertexShader = vShader; }
-		// template <unsigned int texWidth, unsigned int texHeight, CP_FORMAT texFormat>
-		// void setFragmentShader (void (*fShader)(Color& color, Face& face, Texture<texWidth, texHeight, texFormat>& tex, float v1Cur,
-		// 					float v2Cur, float v3Cur, float texCoordX, float texCoordY)) { fragmentShader = fShader; }
+		virtual void drawTriangleShaded (TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData);
+		virtual void drawTriangleShaded (TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData);
+		virtual void drawTriangleShaded (TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData);
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
 		// TODO remove this after testing
-		// virtual void testTexture (Texture texture) = 0;
+		virtual void testTexture (Texture<CP_FORMAT::RGBA_32BIT>* texture) = 0;
 
 		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FB; }
 		const ColorProfile<format>& getColorProfile() const { return m_ColorProfile; }
@@ -72,22 +79,6 @@ class Graphics
 		FrameBuffer<width, height, format> 	m_FB;
 		ColorProfile<format> 			m_ColorProfile;
 		Font* 					m_CurrentFont;
-
-		// TODO this is probably not the right way to handle shaders, for testing purposes only now
-		// shaders (default vertex does nothing, default fragment is a rgb gradient)
-		// void (*vertexShader)(Face& face) = [](Face& face) { return; };
-		// void (*fragmentShader)(Color& color, Face& face, Texture* tex, float v1Cur, float v2Cur, float v3Cur, float texCoordX,
-		// 			float texCoordY) =
-		// 	[](Color& color, Face& face, Texture* tex, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY)
-		// 	{
-		// 		color.m_R = v1Cur;
-		// 		color.m_G = v2Cur;
-		// 		color.m_B = v3Cur;
-		// 		color.m_A = 1.0f;
-		// 		color.m_M = false;
-		// 		color.m_IsMonochrome = false;
-		// 		color.m_HasAlpha = false;
-		// 	};
 
 		// helpers
 		static inline bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected

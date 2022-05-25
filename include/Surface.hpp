@@ -48,6 +48,9 @@ class SurfaceBase
 
 		virtual void setFont (Font* font) = 0;
 
+		unsigned int getWidth() { return width; }
+		unsigned int getHeight() { return height; }
+
 	protected:
 		GRAPHICS* 	m_Graphics;
 
@@ -62,8 +65,8 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 			m_GraphicsBuffer { nullptr },
 			m_GraphicsBufferReadIncr( 0 ),
 			m_GraphicsBufferWriteIncr( bufferSize - 1 ),
-			m_GraphicsRead( m_GraphicsBuffer[0] ),
-			m_GraphicsThreadsDone{ false }
+			m_GraphicsThreadsDone{ false },
+			m_GraphicsRead( m_GraphicsBuffer[0] )
 		{
 			SurfaceBase<width, height, format, bufferSize>::m_Graphics = m_GraphicsBuffer[bufferSize - 1];
 			for ( unsigned int bufferNum = 0; bufferNum < bufferSize; bufferNum++ )
@@ -115,7 +118,7 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 		}
 
 	protected:
-		virtual void draw(GRAPHICS* graphics) = 0;
+		virtual void draw(GRAPHICS* graphics) override = 0;
 
 	private:
 		std::array<GRAPHICS*, bufferSize> 	m_GraphicsBuffer;
