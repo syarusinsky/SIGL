@@ -28,7 +28,6 @@ template <CP_FORMAT format>
 struct TriShaderData
 {
 	std::array<Texture<format>*, 5>& textures;
-	Face& face;
 	Camera3D& camera;
 	void (*vShader)(TriShaderData<format>& vShaderData);
 	void (*fShader)(Color& colorOut, TriShaderData<format>& fShaderData, float v1Cur, float v2Cur, float v3Cur,
@@ -63,9 +62,9 @@ class Graphics
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) = 0;
 
-		virtual void drawTriangleShaded (TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData);
-		virtual void drawTriangleShaded (TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData);
-		virtual void drawTriangleShaded (TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData);
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 

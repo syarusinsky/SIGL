@@ -55,9 +55,9 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) override;
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
 
-		void drawTriangleShaded (TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData) override;
-		void drawTriangleShaded (TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData) override;
-		void drawTriangleShaded (TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData) override;
 
 		// TODO remove this after testing
 		void testTexture (Texture<CP_FORMAT::RGBA_32BIT>* texture) override;
@@ -68,8 +68,7 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
 
-		template <CP_FORMAT texFormat>
-		void drawTriangleShadedHelper (TriShaderData<texFormat>& shaderData);
+		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData);
 
 		SoftwareGraphics();
 		~SoftwareGraphics() override;
@@ -899,28 +898,27 @@ static inline void calcTriGradients( float& v1StartEdgeDistT, float& v1EndEdgeDi
 
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData)
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData)
 {
-	this->drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( shaderData );
+	this->drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData)
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData)
 {
-	this->drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( shaderData );
+	this->drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData)
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData)
 {
-	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( shaderData );
+	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 template <CP_FORMAT texFormat>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelper (TriShaderData<texFormat>& shaderData)
+void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData)
 {
-	Face& face = shaderData.face;
 	Camera3D& camera = shaderData.camera;
 
 	// get previous color, since we'll want to set it back when we're done with the shading colors
