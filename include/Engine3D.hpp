@@ -17,6 +17,7 @@ Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegr
 struct Vertex
 {
 	Vector<4> vec;
+	Vector<4> normal;
 	Vector<2> texCoords;
 };
 
@@ -25,7 +26,7 @@ struct Face
 	Vertex vertices[3];
 	Vector<4> normal;
 
-	void calcNormals();
+	void calcFaceNormals();
 };
 
 struct Mesh

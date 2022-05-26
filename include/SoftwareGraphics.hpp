@@ -25,8 +25,6 @@
 #include <algorithm>
 #include <limits>
 
-#include <iostream>
-
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 {
@@ -922,16 +920,16 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	Camera3D& camera = shaderData.camera;
 
 	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_CP.template getColor();
+	const Color previousColor = m_CP.getColor();
 
 	// a color to store for fragment shading
-	Color currentColor = m_CP.template getColor();
+	Color currentColor = m_CP.getColor();
 
 	// put through the vertex shader first
 	( *shaderData.vShader )( shaderData );
 
 	// first determine if this triangle needs to be rendered (back face culling)
-	face.calcNormals();
+	face.calcFaceNormals();
 	const Vector<4>& vertexVec = face.vertices[0].vec;
 	const Vector<4>& normal = face.normal;
 	if ( normal.x() * (vertexVec.x() - camera.x())
@@ -1127,7 +1125,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 				float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
 				float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 				( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY );
-				m_CP.template setColor( currentColor );
+				m_CP.setColor( currentColor );
 				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 				v1Current += v1Incr;
@@ -1197,7 +1195,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 					float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
 					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 					( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY );
-					m_CP.template setColor( currentColor );
+					m_CP.setColor( currentColor );
 					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					v1Current += v1Incr;
@@ -1307,7 +1305,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 					float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
 					float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 					( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY );
-					m_CP.template setColor( currentColor );
+					m_CP.setColor( currentColor );
 					m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
 					v1Current += v1Incr;
@@ -1325,7 +1323,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// set the previously used color back since we're done with the gradients
-	m_CP.template setColor( previousColor );
+	m_CP.setColor( previousColor );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
@@ -1798,7 +1796,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::testTexture (Texture<C
 	{
 		for ( unsigned int column = 0; column < texWidth; column++ )
 		{
-			m_CP.template setColor( texture->getColor(column, row) );
+			m_CP.setColor( texture->getColor(column, row) );
 			m_CP.template putPixel<width, height>( m_Pxls, (row * width) + column );
 		}
 	}
