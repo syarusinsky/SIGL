@@ -33,6 +33,14 @@ Mesh createCubeMesh()
 		Face{ {Vertex{Vector<4>({0.0f, 0.0f, 1.0f, 1.0f}), {}, Vector<2>({0.0f, 0.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 0.0f, 1.0f}), {}, Vector<2>({1.0f, 1.0f})}, Vertex{Vector<4>({1.0f, 0.0f, 1.0f, 1.0f}), {}, Vector<2>({1.0f, 0.0f})}} }
 	};
 
+	for ( Face& face : cube.faces )
+	{
+		// translate to origin for rotation
+		face.vertices[0].vec -= 0.5f;
+		face.vertices[1].vec -= 0.5f;
+		face.vertices[2].vec -= 0.5f;
+	}
+
 	return cube;
 }
 
