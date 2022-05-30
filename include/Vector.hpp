@@ -15,6 +15,7 @@ class Vector : public Matrix<1, dimensions>
 	public:
 		Vector (float initVal = 0.0f);
 		Vector (const std::vector<float>& initVals);
+		Vector (const Matrix<1, dimensions>& matrix);
 		~Vector() {}
 
 		float& at (unsigned int pos);
@@ -51,6 +52,12 @@ Vector<dimensions>::Vector (const std::vector<float>& initVals) :
 	{
 		this->m_Vals[0][pos] = initVals[pos];
 	}
+}
+
+template <unsigned int dimensions>
+Vector<dimensions>::Vector (const Matrix<1, dimensions>& matrix) :
+	Matrix<1, dimensions>( matrix )
+{
 }
 
 template <unsigned int dimensions>

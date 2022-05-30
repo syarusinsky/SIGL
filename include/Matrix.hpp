@@ -23,6 +23,11 @@ class Matrix
 		Matrix operator* (float scalar) const;
 		Matrix operator*= (float scalar);
 
+		Matrix operator+ (const Matrix<rows, columns>& other) const;
+		Matrix operator+= (const Matrix<rows, columns>& other);
+		Matrix operator- (const Matrix<rows, columns>& other) const;
+		Matrix operator-= (const Matrix<rows, columns>& other);
+
 		unsigned int numRows() const { return rows; }
 		unsigned int numColumns() const { return columns; }
 
@@ -133,6 +138,66 @@ Matrix<rows, columns> Matrix<rows, columns>::operator*= (float scalar)
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
 			m_Vals[row][column] *= scalar;
+		}
+	}
+
+	return *this;
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns> Matrix<rows, columns>::operator+ (const Matrix<rows,columns>& other) const
+{
+	Matrix copy = *this;
+
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int column = 0; column < columns; column++ )
+		{
+			copy.m_Vals[row][column] += other.m_Vals[row][column];
+		}
+	}
+
+	return copy;
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns> Matrix<rows, columns>::operator+= (const Matrix<rows, columns>& other)
+{
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int column = 0; column < columns; column++ )
+		{
+			m_Vals[row][column] += other.m_Vals[row][column];
+		}
+	}
+
+	return *this;
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns> Matrix<rows, columns>::operator- (const Matrix<rows,columns>& other) const
+{
+	Matrix copy = *this;
+
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int column = 0; column < columns; column++ )
+		{
+			copy.m_Vals[row][column] -= other.m_Vals[row][column];
+		}
+	}
+
+	return copy;
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns> Matrix<rows, columns>::operator-= (const Matrix<rows, columns>& other)
+{
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int column = 0; column < columns; column++ )
+		{
+			m_Vals[row][column] -= other.m_Vals[row][column];
 		}
 	}
 
