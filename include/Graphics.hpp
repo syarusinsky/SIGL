@@ -29,6 +29,7 @@ struct TriShaderData
 {
 	std::array<Texture<format>*, 5>& textures;
 	Camera3D& camera;
+	Color color;
 	void (*vShader)(TriShaderData<format>& vShaderData);
 	void (*fShader)(Color& colorOut, TriShaderData<format>& fShaderData, float v1Cur, float v2Cur, float v3Cur,
 			float texCoordX, float texCoordY);

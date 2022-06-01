@@ -25,9 +25,6 @@
 #include <algorithm>
 #include <limits>
 
-// TODO remove after testing
-#include <iostream>
-
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 {
@@ -829,12 +826,12 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
-			float perspInterp = 1.0f / persp;
-			float v1CurPersp = v1Cur * v1PerspMul * perspInterp;
-			float v2CurPersp = v2Cur * v2PerspMul * perspInterp;
-			float v3CurPersp = v3Cur * v3PerspMul *perspInterp;
-			float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
-			float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
+			const float perspInterp = 1.0f / persp;
+			const float v1CurPersp = v1Cur * v1PerspMul * perspInterp;
+			const float v2CurPersp = v2Cur * v2PerspMul * perspInterp;
+			const float v3CurPersp = v3Cur * v3PerspMul *perspInterp;
+			const float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
+			const float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 			( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY);
 			m_CP.setColor( currentColor );
 			m_CP.template putPixel<width, height>( m_Pxls, pixel );
@@ -882,37 +879,38 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		const float rowF = static_cast<float>( row );
 		const float leftXF = static_cast<float>( leftX );
 		const float rightXF = static_cast<float>( rightX );
-		const float v1CurStart = (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted));
-		const float v1CurEnd   = (xGradStep.at(0) * (rightXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted));
-		const float v2CurStart = (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted));
-		const float v2CurEnd   = (xGradStep.at(1) * (rightXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted));
-		const float v3CurStart = (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted));
-		const float v3CurEnd   = (xGradStep.at(2) * (rightXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted));
-		const float v1CurStep  = ( v1CurEnd - v1CurStart ) * oneOverPixelStride;
-		const float v2CurStep  = ( v2CurEnd - v2CurStart ) * oneOverPixelStride;
-		const float v3CurStep  = ( v3CurEnd - v3CurStart ) * oneOverPixelStride;
+		const float v1CurStart = 1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) );
+		const float v1CurEnd   = 1.0f - ( (xGradStep.at(0) * (rightXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) );
+		const float v2CurStart = 1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) );
+		const float v2CurEnd   = 1.0f - ( (xGradStep.at(1) * (rightXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) );
+		const float v3CurStart = 1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) );
+		const float v3CurEnd   = 1.0f - ( (xGradStep.at(2) * (rightXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) );
+		const float perspStart = ( v1CurStart * v1PerspMul ) + ( v2CurStart * v2PerspMul ) + ( v3CurStart * v3PerspMul );
+		const float perspEnd   = ( v1CurEnd * v1PerspMul ) + ( v2CurEnd * v2PerspMul ) + ( v3CurEnd * v3PerspMul );
+		const float v1CurIncr  = ( v1CurEnd - v1CurStart ) * oneOverPixelStride;
+		const float v2CurIncr  = ( v2CurEnd - v2CurStart ) * oneOverPixelStride;
+		const float v3CurIncr  = ( v3CurEnd - v3CurStart ) * oneOverPixelStride;
+		const float perspIncr  = ( perspEnd - perspStart ) * oneOverPixelStride;
 		float v1Cur = v1CurStart;
 		float v2Cur = v2CurStart;
 		float v3Cur = v3CurStart;
+		float persp = perspStart;
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
-			float v1CurAdj = 1.0f - v1Cur;
-			float v2CurAdj = 1.0f - v2Cur;
-			float v3CurAdj = 1.0f - v3Cur;
-			float perspInterp = (( v1CurAdj * v1PerspMul ) + ( v2CurAdj * v2PerspMul ) + ( v3CurAdj * v3PerspMul ));
-			perspInterp = 1.0f / perspInterp;
-			float v1CurPersp = v1CurAdj * v1PerspMul * perspInterp;
-			float v2CurPersp = v2CurAdj * v2PerspMul * perspInterp;
-			float v3CurPersp = v3CurAdj * v3PerspMul *perspInterp;
-			float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
-			float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
+			const float perspInterp = 1.0f / persp;
+			const float v1CurPersp = v1Cur * v1PerspMul * perspInterp;
+			const float v2CurPersp = v2Cur * v2PerspMul * perspInterp;
+			const float v3CurPersp = v3Cur * v3PerspMul *perspInterp;
+			const float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
+			const float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
 			( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY);
 			m_CP.setColor( currentColor );
 			m_CP.template putPixel<width, height>( m_Pxls, pixel );
-			v1Cur += v1CurStep;
-			v2Cur += v2CurStep;
-			v3Cur += v3CurStep;
+			v1Cur += v1CurIncr;
+			v2Cur += v2CurIncr;
+			v3Cur += v3CurIncr;
+			persp += perspIncr;
 		}
 
 		// increment accumulators

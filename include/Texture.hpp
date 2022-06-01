@@ -48,6 +48,9 @@ Texture<format>::Texture (uint8_t* data) :
 template <CP_FORMAT format>
 const Color Texture<format>::getColor (float texCoordX, float texCoordY)
 {
+	// ensure that the texure coords start from the bottom
+	texCoordY = 1.0f - texCoordY;
+
 	// wrap texture coordinates from 0 to 1
 	texCoordX = std::remainder( texCoordX, 1.0f );
 	texCoordY = std::remainder( texCoordY, 1.0f );
