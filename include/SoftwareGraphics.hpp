@@ -824,14 +824,68 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		/*
 		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 1.0f; // when rowF = y1FSorted
 		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 0.0f; // when rowF = y3FSorted
+		1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) ) = 0.0f; // when rowF = y1FSorted
+		1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) ) = 0.0f; // when rowF = y3FSorted
+		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 0.0f; // when rowF = y1FSorted
+		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 1.0f; // when rowF = y3FSorted
+
+		xGradStep.at(0) * (x1FSorted - x1FSorted) = 0.0f;
+		xGradStep.at(0) * (x3FSorted - x1FSorted) = 0.0f;
+		yGradStep.at(0) * (y1FSorted - y1FSorted) = 0.0f;
+		yGradStep.at(0) * (y3FSorted - y1FSorted) = 1.0f;
+
+		xGradStep.at(1) * (x1FSorted - x2FSorted) = 0.0f;
+		xGradStep.at(1) * (x2FSorted - x2FSorted) = 0.5f;
+		xGradStep.at(1) * (x3FSorted - x2FSorted) = 1.0f;
+		yGradStep.at(1) * (y1FSorted - y2FSorted) = 1.0f;
+		yGradStep.at(1) * (y2FSorted - y2FSorted) = 0.5f;
+		yGradStep.at(1) * (y3FSorted - y2FSorted) = 0.0f;
+
+		xGradStep.at(2) * (x1FSorted - x3FSorted) = 0.0f;
+		xGradStep.at(2) * (x3FSorted - x3FSorted) = 0.0f;
+		yGradStep.at(2) * (y1FSorted - y3FSorted) = 1.0f;
+		yGradStep.at(2) * (y3FSorted - y3FSorted) = 0.0f;
+		*/
+
+		x2FSorted = x1FSorted;
+		y2FSorted = y3FSorted;
+		const float x2GradStep = 1.0f / (x3FSorted - x2FSorted);
+		const float y2GradStep = 1.0f / (y1FSorted - y2FSorted);
+		xGradStep = Vector<3>({ 0.0f, x2GradStep, 0.0f });
+		yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), y2GradStep, 1.0f / (y1FSorted - y3FSorted) });
+
+		const float v1StepTotal = (xGradStep.at(1) * (x1FSorted - x2FSorted)) + (yGradStep.at(1) * (y1FSorted - y2FSorted));
+		const float v2StepTotal = (xGradStep.at(1) * (((x3FSorted + x1FSorted) * 0.5f) - x2FSorted)) + (yGradStep.at(1) *
+						(((y3FSorted + y1FSorted) * 0.5f) - y2FSorted));
+		const float v3StepTotal = (xGradStep.at(1) * (x3FSorted - x2FSorted)) + (yGradStep.at(1) * (y3FSorted - y2FSorted));
+		if ( ! floatsAreEqual(v1StepTotal, 1.0f) || ! floatsAreEqual(v2StepTotal, 1.0f) || ! floatsAreEqual(v3StepTotal, 1.0f) )
+		{
+			std::cout << "WRONG --------------------------------------------" << std::endl;
+			std::cout << "   v1StepTotal: " << std::to_string(v1StepTotal) << std::endl;
+			std::cout << "   v2StepTotal: " << std::to_string(v2StepTotal) << std::endl;
+			std::cout << "   v3StepTotal: " << std::to_string(v3StepTotal) << std::endl;
+		}
+		else
+		{
+			std::cout << "RIGHT --------------------------------------------" << std::endl;
+			std::cout << "   v1StepTotal: " << std::to_string(v1StepTotal) << std::endl;
+			std::cout << "   v2StepTotal: " << std::to_string(v2StepTotal) << std::endl;
+			std::cout << "   v3StepTotal: " << std::to_string(v3StepTotal) << std::endl;
+		}
+	}
+	else if ( floatsAreEqual(line1Slope, line2Slope) && floatsAreEqual(line2Slope, line3Slope) ) // diagonal lines (all vertices along the same line)
+	{
+		/*
+		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 1.0f; // when rowF = y1FSorted
+		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 0.0f; // when rowF = y3FSorted
 		1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) ) = 0.0f;
 		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 0.0f; // when rowF = y1FSorted
 		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 1.0f; // when rowF = y3FSorted
 
 		xGradStep.at(0) * (x1FSorted - x1FSorted) = 0.0f;
-		xGradStep.at(0) * (x3FSorted - x1FSorted) = 1.0f;
-		yGradStep.at(0) * (rowF - y1FSorted) = 0.0f;
-		yGradStep.at(0) * (rowF - y1FSorted) = 0.0f;
+		xGradStep.at(0) * (x3FSorted - x1FSorted) = 0.0f;
+		yGradStep.at(0) * (y1FSorted - y1FSorted) = 0.0f;
+		yGradStep.at(0) * (y3FSorted - y1FSorted) = 1.0f;
 
 		xGradStep.at(1) * (x1FSorted - x1FSorted) = 1.0f;
 		xGradStep.at(1) * (x3FSorted - x1FSorted) = 1.0f;
@@ -844,13 +898,6 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		yGradStep.at(2) * (rowF - y3FSorted) = 1.0f;
 		*/
 
-		// TODO need to fix
-		// x2FSorted -= 1.0f; // needed for x1FSorted - x2FSorted to equal 1
-		// xGradStep = Vector<3>({ 0.0f, 1.0f, 0.0f });
-		// yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), 0.0f, 1.0f / (y1FSorted - y3FSorted) });
-	}
-	else if ( floatsAreEqual(line1Slope, line2Slope) && floatsAreEqual(line2Slope, line3Slope) ) // diagonal lines (all vertices along the same line)
-	{
 		// TODO need to fix
 		// x2FSorted -= 1.0f; // needed for x1FSorted - x2FSorted to equal 1
 		// xGradStep = Vector<3>({ 0.0f, 1.0f, 0.0f });
