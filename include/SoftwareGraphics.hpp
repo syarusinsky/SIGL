@@ -833,9 +833,12 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		xGradStep = Vector<3>({ 0.0f, 1.0f, 0.0f });
 		yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), 0.0f, 1.0f / (y1FSorted - y3FSorted) });
 	}
-	else if ( line1Slope < -100000.0f || line2Slope < -100000.0f || line3Slope < -100000.0f ) // diagonal lines (two vertices are the same)
+	// TODO apparently diagonal lines are still not working correctly
+	else if ( (x1Sorted == x2Sorted && y1Sorted == y2Sorted) // diagonal lines (two vertices are the same)
+			|| (x2Sorted == x3Sorted && y2Sorted == y3Sorted) || (x1Sorted == x3Sorted && y1Sorted == y3Sorted) )
 	{
-		sortDepths( v1Depth, v2Depth, v3Depth );
+		caseF = 1.0f;
+		// sortDepths( v1Depth, v2Depth, v3Depth );
 		/*
 		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 1.0f; // when rowF = y1FSorted
 		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 0.0f; // when rowF = y3FSorted
@@ -907,7 +910,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 	else if ( floatsAreEqual(line1Slope, line2Slope) && floatsAreEqual(line2Slope, line3Slope) ) // diagonal lines (all vertices along the same line)
 	{
-		sortDepths( v1Depth, v2Depth, v3Depth );
+		caseF = 1.0f;
+		// sortDepths( v1Depth, v2Depth, v3Depth );
 		x2FSorted = x1FSorted;
 		y2FSorted = y3FSorted;
 		const float x2GradStep = 1.0f / (x3FSorted - x2FSorted);
@@ -1024,33 +1028,6 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		float persp = perspStart;
 		float depth = depthStart;
 
-		if ( v1CurStart > 1.0f || v1CurEnd > 1.0f || v2CurStart > 1.0f || v2CurEnd > 1.0f || v3CurStart > 1.0f || v3CurEnd > 1.0f ) std::cout << "FAIL" << std::endl;
-		if ( v1CurIncr * (tempXY2 - tempXY1) > 1.0f )
-		{
-			std::cout << "FAIL v1CurIncr" << std::endl;
-		}
-		if ( v2CurIncr * (tempXY2 - tempXY1) > 1.0f )
-		{
-			std::cout << "FAIL v2CurIncr" << std::endl;
-		}
-		if ( v3CurIncr * (tempXY2 - tempXY1) > 1.0f )
-		{
-			std::cout << "FAIL v3CurIncr" << std::endl;
-		}
-
-		if ( v1CurIncr * (tempXY2 - tempXY1) < 0.0f )
-		{
-			std::cout << "NEGATIVE v1CurIncr" << std::endl;
-		}
-		if ( v2CurIncr * (tempXY2 - tempXY1) < 0.0f )
-		{
-			std::cout << "NEGATIVE v2CurIncr" << std::endl;
-		}
-		if ( v3CurIncr * (tempXY2 - tempXY1) > 0.0f )
-		{
-			std::cout << "NEGATIVE v3CurIncr" << std::endl;
-		}
-
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
 			if ( m_DepthBuffer[pixel] > depth )
@@ -1140,33 +1117,6 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		float v3Cur = v3CurStart;
 		float persp = perspStart;
 		float depth = depthStart;
-
-		if ( v1CurStart > 1.0f || v1CurEnd > 1.0f || v2CurStart > 1.0f || v2CurEnd > 1.0f || v3CurStart > 1.0f || v3CurEnd > 1.0f ) std::cout << "FAIL" << std::endl;
-		if ( v1CurIncr * (tempXY2 - tempXY1) > 1.0f )
-		{
-			std::cout << "FAIL v1CurIncr" << std::endl;
-		}
-		if ( v2CurIncr * (tempXY2 - tempXY1) > 1.0f )
-		{
-			std::cout << "FAIL v2CurIncr" << std::endl;
-		}
-		if ( v3CurIncr * (tempXY2 - tempXY1) > 1.0f )
-		{
-			std::cout << "FAIL v3CurIncr" << std::endl;
-		}
-
-		if ( v1CurIncr * (tempXY2 - tempXY1) < 0.0f )
-		{
-			std::cout << "NEGATIVE v1CurIncr" << std::endl;
-		}
-		if ( v2CurIncr * (tempXY2 - tempXY1) < 0.0f )
-		{
-			std::cout << "NEGATIVE v2CurIncr" << std::endl;
-		}
-		if ( v3CurIncr * (tempXY2 - tempXY1) > 0.0f )
-		{
-			std::cout << "NEGATIVE v3CurIncr" << std::endl;
-		}
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
