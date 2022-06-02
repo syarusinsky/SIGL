@@ -131,6 +131,7 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 
 		void drawWrapper(GRAPHICS* graphics, unsigned int bufferNum)
 		{
+			graphics->clearDepthBuffer();
 			this->draw( graphics );
 			m_GraphicsThreadsDone[bufferNum] = true;
 		}
@@ -170,6 +171,7 @@ class SurfaceSingleCore : public SurfaceBase<width, height, format, bufferSize>
 
 		bool render()
 		{
+			m_Graphics->clearDepthBuffer();
 			draw( SurfaceBase<width, height, format, bufferSize>::m_Graphics );
 			return false;
 		}

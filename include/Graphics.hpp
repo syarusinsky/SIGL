@@ -69,14 +69,14 @@ class Graphics
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
-		// TODO remove this after testing
-		virtual void testTexture (Texture<CP_FORMAT::RGBA_32BIT>* texture) = 0;
-
 		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FB; }
 		const ColorProfile<format>& getColorProfile() const { return m_ColorProfile; }
 
+		void clearDepthBuffer();
+
 	protected:
 		FrameBuffer<width, height, format> 	m_FB;
+		std::array<float, width * height> 	m_DepthBuffer;
 		ColorProfile<format> 			m_ColorProfile;
 		Font* 					m_CurrentFont;
 
@@ -85,11 +85,18 @@ class Graphics
 
 		Graphics() :
 			m_FB(),
+			m_DepthBuffer{},
 			m_ColorProfile(),
 			m_CurrentFont( nullptr ) {}
 		virtual ~Graphics() {}
 
 };
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Texture>
+void Graphics<width, height, format, bufferSize, Texture...>::clearDepthBuffer()
+{
+	std::fill( std::begin(m_DepthBuffer), std::end(m_DepthBuffer), std::numeric_limits<float>::max() );
+}
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Texture>
 inline bool Graphics<width, height, format, bufferSize, Texture...>::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)

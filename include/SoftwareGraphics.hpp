@@ -15,6 +15,7 @@
 #define m_CP Graphics<width, height, format, bufferSize>::m_ColorProfile
 #define m_CurrentFont Graphics<width, height, format, bufferSize>::m_CurrentFont
 #define m_Pxls Graphics<width, height, format, bufferSize>::m_FB.getPixels()
+#define m_DepthBuffer Graphics<width, height, format, bufferSize>::m_DepthBuffer
 #define m_NumPxls Graphics<width, height, format, bufferSize>::m_FB.getNumPixels()
 
 #include "Font.hpp"
@@ -24,6 +25,9 @@
 
 #include <algorithm>
 #include <limits>
+
+// TODO remove after testing
+#include <iostream>
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
@@ -56,9 +60,6 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData) override;
-
-		// TODO remove this after testing
-		void testTexture (Texture<CP_FORMAT::RGBA_32BIT>* texture) override;
 
 	protected:
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
@@ -291,9 +292,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangle (float x1
 }
 
 static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSorted, float& y1FSorted, float& x1TexCoord, float& y1TexCoord,
-					float& v1PerspMul, int& x2Sorted, int& y2Sorted, float& x2FSorted, float& y2FSorted, float& x2TexCoord,
-					float& y2TexCoord, float& v2PerspMul, int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted,
-					float& x3TexCoord, float& y3TexCoord, float& v3PerspMul )
+					float& v1PerspMul, float& v1Depth, int& x2Sorted, int& y2Sorted, float& x2FSorted, float& y2FSorted,
+					float& x2TexCoord, float& y2TexCoord, float& v2PerspMul, float& v2Depth, int& x3Sorted, int& y3Sorted,
+					float& x3FSorted, float& y3FSorted, float& x3TexCoord, float& y3TexCoord, float& v3PerspMul, float& v3Depth )
 {
 	// first sort by y values
 	if (y2Sorted > y3Sorted)
@@ -305,6 +306,7 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		float xTexCoordTemp = x2TexCoord;
 		float yTexCoordTemp = y2TexCoord;
 		float vPerspMulTemp = v2PerspMul;
+		float vDepthTemp = v2Depth;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -319,6 +321,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y3TexCoord = yTexCoordTemp;
 		v2PerspMul = v3PerspMul;
 		v3PerspMul = vPerspMulTemp;
+		v2Depth = v3Depth;
+		v3Depth = vDepthTemp;
 	}
 	if (y1Sorted > y2Sorted)
 	{
@@ -329,6 +333,7 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		float xTexCoordTemp = x1TexCoord;
 		float yTexCoordTemp = y1TexCoord;
 		float vPerspMulTemp = v1PerspMul;
+		float vDepthTemp = v1Depth;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xTemp;
@@ -343,6 +348,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2TexCoord = yTexCoordTemp;
 		v1PerspMul = v2PerspMul;
 		v2PerspMul = vPerspMulTemp;
+		v1Depth = v2Depth;
+		v2Depth = vDepthTemp;
 	}
 	if (y2Sorted > y3Sorted)
 	{
@@ -353,6 +360,7 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		float xTexCoordTemp = x2TexCoord;
 		float yTexCoordTemp = y2TexCoord;
 		float vPerspMulTemp = v2PerspMul;
+		float vDepthTemp = v2Depth;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -367,6 +375,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y3TexCoord = yTexCoordTemp;
 		v2PerspMul = v3PerspMul;
 		v3PerspMul = vPerspMulTemp;
+		v2Depth = v3Depth;
+		v3Depth = vDepthTemp;
 	}
 
 	// then sort by x values
@@ -379,6 +389,7 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		float xTexCoordTemp = x2TexCoord;
 		float yTexCoordTemp = y2TexCoord;
 		float vPerspMulTemp = v2PerspMul;
+		float vDepthTemp = v2Depth;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -393,6 +404,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y3TexCoord = yTexCoordTemp;
 		v2PerspMul = v3PerspMul;
 		v3PerspMul = vPerspMulTemp;
+		v2Depth = v3Depth;
+		v3Depth = vDepthTemp;
 	}
 	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
 	{
@@ -403,6 +416,7 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		float xTexCoordTemp = x1TexCoord;
 		float yTexCoordTemp = y1TexCoord;
 		float vPerspMulTemp = v1PerspMul;
+		float vDepthTemp = v1Depth;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xTemp;
@@ -417,6 +431,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y2TexCoord = yTexCoordTemp;
 		v1PerspMul = v2PerspMul;
 		v2PerspMul = vPerspMulTemp;
+		v1Depth = v2Depth;
+		v2Depth = vDepthTemp;
 	}
 	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
 	{
@@ -427,6 +443,7 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		float xTexCoordTemp = x2TexCoord;
 		float yTexCoordTemp = y2TexCoord;
 		float vPerspMulTemp = v2PerspMul;
+		float vDepthTemp = v2Depth;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xTemp;
@@ -441,6 +458,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 		y3TexCoord = yTexCoordTemp;
 		v2PerspMul = v3PerspMul;
 		v3PerspMul = vPerspMulTemp;
+		v2Depth = v3Depth;
+		v3Depth = vDepthTemp;
 	}
 }
 
@@ -470,8 +489,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleFilled (fl
 
 	// sorting vertices
 	float fake = 0.0f;
-	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, fake, fake, fake, x2Sorted, y2Sorted, x2FSorted, y2FSorted, fake, fake, fake,
-				x3Sorted, y3Sorted, x3FSorted, y3FSorted, fake, fake, fake );
+	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, fake, fake, fake, fake,
+				x2Sorted, y2Sorted, x2FSorted, y2FSorted, fake, fake, fake, fake,
+				x3Sorted, y3Sorted, x3FSorted, y3FSorted, fake, fake, fake, fake );
 
 	// getting the slope of each line
 	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
@@ -656,6 +676,13 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Fa
 	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
 
+inline bool floatsAreEqual (float x, float y)
+{
+	if ( fabs(x - y) < std::numeric_limits<float>::epsilon() ) return true;
+
+	return false;
+}
+
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 template <CP_FORMAT texFormat>
 void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData)
@@ -723,21 +750,14 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	float v1PerspMul = 1.0f / face.vertices[0].vec.w();
 	float v2PerspMul = 1.0f / face.vertices[1].vec.w();
 	float v3PerspMul = 1.0f / face.vertices[2].vec.w();
-
-	/*
-	// TODO test code, remove after
-	float v1Cur = 1.0f;
-	float v2Cur = 0.0f;
-	float v3Cur = 0.0f;
-	float perspInterp = ( v1Cur * v1PerspMul ) + ( v2Cur * v2PerspMul ) + ( v3Cur * v3PerspMul );
-	perspInterp = v1PerspMul / perspInterp;
-	std::cout << "perspInterp: " << std::to_string(perspInterp) << std::endl;
-	*/
+	float v1Depth = face.vertices[0].vec.z();
+	float v2Depth = face.vertices[1].vec.z();
+	float v3Depth = face.vertices[2].vec.z();
 
 	// sorting vertices
-	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, texCoordX1, texCoordY1, v1PerspMul,
-				x2Sorted, y2Sorted, x2FSorted, y2FSorted, texCoordX2, texCoordY2, v2PerspMul,
-				x3Sorted, y3Sorted, x3FSorted, y3FSorted, texCoordX3, texCoordY3, v3PerspMul );
+	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted, texCoordX1, texCoordY1, v1PerspMul, v1Depth,
+				x2Sorted, y2Sorted, x2FSorted, y2FSorted, texCoordX2, texCoordY2, v2PerspMul, v2Depth,
+				x3Sorted, y3Sorted, x3FSorted, y3FSorted, texCoordX3, texCoordY3, v3PerspMul, v3Depth );
 
 	// getting the slope of each line
 	const float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
@@ -772,14 +792,97 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	// gradient calculation vars
 	const float oneOverdX = 1.0f / ( ((x2FSorted - x3FSorted) * (y1FSorted - y3FSorted)) - ((x1FSorted - x3FSorted) * (y2FSorted - y3FSorted)) );
 	const float oneOverdY = -oneOverdX;
+	const float y1y3Step = y1FSorted - y3FSorted;
+	const float y2y3Step = y2FSorted - y3FSorted;
+	const float x1x3Step = x1FSorted - x3FSorted;
+	const float x2x3Step = x2FSorted - x3FSorted;
 	Vector<3> v1GradVal({ 1.0f, 0.0f, 0.0f });
 	Vector<3> v2GradVal({ 0.0f, 1.0f, 0.0f });
 	Vector<3> v3GradVal({ 0.0f, 0.0f, 1.0f });
-	Vector<3> xGradStep = ( ((v2GradVal - v3GradVal) * (y1FSorted - y3FSorted)) - ((v1GradVal - v3GradVal) * (y2FSorted - y3FSorted)) ) * oneOverdX;
-	Vector<3> yGradStep = ( ((v2GradVal - v3GradVal) * (x1FSorted - x3FSorted)) - ((v1GradVal - v3GradVal) * (x2FSorted - x3FSorted)) ) * oneOverdY;
+	Vector<3> xGradStep = ( ((v2GradVal - v3GradVal) * y1y3Step) - ((v1GradVal - v3GradVal) * y2y3Step) ) * oneOverdX;
+	Vector<3> yGradStep = ( ((v2GradVal - v3GradVal) * x1x3Step) - ((v1GradVal - v3GradVal) * x2x3Step) ) * oneOverdY;
 	// so grad vals will be positive
 	xGradStep *= -1.0f;
 	yGradStep *= -1.0f;
+	if ( line1Slope == 0.0f && line2Slope == 0.0f && line3Slope == 0.0f ) // horizontal lines
+	{
+		y3FSorted -= 1.0f; // needed for rowF - y3Sorted to equal 1
+		const float x3x1Step = 1.0f / (x3FSorted - x1FSorted);
+		xGradStep = Vector<3>({ x3x1Step, 0.0f, -x3x1Step });
+		yGradStep = Vector<3>({ 0.0f, 0.0f, 1.0f / (y1FSorted - y3FSorted) });
+		return;
+	}
+	else if ( line1Slope  > 100000.0f && line2Slope > 100000.0f && line3Slope > 100000.0f ) // vertical lines
+	{
+		x2FSorted -= 1.0f; // needed for x1FSorted - x2FSorted to equal 1
+		xGradStep = Vector<3>({ 0.0f, 1.0f, 0.0f });
+		yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), 0.0f, 1.0f / (y1FSorted - y3FSorted) });
+		return;
+	}
+	else if ( line1Slope < -100000.0f || line2Slope < -100000.0f || line3Slope < -100000.0f ) // diagonal lines (two vertices are the same)
+	{
+		/*
+		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 1.0f; // when rowF = y1FSorted
+		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 0.0f; // when rowF = y3FSorted
+		1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) ) = 0.0f;
+		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 0.0f; // when rowF = y1FSorted
+		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 1.0f; // when rowF = y3FSorted
+
+		xGradStep.at(0) * (x1FSorted - x1FSorted) = 0.0f;
+		xGradStep.at(0) * (x3FSorted - x1FSorted) = 1.0f;
+		yGradStep.at(0) * (rowF - y1FSorted) = 0.0f;
+		yGradStep.at(0) * (rowF - y1FSorted) = 0.0f;
+
+		xGradStep.at(1) * (x1FSorted - x1FSorted) = 1.0f;
+		xGradStep.at(1) * (x3FSorted - x1FSorted) = 1.0f;
+		yGradStep.at(1) * (rowF - y2FSorted) = 0.0f;
+		yGradStep.at(1) * (rowF - y2FSorted) = 0.0f;
+
+		xGradStep.at(2) * (x1FSorted - x1FSorted) = 0.0f;
+		xGradStep.at(2) * (x3FSorted - x1FSorted) = -1.0f;
+		yGradStep.at(2) * (rowF - y3FSorted) = 1.0f;
+		yGradStep.at(2) * (rowF - y3FSorted) = 1.0f;
+		*/
+
+		// TODO need to fix
+		// x2FSorted -= 1.0f; // needed for x1FSorted - x2FSorted to equal 1
+		// xGradStep = Vector<3>({ 0.0f, 1.0f, 0.0f });
+		// yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), 0.0f, 1.0f / (y1FSorted - y3FSorted) });
+	}
+	else if ( floatsAreEqual(line1Slope, line2Slope) && floatsAreEqual(line2Slope, line3Slope) ) // diagonal lines (all vertices along the same line)
+	{
+		// TODO need to fix
+		// x2FSorted -= 1.0f; // needed for x1FSorted - x2FSorted to equal 1
+		// xGradStep = Vector<3>({ 0.0f, 1.0f, 0.0f });
+		// yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), 0.0f, 1.0f / (y1FSorted - y3FSorted) });
+		return;
+	}
+	else
+	{
+		return;
+	}
+	for ( unsigned int num = 0; num < 3; num++ )
+	{
+		if ( xGradStep.at(num) < -1000.0f || yGradStep.at(num) < -1000.0f )
+		{
+			std::cout << "v1: " << std::to_string(x1FSorted) << ", " << std::to_string(y1FSorted) << std::endl;
+			std::cout << "v2: " << std::to_string(x2FSorted) << ", " << std::to_string(y2FSorted) << std::endl;
+			std::cout << "v3: " << std::to_string(x3FSorted) << ", " << std::to_string(y3FSorted) << std::endl;
+
+			std::cout << "line1Slope: " << std::to_string(line1Slope) << std::endl;
+			std::cout << "line2Slope: " << std::to_string(line2Slope) << std::endl;
+			std::cout << "line3Slope: " << std::to_string(line3Slope) << std::endl;
+
+			std::cout << "y1y3Step: " << std::to_string(y1y3Step) << std::endl;
+			std::cout << "y2y3Step: " << std::to_string(y2y3Step) << std::endl;
+			std::cout << "x1x3Step: " << std::to_string(x1x3Step) << std::endl;
+			std::cout << "x2x3Step: " << std::to_string(x2x3Step) << std::endl;
+
+			std::cout << "xGradStep: " << std::to_string(xGradStep.at(0)) << ", " << std::to_string(xGradStep.at(1)) << ", " << std::to_string(xGradStep.at(2)) << std::endl;
+			std::cout << "yGradStep: " << std::to_string(yGradStep.at(0)) << ", " << std::to_string(yGradStep.at(1)) << ", " << std::to_string(yGradStep.at(2)) << std::endl;
+			std::cout << std::endl;
+		}
+	}
 
 	int topHalfRow = y1Sorted;
 	while ( topHalfRow < y2Sorted && topHalfRow < 0 )
@@ -815,30 +918,40 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		const float v3CurEnd   = 1.0f - ( (xGradStep.at(2) * (rightXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) );
 		const float perspStart = ( v1CurStart * v1PerspMul ) + ( v2CurStart * v2PerspMul ) + ( v3CurStart * v3PerspMul );
 		const float perspEnd   = ( v1CurEnd * v1PerspMul ) + ( v2CurEnd * v2PerspMul ) + ( v3CurEnd * v3PerspMul );
+		const float depthStart = ( v1CurStart * v1Depth ) + ( v2CurStart * v2Depth ) + ( v3CurStart * v3Depth );
+		const float depthEnd   = ( v1CurEnd * v1Depth ) + ( v2CurEnd * v2Depth ) + ( v3CurEnd * v3Depth );
 		const float v1CurIncr  = ( v1CurEnd - v1CurStart ) * oneOverPixelStride;
 		const float v2CurIncr  = ( v2CurEnd - v2CurStart ) * oneOverPixelStride;
 		const float v3CurIncr  = ( v3CurEnd - v3CurStart ) * oneOverPixelStride;
 		const float perspIncr  = ( perspEnd - perspStart ) * oneOverPixelStride;
+		const float depthIncr  = ( depthEnd == depthStart ) ? 0.0f : ( depthEnd - depthStart ) * oneOverPixelStride;
 		float v1Cur = v1CurStart;
 		float v2Cur = v2CurStart;
 		float v3Cur = v3CurStart;
 		float persp = perspStart;
+		float depth = depthStart;
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
-			const float perspInterp = 1.0f / persp;
-			const float v1CurPersp = v1Cur * v1PerspMul * perspInterp;
-			const float v2CurPersp = v2Cur * v2PerspMul * perspInterp;
-			const float v3CurPersp = v3Cur * v3PerspMul *perspInterp;
-			const float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
-			const float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
-			( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY);
-			m_CP.setColor( currentColor );
-			m_CP.template putPixel<width, height>( m_Pxls, pixel );
-			v1Cur += v1CurIncr;
-			v2Cur += v2CurIncr;
-			v3Cur += v3CurIncr;
-			persp += perspIncr;
+			if ( m_DepthBuffer[pixel] > depth )
+			{
+				const float perspInterp = 1.0f / persp;
+				const float v1CurPersp = v1Cur * v1PerspMul * perspInterp;
+				const float v2CurPersp = v2Cur * v2PerspMul * perspInterp;
+				const float v3CurPersp = v3Cur * v3PerspMul *perspInterp;
+				const float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
+				const float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
+				( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY);
+				m_CP.setColor( currentColor );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				v1Cur += v1CurIncr;
+				v2Cur += v2CurIncr;
+				v3Cur += v3CurIncr;
+				persp += perspIncr;
+				depth += depthIncr;
+
+				m_DepthBuffer[pixel] = depth;
+			}
 		}
 
 		// increment accumulators
@@ -847,7 +960,12 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// in case the top of the triangle is straight, set the accumulators appropriately
-	if ( y1Sorted == y2Sorted )
+	if ( y1Sorted == y2Sorted == y3Sorted )
+	{
+		xLeftAccumulator  = (float) x1Sorted;
+		xRightAccumulator = (float) x3Sorted;
+	}
+	else if ( y1Sorted == y2Sorted )
 	{
 		xLeftAccumulator  = (float) x1Sorted;
 		xRightAccumulator = (float) x2Sorted;
@@ -887,30 +1005,40 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		const float v3CurEnd   = 1.0f - ( (xGradStep.at(2) * (rightXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) );
 		const float perspStart = ( v1CurStart * v1PerspMul ) + ( v2CurStart * v2PerspMul ) + ( v3CurStart * v3PerspMul );
 		const float perspEnd   = ( v1CurEnd * v1PerspMul ) + ( v2CurEnd * v2PerspMul ) + ( v3CurEnd * v3PerspMul );
+		const float depthStart = ( v1CurStart * v1Depth ) + ( v2CurStart * v2Depth ) + ( v3CurStart * v3Depth );
+		const float depthEnd   = ( v1CurEnd * v1Depth ) + ( v2CurEnd * v2Depth ) + ( v3CurEnd * v3Depth );
 		const float v1CurIncr  = ( v1CurEnd - v1CurStart ) * oneOverPixelStride;
 		const float v2CurIncr  = ( v2CurEnd - v2CurStart ) * oneOverPixelStride;
 		const float v3CurIncr  = ( v3CurEnd - v3CurStart ) * oneOverPixelStride;
 		const float perspIncr  = ( perspEnd - perspStart ) * oneOverPixelStride;
+		const float depthIncr  = ( depthEnd == depthStart ) ? 0.0f : ( depthEnd - depthStart ) * oneOverPixelStride;
 		float v1Cur = v1CurStart;
 		float v2Cur = v2CurStart;
 		float v3Cur = v3CurStart;
 		float persp = perspStart;
+		float depth = depthStart;
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
-			const float perspInterp = 1.0f / persp;
-			const float v1CurPersp = v1Cur * v1PerspMul * perspInterp;
-			const float v2CurPersp = v2Cur * v2PerspMul * perspInterp;
-			const float v3CurPersp = v3Cur * v3PerspMul *perspInterp;
-			const float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
-			const float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
-			( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY);
-			m_CP.setColor( currentColor );
-			m_CP.template putPixel<width, height>( m_Pxls, pixel );
-			v1Cur += v1CurIncr;
-			v2Cur += v2CurIncr;
-			v3Cur += v3CurIncr;
-			persp += perspIncr;
+			if ( m_DepthBuffer[pixel] > depth )
+			{
+				const float perspInterp = 1.0f / persp;
+				const float v1CurPersp = v1Cur * v1PerspMul * perspInterp;
+				const float v2CurPersp = v2Cur * v2PerspMul * perspInterp;
+				const float v3CurPersp = v3Cur * v3PerspMul *perspInterp;
+				const float texCoordX = ( v1CurPersp * texCoordX1 ) + ( v2CurPersp * texCoordX2 ) + ( v3CurPersp * texCoordX3 );
+				const float texCoordY = ( v1CurPersp * texCoordY1 ) + ( v2CurPersp * texCoordY2 ) + ( v3CurPersp * texCoordY3 );
+				( *shaderData.fShader )( currentColor, shaderData, v1CurPersp, v2CurPersp, v3CurPersp, texCoordX, texCoordY);
+				m_CP.setColor( currentColor );
+				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				v1Cur += v1CurIncr;
+				v2Cur += v2CurIncr;
+				v3Cur += v3CurIncr;
+				persp += perspIncr;
+				depth += depthIncr;
+
+				m_DepthBuffer[pixel] = depth;
+			}
 		}
 
 		// increment accumulators
@@ -1382,25 +1510,10 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSpriteHelper (floa
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::testTexture (Texture<CP_FORMAT::RGBA_32BIT>* texture)
-{
-	const unsigned int texHeight = texture->getHeight();
-	const unsigned int texWidth = texture->getWidth();
-
-	for ( unsigned int row = 0; row < texHeight; row++ )
-	{
-		for ( unsigned int column = 0; column < texWidth; column++ )
-		{
-			m_CP.setColor( texture->getColor(column, row) );
-			m_CP.template putPixel<width, height>( m_Pxls, (row * width) + column );
-		}
-	}
-}
-
 #undef m_CP
 #undef m_CurrentFont
 #undef m_Pxls
+#undef m_DepthBuffer
 #undef m_NumPxls
 
 #endif // SOFTWARE_GRAPHICS_HPP
