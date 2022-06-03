@@ -683,19 +683,6 @@ inline bool floatsAreEqual (float x, float y)
 	return false;
 }
 
-inline void sortDepths (float& v1Depth, float& v2Depth, float& v3Depth)
-{
-	std::vector<float> sortVec;
-	sortVec.push_back( v1Depth );
-	sortVec.push_back( v2Depth );
-	sortVec.push_back( v3Depth );
-
-	std::sort( sortVec.begin(), sortVec.end() );
-
-	v1Depth = sortVec[0];
-	v3Depth = sortVec[1];
-}
-
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 template <CP_FORMAT texFormat>
 void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData)
@@ -711,7 +698,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	// put through the vertex shader first
 	( *shaderData.vShader )( shaderData );
 
+	/*
 	// first determine if this triangle needs to be rendered (back face culling)
+	// TODO this may reject some 'triangles' that are really just lines
 	face.calcFaceNormals();
 	const Vector<4>& vertexVec = face.vertices[0].vec;
 	const Vector<4>& normal = face.normal;
@@ -726,6 +715,10 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	{
 		return;
 	}
+	*/
+
+	camera.projectFace( face );
+	camera.scaleXYToZeroToOne( face );
 
 	float x1 = face.vertices[0].vec.x();
 	float y1 = face.vertices[0].vec.y();
@@ -803,6 +796,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// gradient calculation vars
+	float v2Offset = 1.0f; // multiplied by gradient start and end calculations for diagonal line cases
 	const float oneOverdX = 1.0f / ( ((x2FSorted - x3FSorted) * (y1FSorted - y3FSorted)) - ((x1FSorted - x3FSorted) * (y2FSorted - y3FSorted)) );
 	const float oneOverdY = -oneOverdX;
 	const float y1y3Step = y1FSorted - y3FSorted;
@@ -820,143 +814,60 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	float caseF = 0.0f; // TODO remove this after done testing
 	if ( line1Slope == 0.0f && line2Slope == 0.0f && line3Slope == 0.0f ) // horizontal lines
 	{
-		sortDepths( v1Depth, v2Depth, v3Depth );
 		y3FSorted -= 1.0f; // needed for rowF - y3Sorted to equal 1
 		const float x3x1Step = 1.0f / (x3FSorted - x1FSorted);
 		xGradStep = Vector<3>({ x3x1Step, 0.0f, -x3x1Step });
 		yGradStep = Vector<3>({ 0.0f, 0.0f, 1.0f / (y1FSorted - y3FSorted) });
 	}
-	else if ( floatsAreEqual(x1FSorted, x2FSorted) && floatsAreEqual(x2FSorted, x3FSorted) ) // vertical lines
+	else if ( x1Sorted == x2Sorted && x2Sorted == x3Sorted ) // vertical lines
 	{
-		sortDepths( v1Depth, v2Depth, v3Depth );
 		x2FSorted -= 1.0f; // needed for x1FSorted - x2FSorted to equal 1
 		xGradStep = Vector<3>({ 0.0f, 1.0f, 0.0f });
 		yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), 0.0f, 1.0f / (y1FSorted - y3FSorted) });
 	}
-	// TODO apparently diagonal lines are still not working correctly
 	else if ( (x1Sorted == x2Sorted && y1Sorted == y2Sorted) // diagonal lines (two vertices are the same)
 			|| (x2Sorted == x3Sorted && y2Sorted == y3Sorted) || (x1Sorted == x3Sorted && y1Sorted == y3Sorted) )
 	{
-		caseF = 1.0f;
-		// sortDepths( v1Depth, v2Depth, v3Depth );
-		/*
-		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 1.0f; // when rowF = y1FSorted
-		1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) ) = 0.0f; // when rowF = y3FSorted
-		1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) ) = 0.0f; // when rowF = y1FSorted
-		1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) ) = 0.0f; // when rowF = y3FSorted
-		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 0.0f; // when rowF = y1FSorted
-		1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) ) = 1.0f; // when rowF = y3FSorted
-
-		xGradStep.at(0) * (x1FSorted - x1FSorted) = 0.0f;
-		xGradStep.at(0) * (x3FSorted - x1FSorted) = 0.0f;
-		yGradStep.at(0) * (y1FSorted - y1FSorted) = 0.0f;
-		yGradStep.at(0) * (y3FSorted - y1FSorted) = 1.0f;
-
-		xGradStep.at(1) * (x1FSorted - x2FSorted) = 0.0f;
-		xGradStep.at(1) * (x2FSorted - x2FSorted) = 0.5f;
-		xGradStep.at(1) * (x3FSorted - x2FSorted) = 1.0f;
-		yGradStep.at(1) * (y1FSorted - y2FSorted) = 1.0f;
-		yGradStep.at(1) * (y2FSorted - y2FSorted) = 0.5f;
-		yGradStep.at(1) * (y3FSorted - y2FSorted) = 0.0f;
-
-		xGradStep.at(2) * (x1FSorted - x3FSorted) = 0.0f;
-		xGradStep.at(2) * (x3FSorted - x3FSorted) = 0.0f;
-		yGradStep.at(2) * (y1FSorted - y3FSorted) = 1.0f;
-		yGradStep.at(2) * (y3FSorted - y3FSorted) = 0.0f;
-		*/
-
-		x2FSorted = x1FSorted;
-		y2FSorted = y3FSorted;
-		const float x2GradStep = 1.0f / (x3FSorted - x2FSorted);
-		const float y2GradStep = 1.0f / (y1FSorted - y2FSorted);
-		xGradStep = Vector<3>({ 0.0f, x2GradStep, 0.0f });
-		yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), y2GradStep, 1.0f / (y1FSorted - y3FSorted) });
-
-		const float v1StepTotal = (xGradStep.at(1) * (x1FSorted - x2FSorted)) + (yGradStep.at(1) * (y1FSorted - y2FSorted));
-		const float v2StepTotal = (xGradStep.at(1) * (((x3FSorted + x1FSorted) * 0.5f) - x2FSorted)) + (yGradStep.at(1) *
-						(((y3FSorted + y1FSorted) * 0.5f) - y2FSorted));
-		const float v3StepTotal = (xGradStep.at(1) * (x3FSorted - x2FSorted)) + (yGradStep.at(1) * (y3FSorted - y2FSorted));
-		if ( ! floatsAreEqual(v1StepTotal, 1.0f) || ! floatsAreEqual(v2StepTotal, 1.0f) || ! floatsAreEqual(v3StepTotal, 1.0f) )
+diagonal:
+		// swap vertices so that v1 and v3 are vertices with the least depth buffer values
+		if ( x1Sorted == x2Sorted && y1Sorted == y2Sorted) // v1 == v2
 		{
-			std::cout << "WRONG --------------------------------------------" << std::endl;
-			std::cout << "   v1StepTotal: " << std::to_string(v1StepTotal) << std::endl;
-			std::cout << "   v2StepTotal: " << std::to_string(v2StepTotal) << std::endl;
-			std::cout << "   v3StepTotal: " << std::to_string(v3StepTotal) << std::endl;
-
-			std::cout << "v1: " << std::to_string(x1FSorted) << ", " << std::to_string(y1FSorted) << std::endl;
-			std::cout << "v2: " << std::to_string(x2FSorted) << ", " << std::to_string(y2FSorted) << std::endl;
-			std::cout << "v3: " << std::to_string(x3FSorted) << ", " << std::to_string(y3FSorted) << std::endl;
-
-			std::cout << "line1Slope: " << std::to_string(line1Slope) << std::endl;
-			std::cout << "line2Slope: " << std::to_string(line2Slope) << std::endl;
-			std::cout << "line3Slope: " << std::to_string(line3Slope) << std::endl;
-
-			std::cout << "y1y3Step: " << std::to_string(y1y3Step) << std::endl;
-			std::cout << "y2y3Step: " << std::to_string(y2y3Step) << std::endl;
-			std::cout << "x1x3Step: " << std::to_string(x1x3Step) << std::endl;
-			std::cout << "x2x3Step: " << std::to_string(x2x3Step) << std::endl;
-
-			std::cout << "xGradStep: " << std::to_string(xGradStep.at(0)) << ", " << std::to_string(xGradStep.at(1)) << ", " << std::to_string(xGradStep.at(2)) << std::endl;
-			std::cout << "yGradStep: " << std::to_string(yGradStep.at(0)) << ", " << std::to_string(yGradStep.at(1)) << ", " << std::to_string(yGradStep.at(2)) << std::endl;
-			std::cout << std::endl;
+			if ( v2Depth < v1Depth )
+			{
+				v1Depth = v2Depth;
+			}
 		}
-		else
+		else // v2 == v3
 		{
-			// std::cout << "RIGHT --------------------------------------------" << std::endl;
-			// std::cout << "   v1StepTotal: " << std::to_string(v1StepTotal) << std::endl;
-			// std::cout << "   v2StepTotal: " << std::to_string(v2StepTotal) << std::endl;
-			// std::cout << "   v3StepTotal: " << std::to_string(v3StepTotal) << std::endl;
+			if ( v2Depth < v3Depth )
+			{
+				v3Depth = v2Depth;
+			}
 		}
+
+		v2Offset = 0.0f;
+		xGradStep = Vector<3>({ 0.0f, 0.0f, 0.0f });
+		yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), 0.0f, 1.0f / (y1FSorted - y3FSorted) });
 	}
 	else if ( floatsAreEqual(line1Slope, line2Slope) && floatsAreEqual(line2Slope, line3Slope) ) // diagonal lines (all vertices along the same line)
 	{
-		caseF = 1.0f;
-		// sortDepths( v1Depth, v2Depth, v3Depth );
-		x2FSorted = x1FSorted;
+		x2FSorted = x3FSorted;
 		y2FSorted = y3FSorted;
-		const float x2GradStep = 1.0f / (x3FSorted - x2FSorted);
-		const float y2GradStep = 1.0f / (y1FSorted - y2FSorted);
-		xGradStep = Vector<3>({ 0.0f, x2GradStep, 0.0f });
-		yGradStep = Vector<3>({ 1.0f / (y3FSorted - y1FSorted), y2GradStep, 1.0f / (y1FSorted - y3FSorted) });
 
-		const float v1StepTotal = (xGradStep.at(1) * (x1FSorted - x2FSorted)) + (yGradStep.at(1) * (y1FSorted - y2FSorted));
-		const float v2StepTotal = (xGradStep.at(1) * (((x3FSorted + x1FSorted) * 0.5f) - x2FSorted)) + (yGradStep.at(1) *
-						(((y3FSorted + y1FSorted) * 0.5f) - y2FSorted));
-		const float v3StepTotal = (xGradStep.at(1) * (x3FSorted - x2FSorted)) + (yGradStep.at(1) * (y3FSorted - y2FSorted));
-		if ( ! floatsAreEqual(v1StepTotal, 1.0f) || ! floatsAreEqual(v2StepTotal, 1.0f) || ! floatsAreEqual(v3StepTotal, 1.0f) )
-		{
-			std::cout << "WRONG --------------------------------------------" << std::endl;
-			std::cout << "   v1StepTotal: " << std::to_string(v1StepTotal) << std::endl;
-			std::cout << "   v2StepTotal: " << std::to_string(v2StepTotal) << std::endl;
-			std::cout << "   v3StepTotal: " << std::to_string(v3StepTotal) << std::endl;
-
-			std::cout << "v1: " << std::to_string(x1FSorted) << ", " << std::to_string(y1FSorted) << std::endl;
-			std::cout << "v2: " << std::to_string(x2FSorted) << ", " << std::to_string(y2FSorted) << std::endl;
-			std::cout << "v3: " << std::to_string(x3FSorted) << ", " << std::to_string(y3FSorted) << std::endl;
-
-			std::cout << "line1Slope: " << std::to_string(line1Slope) << std::endl;
-			std::cout << "line2Slope: " << std::to_string(line2Slope) << std::endl;
-			std::cout << "line3Slope: " << std::to_string(line3Slope) << std::endl;
-
-			std::cout << "y1y3Step: " << std::to_string(y1y3Step) << std::endl;
-			std::cout << "y2y3Step: " << std::to_string(y2y3Step) << std::endl;
-			std::cout << "x1x3Step: " << std::to_string(x1x3Step) << std::endl;
-			std::cout << "x2x3Step: " << std::to_string(x2x3Step) << std::endl;
-
-			std::cout << "xGradStep: " << std::to_string(xGradStep.at(0)) << ", " << std::to_string(xGradStep.at(1)) << ", " << std::to_string(xGradStep.at(2)) << std::endl;
-			std::cout << "yGradStep: " << std::to_string(yGradStep.at(0)) << ", " << std::to_string(yGradStep.at(1)) << ", " << std::to_string(yGradStep.at(2)) << std::endl;
-			std::cout << std::endl;
-		}
-		else
-		{
-			// std::cout << "RIGHT --------------------------------------------" << std::endl;
-			// std::cout << "   v1StepTotal: " << std::to_string(v1StepTotal) << std::endl;
-			// std::cout << "   v2StepTotal: " << std::to_string(v2StepTotal) << std::endl;
-			// std::cout << "   v3StepTotal: " << std::to_string(v3StepTotal) << std::endl;
-		}
+		goto diagonal;
 	}
 	else
 	{
+		// backface culling
+		face.calcFaceNormals();
+		const Vector<4>& vertexVec = face.vertices[0].vec;
+		const Vector<4>& normal = face.normal;
+		if ( ! (normal.x() * (vertexVec.x() - camera.x())
+				+ normal.y() * (vertexVec.y() - camera.y())
+				+ normal.z() * (vertexVec.z() - camera.z()) < 0.0f) )
+		{
+			return;
+		}
 	}
 	for ( unsigned int num = 0; num < 3; num++ )
 	{
@@ -1009,8 +920,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		const float rightXF = static_cast<float>( rightX );
 		const float v1CurStart = 1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted))  );
 		const float v1CurEnd   = 1.0f - ( (xGradStep.at(0) * (rightXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) );
-		const float v2CurStart = 1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted))  );
-		const float v2CurEnd   = 1.0f - ( (xGradStep.at(1) * (rightXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) );
+		const float v2CurStart = ( 1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted))  )  ) * v2Offset;
+		const float v2CurEnd   = ( 1.0f - ( (xGradStep.at(1) * (rightXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) )  ) * v2Offset;
 		const float v3CurStart = 1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted))  );
 		const float v3CurEnd   = 1.0f - ( (xGradStep.at(2) * (rightXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) );
 		const float perspStart = ( v1CurStart * v1PerspMul ) + ( v2CurStart * v2PerspMul ) + ( v3CurStart * v3PerspMul );
@@ -1028,9 +939,18 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		float persp = perspStart;
 		float depth = depthStart;
 
+		/*
+		std::cout << "v1CurStart: " << std::to_string(v1CurStart) << std::endl;
+		std::cout << "v1CurEnd: " << std::to_string(v1CurEnd) << std::endl;
+		std::cout << "v2CurStart: " << std::to_string(v2CurStart) << std::endl;
+		std::cout << "v2CurEnd: " << std::to_string(v2CurEnd) << std::endl;
+		std::cout << "v3CurStart: " << std::to_string(v3CurStart) << std::endl;
+		std::cout << "v3CurEnd: " << std::to_string(v3CurEnd) << std::endl;
+		*/
+
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
-			if ( m_DepthBuffer[pixel] > depth )
+			if ( m_DepthBuffer[pixel] >= depth )
 			{
 				// if ( v1Cur + v2Cur + v3Cur > 1.0f ) std::cout << "FAIL DIFFERENT" << std::endl;
 				const float perspInterp = 1.0f / persp;
@@ -1099,8 +1019,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		const float rightXF = static_cast<float>( rightX );
 		const float v1CurStart = 1.0f - ( (xGradStep.at(0) * (leftXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted))  );
 		const float v1CurEnd   = 1.0f - ( (xGradStep.at(0) * (rightXF - x1FSorted)) + (yGradStep.at(0) * (rowF - y1FSorted)) );
-		const float v2CurStart = 1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted))  );
-		const float v2CurEnd   = 1.0f - ( (xGradStep.at(1) * (rightXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) );
+		const float v2CurStart = ( 1.0f - ( (xGradStep.at(1) * (leftXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted))  )  ) * v2Offset;
+		const float v2CurEnd   = ( 1.0f - ( (xGradStep.at(1) * (rightXF - x2FSorted)) + (yGradStep.at(1) * (rowF - y2FSorted)) )  ) * v2Offset;
 		const float v3CurStart = 1.0f - ( (xGradStep.at(2) * (leftXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted))  );
 		const float v3CurEnd   = 1.0f - ( (xGradStep.at(2) * (rightXF - x3FSorted)) + (yGradStep.at(2) * (rowF - y3FSorted)) );
 		const float perspStart = ( v1CurStart * v1PerspMul ) + ( v2CurStart * v2PerspMul ) + ( v3CurStart * v3PerspMul );
@@ -1118,9 +1038,18 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		float persp = perspStart;
 		float depth = depthStart;
 
+		/*
+		std::cout << "v1CurStart: " << std::to_string(v1CurStart) << std::endl;
+		std::cout << "v1CurEnd: " << std::to_string(v1CurEnd) << std::endl;
+		std::cout << "v2CurStart: " << std::to_string(v2CurStart) << std::endl;
+		std::cout << "v2CurEnd: " << std::to_string(v2CurEnd) << std::endl;
+		std::cout << "v3CurStart: " << std::to_string(v3CurStart) << std::endl;
+		std::cout << "v3CurEnd: " << std::to_string(v3CurEnd) << std::endl;
+		*/
+
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
-			if ( m_DepthBuffer[pixel] > depth )
+			if ( m_DepthBuffer[pixel] >= depth )
 			{
 				// if ( v1Cur + v2Cur + v3Cur > 1.0f ) std::cout << "FAIL DIFFERENT" << std::endl;
 				const float perspInterp = 1.0f / persp;
