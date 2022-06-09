@@ -50,6 +50,9 @@ class Camera3D
 		float y() const;
 		float z() const;
 
+		float getNearClip() { return m_NearClip; }
+		float getFarClip() { return m_FarClip; }
+
 	private:
 		float			m_NearClip;
 		float			m_FarClip;

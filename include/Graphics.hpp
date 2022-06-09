@@ -67,6 +67,8 @@ class Graphics
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData);
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData);
 
+		virtual void drawDepthBuffer (Camera3D& camera) = 0;
+
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
 		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FB; }

@@ -177,7 +177,7 @@ class SurfaceSingleCore : public SurfaceBase<width, height, format, bufferSize>
 		}
 
 	protected:
-		virtual void draw(GRAPHICS* graphics) = 0;
+		virtual void draw(GRAPHICS* graphics) override = 0;
 
 	private:
 		using 	SurfaceBase<width, height, format, bufferSize>::m_Graphics;
