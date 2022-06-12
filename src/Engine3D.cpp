@@ -169,16 +169,14 @@ float Camera3D::z() const
 void Camera3D::generateProjectionMatrix()
 {
 	const float piOver180 = M_PI / 180.0f;
-	float projectionPlaneDistance = 1.0f / tanf( m_FieldOfView * piOver180 * 0.5f ); // also converting fov to radians
-	float normalizedClip = m_FarClip / ( m_FarClip - m_NearClip );
+	const float tanHalfFov = tanf(m_FieldOfView * piOver180 * 0.5f);
 
 	m_ProjectionMatrix = Matrix<4, 4>( 0.0f ); // reset the projection matrix
-	m_ProjectionMatrix.at(0, 0) = projectionPlaneDistance * m_AspectRatio;
-	m_ProjectionMatrix.at(1, 1) = projectionPlaneDistance;
-	m_ProjectionMatrix.at(2, 2) = normalizedClip;
-	m_ProjectionMatrix.at(3, 2) = (m_NearClip * -1.0f) * normalizedClip;
+	m_ProjectionMatrix.at(0, 0) = 1.0f / ( tanHalfFov * m_AspectRatio );
+	m_ProjectionMatrix.at(1, 1) = 1.0f / tanHalfFov;
+	m_ProjectionMatrix.at(2, 2) = -( m_FarClip + m_NearClip ) / ( m_FarClip - m_NearClip );
+	m_ProjectionMatrix.at(3, 2) = ( -2.0f * m_FarClip * m_NearClip ) / ( m_FarClip - m_NearClip );
 	m_ProjectionMatrix.at(2, 3) = 1.0f;
-	m_ProjectionMatrix.at(3, 3) = 0.0f;
 }
 
 void Camera3D::projectFace (Face& face) const

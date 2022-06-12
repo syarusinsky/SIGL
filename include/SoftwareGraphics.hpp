@@ -791,6 +791,7 @@ inline bool SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 				const float perspOffset = 1.0f / pers;
 				const float texCoordX = texX * perspOffset;
 				const float texCoordY = texY * perspOffset;
+				/*
 				if ( texCoordX > 1.0f || texCoordX < 0.0f || texCoordY > 1.0f || texCoordY < 0.0f )
 				{
 					std::cout << "FAIL------------------------------------------------------" << std::endl;
@@ -816,6 +817,7 @@ inline bool SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 					std::cout << "   rightX: " << std::to_string(rightX) << std::endl;
 					std::cout << "   row: " << std::to_string(row) << std::endl;
 				}
+				*/
 				( *shaderData.fShader )( currentColor, shaderData, 0.0f, 0.0f, 0.0f, texCoordX, texCoordY);
 				m_CP.setColor( currentColor );
 				m_CP.template putPixel<width, height>( m_Pxls, pixel );
@@ -862,6 +864,17 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 
 	camera.projectFace( face );
 	camera.scaleXYToZeroToOne( face );
+
+	// backface culling
+	face.calcFaceNormals();
+	const Vector<4>& vertexVec = face.vertices[0].vec;
+	const Vector<4>& normal = face.normal;
+	if ( ! (normal.x() * (vertexVec.x() - camera.x())
+			+ normal.y() * (vertexVec.y() - camera.y())
+			+ normal.z() * (vertexVec.z() - camera.z()) > 0.0f) )
+	{
+		return;
+	}
 
 	float x1 = face.vertices[0].vec.x() * (width  - 1);
 	float y1 = face.vertices[0].vec.y() * (height - 1);
@@ -961,47 +974,6 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	float testY3 = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (y3 - y1) ) + ( texCoordYXIncr * (x3 - x1) );
 	float testD2 = v1Depth + ( depthYIncr * (y2 - y1) ) + ( depthXIncr * (x2 - x1) );
 	float testD3 = v1Depth + ( depthYIncr * (y3 - y1) ) + ( depthXIncr * (x3 - x1) );
-
-	/*
-	// catching corner cases, first we check for all pixels at the same location
-	const bool isSinglePixel = floatsAreEqual(y1y3Step, 0.0f) && floatsAreEqual(y2y3Step, 0.0f)
-					&& floatsAreEqual(x1x3Step, 0.0f) && floatsAreEqual(x2x3Step, 0.0f);
-	if ( x1Sorted == x2Sorted && x2Sorted == x3Sorted && y1Sorted == y2Sorted && y2Sorted == y3Sorted )
-	{
-		return;
-	}
-	else if ( ! isSinglePixel && line1Slope == 0.0f && line2Slope == 0.0f && line3Slope == 0.0f ) // horizontal lines
-	{
-		return;
-	}
-	else if ( x1Sorted == x2Sorted && x2Sorted == x3Sorted ) // vertical lines
-	{
-		return;
-	}
-	else if ( (x1Sorted == x2Sorted && y1Sorted == y2Sorted) // diagonal lines (two vertices are the same)
-			|| (x2Sorted == x3Sorted && y2Sorted == y3Sorted) || (x1Sorted == x3Sorted && y1Sorted == y3Sorted) )
-	{
-		return;
-	}
-	else if ( floatsAreEqual(line1Slope, line2Slope, 0.2f)
-			&& floatsAreEqual(line2Slope, line3Slope, 0.2f) ) // diagonal lines (all vertices along the same line)
-	{
-		return;
-	}
-	else
-	{
-	*/
-		// backface culling
-		face.calcFaceNormals();
-		const Vector<4>& vertexVec = face.vertices[0].vec;
-		const Vector<4>& normal = face.normal;
-		if ( ! (normal.x() * (vertexVec.x() - camera.x())
-				+ normal.y() * (vertexVec.y() - camera.y())
-				+ normal.z() * (vertexVec.z() - camera.z()) < 0.0f) )
-		{
-			return;
-		}
-	// }
 
 	int topHalfRow = y1Sorted;
 	while ( topHalfRow < y2Sorted && topHalfRow < 0 )
