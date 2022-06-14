@@ -26,9 +26,6 @@
 #include <algorithm>
 #include <limits>
 
-// TODO remove after testing
-#include <iostream>
-
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 {
@@ -66,13 +63,11 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 	protected:
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
 		template <CP_FORMAT texFormat>
-		inline bool renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
-			float& xLeftAccumulator, float& xRightAccumulator, float x1FSorted, float y1FSorted, float x2FSorted, float y2FSorted,
-			float x3FSorted, float y3FSorted, float v1PerspMul, float v2PerspMul, float v3PerspMul, float v1Depth, float v2Depth,
-			float v3Depth, float v2Offset, float xLeftIncr, float xRightIncr, TriShaderData<texFormat>& shaderData, Color& currentColor,
-			float texCoordX1, float texCoordY1, float texCoordX2, float texCoordY2, float texCoordX3, float texCoordY3, float texCoordXXIncr,
-			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float& texCoordX, float& texCoordY, float perspXIncr,
-			float perspYIncr, float& persp, float depthXIncr, float depthYIncr, float& depth );
+		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
+			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
+			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
+			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
+			float depthYIncr);
 
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
@@ -82,6 +77,13 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 		SoftwareGraphics();
 		~SoftwareGraphics() override;
 };
+
+inline bool floatsAreEqual (float x, float y, float diff = std::numeric_limits<float>::epsilon() )
+{
+	if ( fabs(x - y) < diff ) return true;
+
+	return false;
+}
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 SoftwareGraphics<width, height, format, bufferSize>::SoftwareGraphics() :
@@ -299,6 +301,60 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangle (float x1
 	drawLine( x1, y1, x2, y2 );
 	drawLine( x2, y2, x3, y3 );
 	drawLine( x3, y3, x1, y1 );
+}
+
+static inline void triSortVertices (Vertex& v1, Vertex& v2, Vertex& v3, float width, float height)
+{
+	v1.vec.x() *= (width  - 1);
+	v1.vec.y() *= (height - 1);
+	v2.vec.x() *= (width  - 1);
+	v2.vec.y() *= (height - 1);
+	v3.vec.x() *= (width  - 1);
+	v3.vec.y() *= (height - 1);
+
+	// first sort by y values
+	if ( v2.vec.y() > v3.vec.y() )
+	{
+		Vertex temp = v2;
+		v2 = v3;
+		v3 = temp;
+	}
+	if ( v1.vec.y() > v2.vec.y() )
+	{
+		Vertex temp = v1;
+		v1 = v2;
+		v2 = temp;
+	}
+	if ( v2.vec.y() > v3.vec.y() )
+	{
+		Vertex temp = v2;
+		v2 = v3;
+		v3 = temp;
+	}
+
+	int y1Sorted = std::ceil( v1.vec.y() );
+	int y2Sorted = std::ceil( v2.vec.y() );
+	int y3Sorted = std::ceil( v3.vec.y() );
+
+	// then sort by x values
+	if ( y2Sorted == y3Sorted && v2.vec.x() > v3.vec.x() )
+	{
+		Vertex temp = v2;
+		v2 = v3;
+		v3 = temp;
+	}
+	if ( y1Sorted == y2Sorted && v1.vec.x() > v2.vec.x() )
+	{
+		Vertex temp = v1;
+		v1 = v2;
+		v2 = temp;
+	}
+	if ( y2Sorted == y3Sorted && v2.vec.x() > v3.vec.x() )
+	{
+		Vertex temp = v2;
+		v2 = v3;
+		v3 = temp;
+	}
 }
 
 static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1Sorted, float& x1FSorted, float& y1FSorted, float& x1TexCoord,
@@ -723,13 +779,6 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Fa
 	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
 
-inline bool floatsAreEqual (float x, float y, float diff = std::numeric_limits<float>::epsilon() )
-{
-	if ( fabs(x - y) < diff ) return true;
-
-	return false;
-}
-
 inline float calcXIncr(Vector<3>& values, float y1, float y2, float y3, float oneOverdX)
 {
 	const float retVal = ( ((values.at(1) - values.at(2)) * (y1 - y3)) - ((values.at(0) - values.at(2)) * (y2 - y3)) ) * oneOverdX;
@@ -744,14 +793,13 @@ inline float calcYIncr(Vector<3>& values, float x1, float x2, float x3, float on
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 template <CP_FORMAT texFormat>
-inline bool SoftwareGraphics<width, height, format, bufferSize>::renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
-			float& xLeftAccumulator, float& xRightAccumulator, float x1FSorted, float y1FSorted, float x2FSorted, float y2FSorted,
-			float x3FSorted, float y3FSorted, float v1PerspMul, float v2PerspMul, float v3PerspMul, float v1Depth, float v2Depth,
-			float v3Depth, float v2Offset, float xLeftIncr, float xRightIncr, TriShaderData<texFormat>& shaderData, Color& currentColor,
-			float texCoordX1, float texCoordY1, float texCoordX2, float texCoordY2, float texCoordX3, float texCoordY3, float texCoordXXIncr,
-			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float& texCoordX, float& texCoordY, float perspXIncr,
-			float perspYIncr, float& persp, float depthXIncr, float depthYIncr, float& depth )
+inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
+			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
+			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
+			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
+			float depthYIncr)
 {
+	// TODO this can be optimized by quite a bit, and likely will need to be
 	for (int row = startRow; row < endRowExclusive && row < height; row++)
 	{
 		// rounding the points and clipping horizontally
@@ -791,33 +839,6 @@ inline bool SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 				const float perspOffset = 1.0f / pers;
 				const float texCoordX = texX * perspOffset;
 				const float texCoordY = texY * perspOffset;
-				/*
-				if ( texCoordX > 1.0f || texCoordX < 0.0f || texCoordY > 1.0f || texCoordY < 0.0f )
-				{
-					std::cout << "FAIL------------------------------------------------------" << std::endl;
-					std::cout << "   v1: " << std::to_string(x1FSorted) << ", " << std::to_string(y1FSorted) << std::endl;
-					std::cout << "   v2: " << std::to_string(x2FSorted) << ", " << std::to_string(y2FSorted) << std::endl;
-					std::cout << "   v3: " << std::to_string(x3FSorted) << ", " << std::to_string(y3FSorted) << std::endl;
-					float xMax = std::max(std::max(x1FSorted, x2FSorted), x3FSorted);
-					float xMin = std::min(std::min(x1FSorted, x2FSorted), x3FSorted);
-					std::cout << "   total x dist: " << std::to_string(xMax - xMin) << std::endl;
-					std::cout << "   total y dist: " << std::to_string(y3FSorted - y1FSorted) << std::endl;
-					std::cout << "   current y dist: " << std::to_string(rowF - y1FSorted) << std::endl;
-					std::cout << "   oneOverPixelStride: " << std::to_string(oneOverPixelStride) << std::endl;
-					std::cout << "   depth: " << std::to_string(depth) << std::endl;
-					std::cout << "   depthStart: " << std::to_string(depthStart) << std::endl;
-					std::cout << "   depthEnd: " << std::to_string(depthEnd) << std::endl;
-					std::cout << "   depthIncr: " << std::to_string(depthIncr) << std::endl;
-					std::cout << "   depthXIncr: " << std::to_string(depthXIncr) << std::endl;
-					std::cout << "   depthYIncr: " << std::to_string(depthYIncr) << std::endl;
-					std::cout << "   v1Depth: " << std::to_string(v1Depth) << std::endl;
-					std::cout << "   v2Depth: " << std::to_string(v2Depth) << std::endl;
-					std::cout << "   v3Depth: " << std::to_string(v3Depth) << std::endl;
-					std::cout << "   leftX: " << std::to_string(leftX) << std::endl;
-					std::cout << "   rightX: " << std::to_string(rightX) << std::endl;
-					std::cout << "   row: " << std::to_string(row) << std::endl;
-				}
-				*/
 				( *shaderData.fShader )( currentColor, shaderData, 0.0f, 0.0f, 0.0f, texCoordX, texCoordY);
 				m_CP.setColor( currentColor );
 				m_CP.template putPixel<width, height>( m_Pxls, pixel );
@@ -835,8 +856,6 @@ inline bool SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 		xLeftAccumulator  += xLeftIncr;
 		xRightAccumulator += xRightIncr;
 	}
-
-	return true;
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
@@ -876,25 +895,28 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 		return;
 	}
 
-	float x1 = face.vertices[0].vec.x() * (width  - 1);
-	float y1 = face.vertices[0].vec.y() * (height - 1);
-	float x2 = face.vertices[1].vec.x() * (width  - 1);
-	float y2 = face.vertices[1].vec.y() * (height - 1);
-	float x3 = face.vertices[2].vec.x() * (width  - 1);
-	float y3 = face.vertices[2].vec.y() * (height - 1);
+	// sorting vertices
+	triSortVertices( face.vertices[0], face.vertices[1], face.vertices[2], width, height );
 
-	int x1Sorted = std::ceil( x1 );
-	int y1Sorted = std::ceil( y1 );
-	int x2Sorted = std::ceil( x2 );
-	int y2Sorted = std::ceil( y2 );
-	int x3Sorted = std::ceil( x3 );
-	int y3Sorted = std::ceil( y3 );
-	float x1FSorted = static_cast<float>( x1Sorted );
-	float y1FSorted = static_cast<float>( y1Sorted );
-	float x2FSorted = static_cast<float>( x2Sorted );
-	float y2FSorted = static_cast<float>( y2Sorted );
-	float x3FSorted = static_cast<float>( x3Sorted );
-	float y3FSorted = static_cast<float>( y3Sorted );
+	float x1 = face.vertices[0].vec.x();
+	float y1 = face.vertices[0].vec.y();
+	float x2 = face.vertices[1].vec.x();
+	float y2 = face.vertices[1].vec.y();
+	float x3 = face.vertices[2].vec.x();
+	float y3 = face.vertices[2].vec.y();
+
+	int x1Ceil = std::ceil( x1 );
+	int y1Ceil = std::ceil( y1 );
+	int x2Ceil = std::ceil( x2 );
+	int y2Ceil = std::ceil( y2 );
+	int x3Ceil = std::ceil( x3 );
+	int y3Ceil = std::ceil( y3 );
+	float x1FCeil = static_cast<float>( x1Ceil );
+	float y1FCeil = static_cast<float>( y1Ceil );
+	float x2FCeil = static_cast<float>( x2Ceil );
+	float y2FCeil = static_cast<float>( y2Ceil );
+	float x3FCeil = static_cast<float>( x3Ceil );
+	float y3FCeil = static_cast<float>( y3Ceil );
 	float texCoordX1 = face.vertices[0].texCoords.x();
 	float texCoordY1 = face.vertices[0].texCoords.y();
 	float texCoordX2 = face.vertices[1].texCoords.x();
@@ -908,19 +930,14 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	float v2Depth = face.vertices[1].vec.z();
 	float v3Depth = face.vertices[2].vec.z();
 
-	// sorting vertices
-	triSortVertices( x1, y1, x1Sorted, y1Sorted, x1FSorted, y1FSorted, texCoordX1, texCoordY1, v1PerspMul, v1Depth,
-				x2, y2, x2Sorted, y2Sorted, x2FSorted, y2FSorted, texCoordX2, texCoordY2, v2PerspMul, v2Depth,
-				x3, y3, x3Sorted, y3Sorted, x3FSorted, y3FSorted, texCoordX3, texCoordY3, v3PerspMul, v3Depth );
-
 	// getting the slope of each line
-	const float line1Slope = (y2FSorted - y1FSorted) / (x2FSorted - x1FSorted);
-	const float line2Slope = (y3FSorted - y1FSorted) / (x3FSorted - x1FSorted);
-	const float line3Slope = (y3FSorted - y2FSorted) / (x3FSorted - x2FSorted);
+	const float line1Slope = (y2FCeil - y1FCeil) / (x2FCeil - x1FCeil);
+	const float line2Slope = (y3FCeil - y1FCeil) / (x3FCeil - x1FCeil);
+	const float line3Slope = (y3FCeil - y2FCeil) / (x3FCeil - x2FCeil);
 
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
-	float xLeftAccumulator  = x1FSorted;
-	float xRightAccumulator = x1FSorted;
+	float xLeftAccumulator  = x1FCeil;
+	float xRightAccumulator = x1FCeil;
 
 	// floats for incrementing xLeftAccumulator and xRightAccumulator
 	float xLeftIncrTop     = 1.0f / line1Slope;
@@ -932,7 +949,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
 
 	// depending on the position of the vertices, we need to swap increments
-	if ( (needsSwapping && x1Sorted < x2Sorted) || (needsSwapping && x1Sorted >= x2Sorted && x2Sorted > x3Sorted) )
+	if ( (needsSwapping && x1Ceil < x2Ceil) || (needsSwapping && x1Ceil >= x2Ceil && x2Ceil > x3Ceil) )
 	{
 		float tempIncr = xLeftIncrTop;
 		xLeftIncrTop = xRightIncrTop;
@@ -944,39 +961,23 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// gradient calculation vars
-	float v2Offset = 1.0f; // multiplied by gradient start and end calculations for diagonal line cases
-	const float oneOverdX = 1.0f / ( ((x2FSorted - x3FSorted) * (y1FSorted - y3FSorted)) - ((x1FSorted - x3FSorted) * (y2FSorted - y3FSorted)) );
+	const float oneOverdX = 1.0f / ( ((x2FCeil - x3FCeil) * (y1FCeil - y3FCeil)) - ((x1FCeil - x3FCeil) * (y2FCeil - y3FCeil)) );
 	const float oneOverdY = -oneOverdX;
-	const float y1y3Step = y3FSorted - y1FSorted;
-	const float y2y3Step = y3FSorted - y2FSorted;
-	const float x1x3Step = x3FSorted - x1FSorted;
-	const float x2x3Step = x3FSorted - x2FSorted;
 	Vector<3> texCoordsX({ texCoordX1 * v1PerspMul, texCoordX2 * v2PerspMul, texCoordX3 * v3PerspMul });
 	Vector<3> texCoordsY({ texCoordY1 * v1PerspMul, texCoordY2 * v2PerspMul, texCoordY3 * v3PerspMul });
-	const float texCoordXXIncr = calcXIncr( texCoordsX, y1FSorted, y2FSorted, y3FSorted, oneOverdX );
-	const float texCoordXYIncr = calcYIncr( texCoordsX, x1FSorted, x2FSorted, x3FSorted, oneOverdY );
-	const float texCoordYXIncr = calcXIncr( texCoordsY, y1FSorted, y2FSorted, y3FSorted, oneOverdX );
-	const float texCoordYYIncr = calcYIncr( texCoordsY, x1FSorted, x2FSorted, x3FSorted, oneOverdY );
-	float texCoordX = texCoordX1 * v1PerspMul;
-	float texCoordY = texCoordY1 * v1PerspMul;
+	const float texCoordXXIncr = calcXIncr( texCoordsX, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float texCoordXYIncr = calcYIncr( texCoordsX, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	const float texCoordYXIncr = calcXIncr( texCoordsY, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float texCoordYYIncr = calcYIncr( texCoordsY, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
 	Vector<3> persps({ v1PerspMul, v2PerspMul, v3PerspMul });
-	const float perspXIncr = calcXIncr( persps, y1FSorted, y2FSorted, y3FSorted, oneOverdX );
-	const float perspYIncr = calcXIncr( persps, x1FSorted, x2FSorted, x3FSorted, oneOverdY );
-	float persp = v1PerspMul;
+	const float perspXIncr = calcXIncr( persps, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float perspYIncr = calcXIncr( persps, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
 	Vector<3> depths({ v1Depth, v2Depth, v3Depth });
-	const float depthXIncr = calcXIncr( depths, y1FSorted, y2FSorted, y3FSorted, oneOverdX );
-	const float depthYIncr = calcYIncr( depths, x1FSorted, x2FSorted, x3FSorted, oneOverdY );
-	float depth = v1Depth;
+	const float depthXIncr = calcXIncr( depths, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float depthYIncr = calcYIncr( depths, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
 
-	float testX2 = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (y2 - y1) ) + ( texCoordXXIncr * (x2 - x1) );
-	float testY2 = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (y2 - y1) ) + ( texCoordYXIncr * (x2 - x1) );
-	float testX3 = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (y3 - y1) ) + ( texCoordXXIncr * (x3 - x1) );
-	float testY3 = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (y3 - y1) ) + ( texCoordYXIncr * (x3 - x1) );
-	float testD2 = v1Depth + ( depthYIncr * (y2 - y1) ) + ( depthXIncr * (x2 - x1) );
-	float testD3 = v1Depth + ( depthYIncr * (y3 - y1) ) + ( depthXIncr * (x3 - x1) );
-
-	int topHalfRow = y1Sorted;
-	while ( topHalfRow < y2Sorted && topHalfRow < 0 )
+	int topHalfRow = y1Ceil;
+	while ( topHalfRow < y2Ceil && topHalfRow < 0 )
 	{
 		// even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
 		xLeftAccumulator  += xLeftIncrTop;
@@ -986,42 +987,24 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// render up until the second vertice
-	if ( ! renderScanlines<texFormat> (topHalfRow, y2Sorted, x1, y1, xLeftAccumulator, xRightAccumulator, x1FSorted, y1FSorted, x2FSorted,
-			y2FSorted, x3FSorted, y3FSorted, v1PerspMul, v2PerspMul, v3PerspMul, v1Depth, v2Depth, v3Depth, v2Offset, xLeftIncrTop,
-			xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordX2, texCoordY2, texCoordX3, texCoordY3, texCoordXXIncr,
-			texCoordXYIncr, texCoordYXIncr, texCoordYYIncr, texCoordX, texCoordY, perspXIncr, perspYIncr, persp, depthXIncr, depthYIncr, depth) )
-	{
-		std::cout << "   line1Slope: " << std::to_string(line1Slope) << std::endl;
-		std::cout << "   line2Slope: " << std::to_string(line2Slope) << std::endl;
-		std::cout << "   line3Slope: " << std::to_string(line3Slope) << std::endl;
-		std::cout << "texCoordX2 * v2PerspMul: " << std::to_string(texCoordX2 * v2PerspMul) << std::endl;
-		std::cout << "texCoordY2 * v2PerspMul: " << std::to_string(texCoordY2 * v2PerspMul) << std::endl;
-		std::cout << "testX2 = " << std::to_string(testX2) << std::endl;
-		std::cout << "testY2 = " << std::to_string(testY2) << std::endl;
-		std::cout << "texCoordX3 * v2PerspMul: " << std::to_string(texCoordX3 * v3PerspMul) << std::endl;
-		std::cout << "texCoordY3 * v2PerspMul: " << std::to_string(texCoordY3 * v3PerspMul) << std::endl;
-		std::cout << "testX3 = " << std::to_string(testX3) << std::endl;
-		std::cout << "testY3 = " << std::to_string(testY3) << std::endl;
-		std::cout << "v2Depth: " << std::to_string(v2Depth) << std::endl;
-		std::cout << "testD2 = " << std::to_string(testD2) << std::endl;
-		std::cout << "v3Depth: " << std::to_string(v3Depth) << std::endl;
-		std::cout << "testD3 = " << std::to_string(testD3) << std::endl;
-	}
+	renderScanlines<texFormat>( topHalfRow, y2Ceil, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrTop,
+			xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr,
+			texCoordXYIncr, texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr );
 
 	// in case the top of the triangle is straight, set the accumulators appropriately
-	if ( y1Sorted == y2Sorted == y3Sorted )
+	if ( y1Ceil == y2Ceil == y3Ceil )
 	{
-		xLeftAccumulator  = x1FSorted;
-		xRightAccumulator = x3FSorted;
+		xLeftAccumulator  = x1FCeil;
+		xRightAccumulator = x3FCeil;
 	}
-	else if ( y1Sorted == y2Sorted )
+	else if ( y1Ceil == y2Ceil )
 	{
-		xLeftAccumulator  = x1FSorted;
-		xRightAccumulator = x2FSorted;
+		xLeftAccumulator  = x1FCeil;
+		xRightAccumulator = x2FCeil;
 	}
 
-	int bottomHalfRow = y2Sorted;
-	while ( bottomHalfRow < y3Sorted && bottomHalfRow < 0 )
+	int bottomHalfRow = y2Ceil;
+	while ( bottomHalfRow < y3Ceil && bottomHalfRow < 0 )
 	{
 		// even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
 		xLeftAccumulator  += xLeftIncrBottom;
@@ -1031,28 +1014,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// rasterize up until the last vertice
-	if ( ! renderScanlines<texFormat> (bottomHalfRow, y3Sorted + 1, x1, y1, xLeftAccumulator, xRightAccumulator, x1FSorted, y1FSorted,
-			x2FSorted, y2FSorted, x3FSorted, y3FSorted, v1PerspMul, v2PerspMul, v3PerspMul, v1Depth, v2Depth, v3Depth, v2Offset,
-			xLeftIncrBottom, xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordX2, texCoordY2, texCoordX3,
-			texCoordY3, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr, texCoordX, texCoordY, perspXIncr, perspYIncr, persp,
-			depthXIncr, depthYIncr, depth) )
-	{
-		std::cout << "   line1Slope: " << std::to_string(line1Slope) << std::endl;
-		std::cout << "   line2Slope: " << std::to_string(line2Slope) << std::endl;
-		std::cout << "   line3Slope: " << std::to_string(line3Slope) << std::endl;
-		std::cout << "texCoordX2 * v2PerspMul: " << std::to_string(texCoordX2 * v2PerspMul) << std::endl;
-		std::cout << "texCoordY2 * v2PerspMul: " << std::to_string(texCoordY2 * v2PerspMul) << std::endl;
-		std::cout << "testX2 = " << std::to_string(testX2) << std::endl;
-		std::cout << "testY2 = " << std::to_string(testY2) << std::endl;
-		std::cout << "texCoordX3 * v2PerspMul: " << std::to_string(texCoordX3 * v3PerspMul) << std::endl;
-		std::cout << "texCoordY3 * v2PerspMul: " << std::to_string(texCoordY3 * v3PerspMul) << std::endl;
-		std::cout << "testX3 = " << std::to_string(testX3) << std::endl;
-		std::cout << "testY3 = " << std::to_string(testY3) << std::endl;
-		std::cout << "v2Depth: " << std::to_string(v2Depth) << std::endl;
-		std::cout << "testD2 = " << std::to_string(testD2) << std::endl;
-		std::cout << "v3Depth: " << std::to_string(v3Depth) << std::endl;
-		std::cout << "testD3 = " << std::to_string(testD3) << std::endl;
-	}
+	renderScanlines<texFormat>( bottomHalfRow, y3Ceil + 1, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrBottom,
+			xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
+			perspXIncr, perspYIncr, depthXIncr, depthYIncr );
 
 	// set the previously used color back since we're done with the gradients
 	m_CP.setColor( previousColor );
