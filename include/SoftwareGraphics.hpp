@@ -357,29 +357,17 @@ static inline void triSortVertices (Vertex& v1, Vertex& v2, Vertex& v3, float wi
 	}
 }
 
-static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1Sorted, float& x1FSorted, float& y1FSorted, float& x1TexCoord,
-					float& y1TexCoord, float& v1PerspMul, float& v1Depth, float& x2, float& y2, int& x2Sorted, int& y2Sorted,
-					float& x2FSorted, float& y2FSorted, float& x2TexCoord, float& y2TexCoord, float& v2PerspMul, float& v2Depth,
-					float& x3, float& y3, int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted, float& x3TexCoord,
-					float& y3TexCoord, float& v3PerspMul, float& v3Depth )
+static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSorted, float& y1FSorted,
+					int& x2Sorted, int& y2Sorted, float& x2FSorted, float& y2FSorted,
+					int& x3Sorted, int& y3Sorted, float& x3FSorted, float& y3FSorted)
 {
 	// first sort by y values
 	if (y2Sorted > y3Sorted)
 	{
-		float xTemp = x2;
-		float yTemp = y2;
 		int xSTemp = x2Sorted;
 		int ySTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float xTexCoordTemp = x2TexCoord;
-		float yTexCoordTemp = y2TexCoord;
-		float vPerspMulTemp = v2PerspMul;
-		float vDepthTemp = v2Depth;
-		x2 = x3;
-		y2 = y3;
-		x3 = xTemp;
-		y3 = yTemp;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xSTemp;
@@ -388,31 +376,13 @@ static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		x2TexCoord = x3TexCoord;
-		y2TexCoord = y3TexCoord;
-		x3TexCoord = xTexCoordTemp;
-		y3TexCoord = yTexCoordTemp;
-		v2PerspMul = v3PerspMul;
-		v3PerspMul = vPerspMulTemp;
-		v2Depth = v3Depth;
-		v3Depth = vDepthTemp;
 	}
 	if (y1Sorted > y2Sorted)
 	{
-		float xTemp = x1;
-		float yTemp = y1;
 		int xSTemp = x1Sorted;
 		int ySTemp = y1Sorted;
 		float xFTemp = x1FSorted;
 		float yFTemp = y1FSorted;
-		float xTexCoordTemp = x1TexCoord;
-		float yTexCoordTemp = y1TexCoord;
-		float vPerspMulTemp = v1PerspMul;
-		float vDepthTemp = v1Depth;
-		x1 = x2;
-		y1 = y2;
-		x2 = xTemp;
-		y2 = yTemp;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xSTemp;
@@ -421,31 +391,13 @@ static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1
 		y1FSorted = y2FSorted;
 		x2FSorted = xFTemp;
 		y2FSorted = yFTemp;
-		x1TexCoord = x2TexCoord;
-		y1TexCoord = y2TexCoord;
-		x2TexCoord = xTexCoordTemp;
-		y2TexCoord = yTexCoordTemp;
-		v1PerspMul = v2PerspMul;
-		v2PerspMul = vPerspMulTemp;
-		v1Depth = v2Depth;
-		v2Depth = vDepthTemp;
 	}
 	if (y2Sorted > y3Sorted)
 	{
-		float xTemp = x2;
-		float yTemp = y2;
 		int xSTemp = x2Sorted;
 		int ySTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float xTexCoordTemp = x2TexCoord;
-		float yTexCoordTemp = y2TexCoord;
-		float vPerspMulTemp = v2PerspMul;
-		float vDepthTemp = v2Depth;
-		x2 = x3;
-		y2 = y3;
-		x3 = xTemp;
-		y3 = yTemp;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xSTemp;
@@ -454,33 +406,15 @@ static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		x2TexCoord = x3TexCoord;
-		y2TexCoord = y3TexCoord;
-		x3TexCoord = xTexCoordTemp;
-		y3TexCoord = yTexCoordTemp;
-		v2PerspMul = v3PerspMul;
-		v3PerspMul = vPerspMulTemp;
-		v2Depth = v3Depth;
-		v3Depth = vDepthTemp;
 	}
 
 	// then sort by x values
 	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
 	{
-		float xTemp = x2;
-		float yTemp = y2;
 		int xSTemp = x2Sorted;
 		int ySTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float xTexCoordTemp = x2TexCoord;
-		float yTexCoordTemp = y2TexCoord;
-		float vPerspMulTemp = v2PerspMul;
-		float vDepthTemp = v2Depth;
-		x2 = x3;
-		y2 = y3;
-		x3 = xTemp;
-		y3 = yTemp;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xSTemp;
@@ -489,31 +423,13 @@ static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		x2TexCoord = x3TexCoord;
-		y2TexCoord = y3TexCoord;
-		x3TexCoord = xTexCoordTemp;
-		y3TexCoord = yTexCoordTemp;
-		v2PerspMul = v3PerspMul;
-		v3PerspMul = vPerspMulTemp;
-		v2Depth = v3Depth;
-		v3Depth = vDepthTemp;
 	}
 	if (y1Sorted == y2Sorted && x1Sorted > x2Sorted)
 	{
-		float xTemp = x1;
-		float yTemp = y1;
 		int xSTemp = x1Sorted;
 		int ySTemp = y1Sorted;
 		float xFTemp = x1FSorted;
 		float yFTemp = y1FSorted;
-		float xTexCoordTemp = x1TexCoord;
-		float yTexCoordTemp = y1TexCoord;
-		float vPerspMulTemp = v1PerspMul;
-		float vDepthTemp = v1Depth;
-		x1 = x2;
-		y1 = y2;
-		x2 = xTemp;
-		y2 = yTemp;
 		x1Sorted = x2Sorted;
 		y1Sorted = y2Sorted;
 		x2Sorted = xSTemp;
@@ -522,31 +438,13 @@ static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1
 		y1FSorted = y2FSorted;
 		x2FSorted = xFTemp;
 		y2FSorted = yFTemp;
-		x1TexCoord = x2TexCoord;
-		y1TexCoord = y2TexCoord;
-		x2TexCoord = xTexCoordTemp;
-		y2TexCoord = yTexCoordTemp;
-		v1PerspMul = v2PerspMul;
-		v2PerspMul = vPerspMulTemp;
-		v1Depth = v2Depth;
-		v2Depth = vDepthTemp;
 	}
 	if (y2Sorted == y3Sorted && x2Sorted > x3Sorted)
 	{
-		float xTemp = x2;
-		float yTemp = y2;
 		int xSTemp = x2Sorted;
 		int ySTemp = y2Sorted;
 		float xFTemp = x2FSorted;
 		float yFTemp = y2FSorted;
-		float xTexCoordTemp = x2TexCoord;
-		float yTexCoordTemp = y2TexCoord;
-		float vPerspMulTemp = v2PerspMul;
-		float vDepthTemp = v2Depth;
-		x2 = x3;
-		y2 = y3;
-		x3 = xTemp;
-		y3 = yTemp;
 		x2Sorted = x3Sorted;
 		y2Sorted = y3Sorted;
 		x3Sorted = xSTemp;
@@ -555,14 +453,6 @@ static inline void triSortVertices (float& x1, float& y1, int& x1Sorted, int& y1
 		y2FSorted = y3FSorted;
 		x3FSorted = xFTemp;
 		y3FSorted = yFTemp;
-		x2TexCoord = x3TexCoord;
-		y2TexCoord = y3TexCoord;
-		x3TexCoord = xTexCoordTemp;
-		y3TexCoord = yTexCoordTemp;
-		v2PerspMul = v3PerspMul;
-		v3PerspMul = vPerspMulTemp;
-		v2Depth = v3Depth;
-		v3Depth = vDepthTemp;
 	}
 }
 
@@ -591,10 +481,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleFilled (fl
 	float y3FSorted = y3;
 
 	// sorting vertices
-	float fake = 0.0f;
-	triSortVertices( fake, fake, x1Sorted, y1Sorted, x1FSorted, y1FSorted, fake, fake, fake, fake,
-				fake , fake, x2Sorted, y2Sorted, x2FSorted, y2FSorted, fake, fake, fake, fake,
-				fake, fake, x3Sorted, y3Sorted, x3FSorted, y3FSorted, fake, fake, fake, fake );
+	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted,
+				x2Sorted, y2Sorted, x2FSorted, y2FSorted,
+				x3Sorted, y3Sorted, x3FSorted, y3FSorted );
 
 	// getting the slope of each line
 	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
