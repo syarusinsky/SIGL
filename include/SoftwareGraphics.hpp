@@ -775,9 +775,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	camera.scaleXYToZeroToOne( face );
 
 	// backface culling
-	face.calcFaceNormals();
 	const Vector<4>& vertexVec = face.vertices[0].vec;
-	const Vector<4>& normal = face.normal;
+	const Vector<4>& normal = face.calcFaceNormals();
 	if ( ! (normal.x() * (vertexVec.x() - camera.x())
 			+ normal.y() * (vertexVec.y() - camera.y())
 			+ normal.z() * (vertexVec.z() - camera.z()) > 0.0f) )

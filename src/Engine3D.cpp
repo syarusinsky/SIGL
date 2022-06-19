@@ -105,7 +105,7 @@ void Mesh::rotate (float x, float y, float z)
 	transformMat *= rotMatrix;
 }
 
-void Face::calcFaceNormals()
+Vector<4> Face::calcFaceNormals()
 {
 	Vertex& vert1 = vertices[0];
 	Vertex& vert2 = vertices[1];
@@ -114,7 +114,7 @@ void Face::calcFaceNormals()
 	Vector<4> normal = crossProductVec4D( vert1.vec, vert2.vec, vert3.vec );
 	normalizeVec4D( normal );
 
-	this->normal = normal;
+	return normal;
 }
 
 Matrix<4, 4> generateIdentityMatrix()

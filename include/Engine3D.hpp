@@ -25,9 +25,8 @@ struct Vertex
 struct Face
 {
 	Vertex vertices[3];
-	Vector<4> normal; // TODO probably want to remove this, both for cache purposes and because it's unnecessary
 
-	void calcFaceNormals();
+	Vector<4> calcFaceNormals();
 };
 
 struct Mesh
