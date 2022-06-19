@@ -11,6 +11,8 @@
  * This can be done in the makefile with CPP_FLAGS, ect.
 **************************************************************************/
 
+#define _USE_MATH_DEFINES
+
 #include "ColorProfile.hpp"
 #include "FrameBuffer.hpp"
 #include <thread>

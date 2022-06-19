@@ -12,6 +12,7 @@
 
 Vector<4> mulVector4DByMatrix4D (const Vector<4>& vector, const Matrix<4, 4>& matrix);
 
+Matrix<4, 4> generateIdentityMatrix();
 Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegrees);
 
 struct Vertex
@@ -24,7 +25,7 @@ struct Vertex
 struct Face
 {
 	Vertex vertices[3];
-	Vector<4> normal;
+	Vector<4> normal; // TODO probably want to remove this, both for cache purposes and because it's unnecessary
 
 	void calcFaceNormals();
 };
@@ -32,8 +33,12 @@ struct Face
 struct Mesh
 {
 	std::vector<Face> faces;
+	Matrix<4, 4> transformMat = generateIdentityMatrix();
 
+	// operations on tranformation matrix
 	void scale (float scaleFactor);
+	void translate (float x, float y, float z);
+	void rotate (float x, float y, float z);
 };
 
 class Camera3D

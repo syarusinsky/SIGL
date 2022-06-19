@@ -87,17 +87,22 @@ Vector<4> mulVector4DByMatrix4D (const Vector<4>& vector, const Matrix<4, 4>& ma
 
 void Mesh::scale (float scaleFactor)
 {
-	// TODO do all transformations with matrices soon
-	for ( Face& face : faces )
-	{
-		Vector<4>& vec1 = face.vertices[0].vec;
-		Vector<4>& vec2 = face.vertices[1].vec;
-		Vector<4>& vec3 = face.vertices[2].vec;
+	transformMat.at( 0, 0 ) *= scaleFactor;
+	transformMat.at( 1, 1 ) *= scaleFactor;
+	transformMat.at( 2, 2 ) *= scaleFactor;
+}
 
-		vec1.x() *= scaleFactor; vec1.y() *= scaleFactor; vec1.z() *= scaleFactor;
-		vec2.x() *= scaleFactor; vec2.y() *= scaleFactor; vec2.z() *= scaleFactor;
-		vec3.x() *= scaleFactor; vec3.y() *= scaleFactor; vec3.z() *= scaleFactor;
-	}
+void Mesh::translate (float x, float y, float z)
+{
+	transformMat.at( 3, 0 ) += x;
+	transformMat.at( 3, 1 ) += y;
+	transformMat.at( 3, 2 ) += z;
+}
+
+void Mesh::rotate (float x, float y, float z)
+{
+	Matrix<4, 4> rotMatrix = generateRotationMatrix( x, y , z );
+	transformMat *= rotMatrix;
 }
 
 void Face::calcFaceNormals()
@@ -110,6 +115,17 @@ void Face::calcFaceNormals()
 	normalizeVec4D( normal );
 
 	this->normal = normal;
+}
+
+Matrix<4, 4> generateIdentityMatrix()
+{
+	Matrix<4, 4> matrix;
+	matrix.at( 0, 0 ) = 1.0f;
+	matrix.at( 1, 1 ) = 1.0f;
+	matrix.at( 2, 2 ) = 1.0f;
+	matrix.at( 3, 3 ) = 1.0f;
+
+	return matrix;
 }
 
 Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegrees)

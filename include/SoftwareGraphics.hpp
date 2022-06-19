@@ -753,6 +753,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 {
 	Camera3D& camera = shaderData.camera;
 
+	// TODO this is not how clipping should be done, need to do homogenous clipping in the future
 	const float nearClipDepth = camera.getNearClip();
 	const float farClipDepth = camera.getFarClip();
 
