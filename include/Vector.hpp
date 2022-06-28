@@ -6,8 +6,11 @@
  * as some functions that can be performed on the vector.
 **************************************************************************/
 
+#define _USE_MATH_DEFINES
+
 #include "Matrix.hpp"
 #include <vector>
+#include <cmath>
 
 template <unsigned int dimensions>
 class Vector : public Matrix<1, dimensions>
@@ -33,7 +36,11 @@ class Vector : public Matrix<1, dimensions>
 		float& w();
 		float w() const;
 
-		unsigned int length() const { return dimensions; }
+		float length() const;
+		unsigned int numDimensions() const { return dimensions; }
+
+		float dotProduct (const Vector<dimensions>& other) const;
+		Vector normalize() const;
 
 	private:
 };
@@ -134,6 +141,46 @@ float Vector<dimensions>::w() const
 	static_assert( dimensions == 4, "Vector dimensions must be 4D to use w()." );
 
 	return this->m_Vals[0][3];
+}
+
+template <unsigned int dimensions>
+float Vector<dimensions>::length() const
+{
+	float length = 0.0f;
+	for ( unsigned int dimension = 0; dimension < dimensions; dimension++ )
+	{
+		length += this->m_Vals[0][dimension] * this->m_Vals[0][dimension];
+	}
+	length = std::sqrt( length );
+
+	return length;
+}
+
+template <unsigned int dimensions>
+float Vector<dimensions>::dotProduct (const Vector<dimensions>& other) const
+{
+	float retVal = 0.0f;
+	for ( unsigned int dimension = 0; dimension < dimensions; dimension++ )
+	{
+		retVal += this->m_Vals[0][dimension] * other.m_Vals[0][dimension];
+	}
+
+	return retVal;
+}
+
+template <unsigned int dimensions>
+Vector<dimensions> Vector<dimensions>::normalize() const
+{
+	float oneOverLength = 1.0f / this->length();
+
+	Vector<dimensions> copy = *this;
+
+	for ( unsigned int dimension = 0; dimension < dimensions; dimension++ )
+	{
+		copy.m_Vals[0][dimension] *= oneOverLength;
+	}
+
+	return copy;
 }
 
 #endif // VECTOR_HPP

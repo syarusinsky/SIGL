@@ -40,6 +40,13 @@ struct Mesh
 	void rotate (float x, float y, float z);
 };
 
+struct PointLight
+{
+	Vector<4> position;
+	Vector<3> color;
+	float intensity;
+};
+
 class Camera3D
 {
 	public:

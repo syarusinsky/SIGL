@@ -26,6 +26,9 @@
 #include <algorithm>
 #include <limits>
 
+// TODO remove after testing
+#include <iostream>
+
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 {
@@ -67,7 +70,7 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
 			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
 			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
-			float depthYIncr);
+			float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
 
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
@@ -668,16 +671,15 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Fa
 	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
 
-inline float calcXIncr(Vector<3>& values, float y1, float y2, float y3, float oneOverdX)
+inline float calcIncr(Vector<3>& values, float xy1, float xy2, float xy3, float oneOverdXY)
 {
-	const float retVal = ( ((values.at(1) - values.at(2)) * (y1 - y3)) - ((values.at(0) - values.at(2)) * (y2 - y3)) ) * oneOverdX;
+	const float retVal = ( ((values.at(1) - values.at(2)) * (xy1 - xy3)) - ((values.at(0) - values.at(2)) * (xy2 - xy3)) ) * oneOverdXY;
 	return ( retVal > 100000.0f || retVal < -100000.0f ) ? 0.0f : retVal;
 }
 
-inline float calcYIncr(Vector<3>& values, float x1, float x2, float x3, float oneOverdY)
+inline float saturate (float val)
 {
-	const float retVal = ( ((values.at(1) - values.at(2)) * (x1 - x3)) - ((values.at(0) - values.at(2)) * (x2 - x3)) ) * oneOverdY;
-	return ( retVal > 100000.0f || retVal < -100000.0f ) ? 0.0f : retVal;
+	if ( val > 1.0f ) return 1.0f; else if ( val < 0.0f ) return 0.0f; else return val;
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
@@ -686,7 +688,7 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
 			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
 			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
-			float depthYIncr)
+			float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
 {
 	// TODO this can be optimized by quite a bit, and likely will need to be
 	for (int row = startRow; row < endRowExclusive && row < height; row++)
@@ -712,14 +714,27 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 		const float texYEnd    = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (rowF - y1) ) + ( texCoordYXIncr * (rightXF - x1) );
 		const float persStart  = v1PerspMul + ( perspYIncr * (rowF - y1) ) + ( perspXIncr * (leftXF - x1) );
 		const float persEnd    = v1PerspMul + ( perspYIncr * (rowF - y1) ) + ( perspXIncr * (rightXF - x1) );
+		// TODO maybe I need v1LightAmnt offset by the prestep
+		const float lightStart = v1LightAmnt + ( lightAmntYIncr * (rowF - y1) ) + ( lightAmntXIncr * (leftXF - x1) );
+		const float lightEnd   = v1LightAmnt + ( lightAmntYIncr * (rowF - y1) ) + ( lightAmntXIncr * (rightXF - x1) );
 		const float depthIncr  = ( depthEnd - depthStart ) * oneOverPixelStride;
 		const float persIncr   = ( persEnd - persStart ) * oneOverPixelStride;
 		const float texXIncr   = ( texXEnd - texXStart ) * oneOverPixelStride;
 		const float texYIncr   = ( texYEnd - texYStart ) * oneOverPixelStride;
+		const float lightIncr  = ( lightEnd - lightStart ) * oneOverPixelStride;
 		float depth = depthStart;
 		float texX  = texXStart;
 		float texY  = texYStart;
 		float pers  = persStart;
+		float light = lightStart;
+
+		std::cout << "row: " << std::to_string( row ) << "   lightAmntYIncr * (rowF - y1): " << std::to_string( lightAmntYIncr * (rowF - y1) ) << std::endl;
+		std::cout << "   leftX: " << std::to_string( leftX ) << "   lightAmntXIncr * (leftXF - x1): " << std::to_string( lightAmntXIncr * (leftXF - x1) ) << std::endl;
+		std::cout << "   rightX: " << std::to_string( rightX ) << "   lightAmntXIncr * (rightXF - x1): " << std::to_string( lightAmntXIncr * (rightXF - x1) ) << std::endl;
+		std::cout << "   lightStart: " << std::to_string( lightStart ) << std::endl;
+		std::cout << "   lightEnd: " << std::to_string( lightEnd ) << std::endl;
+
+		// if ( lightStart > 1.0f || lightStart < -0.000001f || lightEnd > 1.0f || lightEnd < -0.000001f ) exit( 5 );
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
@@ -728,7 +743,7 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 				const float perspOffset = 1.0f / pers;
 				const float texCoordX = texX * perspOffset;
 				const float texCoordY = texY * perspOffset;
-				( *shaderData.fShader )( currentColor, shaderData, 0.0f, 0.0f, 0.0f, texCoordX, texCoordY);
+				( *shaderData.fShader )( currentColor, shaderData, 0.0f, 0.0f, 0.0f, texCoordX, texCoordY, light );
 				m_CP.setColor( currentColor );
 				m_CP.template putPixel<width, height>( m_Pxls, pixel );
 
@@ -739,6 +754,7 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 			texX  += texXIncr;
 			texY  += texYIncr;
 			pers  += persIncr;
+			light += lightIncr;
 		}
 
 		// increment accumulators
@@ -818,21 +834,36 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	float v1Depth = face.vertices[0].vec.z();
 	float v2Depth = face.vertices[1].vec.z();
 	float v3Depth = face.vertices[2].vec.z();
+	Vector<4> lightDir({0.0f, 0.0f, 1.0f, 0.0f}); // TODO remove this after testing
+	float v1LightAmnt = saturate( face.vertices[0].normal.dotProduct(lightDir) );
+	float v2LightAmnt = saturate( face.vertices[1].normal.dotProduct(lightDir) );
+	float v3LightAmnt = saturate( face.vertices[2].normal.dotProduct(lightDir) );
 
-	// getting the slope of each line
-	const float line1Slope = (y2FCeil - y1FCeil) / (x2FCeil - x1FCeil);
-	const float line2Slope = (y3FCeil - y1FCeil) / (x3FCeil - x1FCeil);
-	const float line3Slope = (y3FCeil - y2FCeil) / (x3FCeil - x2FCeil);
+	std::cout << "x1: " << std::to_string( x1 ) << std::endl;
+	std::cout << "y1: " << std::to_string( y1 ) << std::endl;
+	std::cout << "x1Ceil: " << std::to_string( x1Ceil ) << std::endl;
+	std::cout << "y1Ceil: " << std::to_string( y1Ceil ) << std::endl;
+	std::cout << "x2: " << std::to_string( x2 ) << std::endl;
+	std::cout << "y2: " << std::to_string( y2 ) << std::endl;
+	std::cout << "x2Ceil: " << std::to_string( x2Ceil ) << std::endl;
+	std::cout << "y2Ceil: " << std::to_string( y2Ceil ) << std::endl;
+	std::cout << "x3: " << std::to_string( x3 ) << std::endl;
+	std::cout << "y3: " << std::to_string( y3 ) << std::endl;
+	std::cout << "x3Ceil: " << std::to_string( x3Ceil ) << std::endl;
+	std::cout << "y3Ceil: " << std::to_string( y3Ceil ) << std::endl;
+	std::cout << "v1LightAmnt: " << std::to_string( v1LightAmnt ) << std::endl;
+	std::cout << "v2LightAmnt: " << std::to_string( v2LightAmnt ) << std::endl;
+	std::cout << "v3LightAmnt: " << std::to_string( v3LightAmnt ) << std::endl;
 
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
 	float xLeftAccumulator  = x1FCeil;
 	float xRightAccumulator = x1FCeil;
 
 	// floats for incrementing xLeftAccumulator and xRightAccumulator
-	float xLeftIncrTop     = 1.0f / line1Slope;
-	float xRightIncrTop    = 1.0f / line2Slope;
-	float xLeftIncrBottom  = 1.0f / line3Slope;
-	float xRightIncrBottom = 1.0f / line2Slope;
+	float xLeftIncrTop     = (x2FCeil - x1FCeil) / (y2FCeil - y1FCeil);
+	float xRightIncrTop    = (x3FCeil - x1FCeil) / (y3FCeil - y1FCeil);
+	float xLeftIncrBottom  = (x3FCeil - x2FCeil) / (y3FCeil - y2FCeil);
+	float xRightIncrBottom = (x3FCeil - x1FCeil) / (y3FCeil - y1FCeil);
 
 	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
 	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
@@ -854,16 +885,30 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	const float oneOverdY = -oneOverdX;
 	Vector<3> texCoordsX({ texCoordX1 * v1PerspMul, texCoordX2 * v2PerspMul, texCoordX3 * v3PerspMul });
 	Vector<3> texCoordsY({ texCoordY1 * v1PerspMul, texCoordY2 * v2PerspMul, texCoordY3 * v3PerspMul });
-	const float texCoordXXIncr = calcXIncr( texCoordsX, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float texCoordXYIncr = calcYIncr( texCoordsX, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-	const float texCoordYXIncr = calcXIncr( texCoordsY, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float texCoordYYIncr = calcYIncr( texCoordsY, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	const float texCoordXXIncr = calcIncr( texCoordsX, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float texCoordXYIncr = calcIncr( texCoordsX, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	const float texCoordYXIncr = calcIncr( texCoordsY, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float texCoordYYIncr = calcIncr( texCoordsY, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
 	Vector<3> persps({ v1PerspMul, v2PerspMul, v3PerspMul });
-	const float perspXIncr = calcXIncr( persps, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float perspYIncr = calcXIncr( persps, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	const float perspXIncr = calcIncr( persps, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float perspYIncr = calcIncr( persps, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
 	Vector<3> depths({ v1Depth, v2Depth, v3Depth });
-	const float depthXIncr = calcXIncr( depths, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float depthYIncr = calcYIncr( depths, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	const float depthXIncr = calcIncr( depths, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float depthYIncr = calcIncr( depths, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
+	const float lightAmntXIncr = calcIncr( lightAmnts, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float lightAmntYIncr = calcIncr( lightAmnts, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+
+	std::cout << "lightAmntXIncr: " << std::to_string( lightAmntXIncr ) << std::endl;
+	std::cout << "lightAmntYIncr: " << std::to_string( lightAmntYIncr ) << std::endl;
+	int xLeftSpan = x1Ceil - std::min( x2Ceil, x3Ceil );
+	int xRightSpan = std::max( x2Ceil, x3Ceil ) - x1Ceil;
+	int yTotalSpan = y3Ceil - y1Ceil;
+	int xTotalSpan = std::max( x1Ceil, std::max(x2Ceil, x3Ceil) ) - std::min( x1Ceil, std::min(x2Ceil, x3Ceil) );
+	std::cout << "x left span: " << std::to_string( xLeftSpan ) << "   *xIncr: " << std::to_string( xLeftSpan * lightAmntXIncr ) << std::endl;
+	std::cout << "x right span: " << std::to_string( xRightSpan ) << "   *xIncr: " << std::to_string( xRightSpan * lightAmntXIncr ) << std::endl;
+	std::cout << "y total span: " << std::to_string( yTotalSpan ) << "   *yIncr: " << std::to_string( yTotalSpan * lightAmntYIncr ) << std::endl;
+	std::cout << "x total span: " << std::to_string( xTotalSpan ) << "   *xIncr: " << std::to_string( xTotalSpan * lightAmntXIncr ) << std::endl;
 
 	int topHalfRow = y1Ceil;
 	while ( topHalfRow < y2Ceil && topHalfRow < 0 )
@@ -876,9 +921,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// render up until the second vertice
-	renderScanlines<texFormat>( topHalfRow, y2Ceil, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrTop,
-			xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr,
-			texCoordXYIncr, texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr );
+	renderScanlines<texFormat>( topHalfRow, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrTop,
+			xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
+			perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
 
 	// in case the top of the triangle is straight, set the accumulators appropriately
 	if ( y1Ceil == y2Ceil == y3Ceil )
@@ -903,9 +948,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	}
 
 	// rasterize up until the last vertice
-	renderScanlines<texFormat>( bottomHalfRow, y3Ceil + 1, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrBottom,
+	renderScanlines<texFormat>( bottomHalfRow, y3Ceil + 1, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrBottom,
 			xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
-			perspXIncr, perspYIncr, depthXIncr, depthYIncr );
+			perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
 
 	// set the previously used color back since we're done with the gradients
 	m_CP.setColor( previousColor );

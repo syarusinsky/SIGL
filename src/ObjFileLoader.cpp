@@ -42,7 +42,7 @@ bool ObjFileLoader::createMeshFromFile (Mesh& meshOut, const std::string& filePa
 		}
 		else if ( tmpStr == "vn" ) // normal
 		{
-			m_NormalBuffer.push_back( std::vector<float>{std::stof(items[1]), std::stof(items[2]), std::stof(items[3]), 1.0f} );
+			m_NormalBuffer.push_back( std::vector<float>{std::stof(items[1]), std::stof(items[2]), std::stof(items[3]), 0.0f} );
 		}
 		else if ( tmpStr == "f" ) // face indices
 		{

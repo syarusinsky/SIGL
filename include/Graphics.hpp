@@ -19,10 +19,12 @@
 #include "Texture.hpp"
 #include <string>
 #include <math.h>
+#include <vector>
 
 class Font;
 class Camera3D;
 struct Face;
+struct PointLight;
 
 template <CP_FORMAT format>
 struct TriShaderData
@@ -30,9 +32,10 @@ struct TriShaderData
 	std::array<Texture<format>*, 5>& textures;
 	Camera3D& camera;
 	Color color;
+	std::vector<PointLight>* lights;
 	void (*vShader)(TriShaderData<format>& vShaderData);
 	void (*fShader)(Color& colorOut, TriShaderData<format>& fShaderData, float v1Cur, float v2Cur, float v3Cur,
-			float texCoordX, float texCoordY);
+			float texCoordX, float texCoordY, float lightAmnt);
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Textures>

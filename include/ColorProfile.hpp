@@ -22,6 +22,8 @@ struct Color
 
 	bool  m_IsMonochrome = false;
 	bool  m_HasAlpha = false;
+
+	Color operator* (float scalar) const { return Color({ m_R * scalar, m_G * scalar, m_B * scalar }); }
 };
 
 enum class CP_FORMAT
