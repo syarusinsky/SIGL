@@ -6,7 +6,10 @@
  * as functions that can be performed on this matrix.
 **************************************************************************/
 
-#include <cstring>
+#define _USE_MATH_DEFINES
+
+#include <cmath>
+#include <array>
 
 template <unsigned int rows, unsigned int columns>
 class Matrix
@@ -34,11 +37,18 @@ class Matrix
 		Matrix operator* (const Matrix<rows, columns>& other) const;
 		Matrix& operator*= (const Matrix<rows, columns>& other);
 
+		Matrix transpose() const;
+		Matrix inverse() const;
+
 		unsigned int numRows() const { return rows; }
 		unsigned int numColumns() const { return columns; }
 
 	protected:
-		float 		m_Vals[rows][columns];
+		std::array<std::array<float, columns>, rows> m_Vals;
+
+	private:
+		float determinant (const std::array<std::array<float, columns>, rows>& vals, int dimensions = rows) const;
+		std::array<std::array<float, columns>, rows> getCofactor(const std::array<std::array<float, columns>, rows>& vals) const;
 };
 
 template <unsigned int rows, unsigned int columns>
@@ -51,7 +61,7 @@ Matrix<rows, columns>::Matrix (float initVal) :
 template <unsigned int rows, unsigned int columns>
 Matrix<rows, columns>& Matrix<rows, columns>::operator= (const Matrix<rows, columns>& other)
 {
-	std::memcpy( m_Vals, other.m_Vals, sizeof(float) * rows * columns );
+	m_Vals = other.m_Vals;
 
 	return *this;
 }
@@ -244,6 +254,140 @@ Matrix<rows, columns>& Matrix<rows, columns>::operator*= (const Matrix<rows, col
 	*this = copyMatrix;
 
 	return *this;
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns> Matrix<rows, columns>::transpose() const
+{
+	static_assert( rows == columns, "Rows != columns for finding transpose of a matrix!" );
+
+	constexpr unsigned int dimensions = rows;
+	
+	Matrix<rows, columns> transpose;
+
+	for ( unsigned int row = 0; row < dimensions; row++ )
+	{
+		for ( unsigned int column = 0; column < dimensions; column++ )
+		{
+			transpose.m_Vals[column][row] = m_Vals[row][column];
+		}
+	}
+
+    return transpose;
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns> Matrix<rows, columns>::inverse() const
+{
+	static_assert( rows == columns, "Rows != columns for finding inverse of a matrix!" );
+
+	constexpr unsigned int dimensions = rows;
+	
+	double oneOverDeterminant = 1.0f / this->determinant( m_Vals );
+
+	Matrix inverse;
+	inverse.m_Vals = this->getCofactor( m_Vals );
+	inverse = inverse.transpose();
+
+	for ( unsigned int row = 0; row < dimensions; row++ )
+	{
+		for ( unsigned int column = 0; column < dimensions; column++ )
+		{
+			inverse.m_Vals[row][column] *= oneOverDeterminant;
+		}
+	}
+
+	return inverse;
+}
+
+template <unsigned int rows, unsigned int columns>
+float Matrix<rows, columns>::determinant (const std::array<std::array<float, columns>, rows>& vals, int dimensions) const
+{
+	static_assert( rows == columns, "Rows != columns for finding determinant of a matrix!" );
+
+	float determinant = 0.0f;
+	int p = 0; int h = 0; int k = 0; int i = 0; int j = 0;
+	std::array<std::array<float, columns>, rows> temp = { 0.0f };
+
+	if ( dimensions == 1 )
+	{
+		return vals[0][0];
+	}
+	else if ( dimensions == 2 )
+	{
+		determinant = ( vals[0][0] * vals[1][1] - vals[0][1] * vals[1][0] );
+	}
+	else
+	{
+		for ( p = 0; p < dimensions; p++ )
+		{
+			h = 0;
+			k = 0;
+			for ( i = 1; i < dimensions; i++ )
+			{
+				for ( j = 0; j < dimensions; j++ )
+				{
+					if ( j == p )
+					{
+						continue;
+					}
+
+					temp[h][k] = vals[i][j];
+					k++;
+					if ( k == dimensions - 1 )
+					{
+						h++;
+						k = 0;
+					}
+				}
+			}
+
+			determinant = determinant + vals[0][p] * std::pow( -1, p ) * this->determinant( temp, dimensions-1 );
+		}
+	}
+
+	return determinant;
+}
+
+template <unsigned int rows, unsigned int columns>
+std::array<std::array<float, columns>, rows> Matrix<rows, columns>::getCofactor(const std::array<std::array<float, columns>, rows>& vals) const
+{
+	static_assert( rows == columns, "Rows != columns for finding cofactor of a matrix!" );
+
+	constexpr unsigned int dimensions = rows;
+
+	std::array<std::array<float, columns>, rows> solution = { 0.0f };
+	std::array<std::array<float, columns>, rows> subArray = { 0.0f };
+
+	for ( unsigned int i = 0; i < dimensions; i++ )
+	{
+		for ( unsigned int j = 0; j < dimensions; j++ )
+		{
+			int p = 0;
+			for ( unsigned int x = 0; x < dimensions; x++ )
+			{
+				if ( x == i )
+				{
+					continue;
+				}
+				int q = 0;
+
+				for ( unsigned int y = 0; y < dimensions; y++ )
+				{
+					if ( y == j )
+					{
+						continue;
+					}
+
+					subArray[p][q] = vals[x][y];
+					q++;
+				}
+				p++;
+			}
+			solution[i][j] = std::pow( -1, i + j ) * this->determinant( subArray, dimensions - 1 );
+		}
+	}
+	return solution;
 }
 
 #endif // MATRIX_HPP

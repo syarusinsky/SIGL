@@ -704,8 +704,8 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 
 		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX + 1) - static_cast<float>( leftX ) );
 		const float rowF = static_cast<float>( row );
-		const float leftXF = static_cast<float>( leftX );
-		const float rightXF = static_cast<float>( rightX );
+		const float leftXF  = std::min( std::max(xLeftAccumulator, 0.0f), width - 1.0f );
+		const float rightXF = std::max( std::min(xRightAccumulator, width - 1.0f), 0.0f );
 		const float depthStart = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (leftXF - x1) );
 		const float depthEnd   = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (rightXF - x1) );
 		const float texXStart  = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF - y1) ) + ( texCoordXXIncr * (leftXF - x1) );
@@ -714,7 +714,6 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 		const float texYEnd    = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (rowF - y1) ) + ( texCoordYXIncr * (rightXF - x1) );
 		const float persStart  = v1PerspMul + ( perspYIncr * (rowF - y1) ) + ( perspXIncr * (leftXF - x1) );
 		const float persEnd    = v1PerspMul + ( perspYIncr * (rowF - y1) ) + ( perspXIncr * (rightXF - x1) );
-		// TODO maybe I need v1LightAmnt offset by the prestep
 		const float lightStart = v1LightAmnt + ( lightAmntYIncr * (rowF - y1) ) + ( lightAmntXIncr * (leftXF - x1) );
 		const float lightEnd   = v1LightAmnt + ( lightAmntYIncr * (rowF - y1) ) + ( lightAmntXIncr * (rightXF - x1) );
 		const float depthIncr  = ( depthEnd - depthStart ) * oneOverPixelStride;
@@ -727,14 +726,6 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 		float texY  = texYStart;
 		float pers  = persStart;
 		float light = lightStart;
-
-		std::cout << "row: " << std::to_string( row ) << "   lightAmntYIncr * (rowF - y1): " << std::to_string( lightAmntYIncr * (rowF - y1) ) << std::endl;
-		std::cout << "   leftX: " << std::to_string( leftX ) << "   lightAmntXIncr * (leftXF - x1): " << std::to_string( lightAmntXIncr * (leftXF - x1) ) << std::endl;
-		std::cout << "   rightX: " << std::to_string( rightX ) << "   lightAmntXIncr * (rightXF - x1): " << std::to_string( lightAmntXIncr * (rightXF - x1) ) << std::endl;
-		std::cout << "   lightStart: " << std::to_string( lightStart ) << std::endl;
-		std::cout << "   lightEnd: " << std::to_string( lightEnd ) << std::endl;
-
-		// if ( lightStart > 1.0f || lightStart < -0.000001f || lightEnd > 1.0f || lightEnd < -0.000001f ) exit( 5 );
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
@@ -834,39 +825,23 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	float v1Depth = face.vertices[0].vec.z();
 	float v2Depth = face.vertices[1].vec.z();
 	float v3Depth = face.vertices[2].vec.z();
-	Vector<4> lightDir({0.0f, 0.0f, 1.0f, 0.0f}); // TODO remove this after testing
+	Vector<4> lightDir({1.0f, 0.0f, 0.0f, 0.0f}); // TODO remove this after testing
 	float v1LightAmnt = saturate( face.vertices[0].normal.dotProduct(lightDir) );
 	float v2LightAmnt = saturate( face.vertices[1].normal.dotProduct(lightDir) );
 	float v3LightAmnt = saturate( face.vertices[2].normal.dotProduct(lightDir) );
-
-	std::cout << "x1: " << std::to_string( x1 ) << std::endl;
-	std::cout << "y1: " << std::to_string( y1 ) << std::endl;
-	std::cout << "x1Ceil: " << std::to_string( x1Ceil ) << std::endl;
-	std::cout << "y1Ceil: " << std::to_string( y1Ceil ) << std::endl;
-	std::cout << "x2: " << std::to_string( x2 ) << std::endl;
-	std::cout << "y2: " << std::to_string( y2 ) << std::endl;
-	std::cout << "x2Ceil: " << std::to_string( x2Ceil ) << std::endl;
-	std::cout << "y2Ceil: " << std::to_string( y2Ceil ) << std::endl;
-	std::cout << "x3: " << std::to_string( x3 ) << std::endl;
-	std::cout << "y3: " << std::to_string( y3 ) << std::endl;
-	std::cout << "x3Ceil: " << std::to_string( x3Ceil ) << std::endl;
-	std::cout << "y3Ceil: " << std::to_string( y3Ceil ) << std::endl;
-	std::cout << "v1LightAmnt: " << std::to_string( v1LightAmnt ) << std::endl;
-	std::cout << "v2LightAmnt: " << std::to_string( v2LightAmnt ) << std::endl;
-	std::cout << "v3LightAmnt: " << std::to_string( v3LightAmnt ) << std::endl;
 
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
 	float xLeftAccumulator  = x1FCeil;
 	float xRightAccumulator = x1FCeil;
 
 	// floats for incrementing xLeftAccumulator and xRightAccumulator
-	float xLeftIncrTop     = (x2FCeil - x1FCeil) / (y2FCeil - y1FCeil);
-	float xRightIncrTop    = (x3FCeil - x1FCeil) / (y3FCeil - y1FCeil);
-	float xLeftIncrBottom  = (x3FCeil - x2FCeil) / (y3FCeil - y2FCeil);
-	float xRightIncrBottom = (x3FCeil - x1FCeil) / (y3FCeil - y1FCeil);
+	float xLeftIncrTop     = ( x2FCeil - x1FCeil ) / ( y2FCeil - y1FCeil );
+	float xRightIncrTop    = ( x3FCeil - x1FCeil ) / ( y3FCeil - y1FCeil );
+	float xLeftIncrBottom  = ( x3FCeil - x2FCeil ) / ( y3FCeil - y2FCeil );
+	float xRightIncrBottom = ( x3FCeil - x1FCeil ) / ( y3FCeil - y1FCeil );
 
 	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
-	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
+	bool needsSwapping = ( xLeftIncrBottom < xRightIncrBottom );
 
 	// depending on the position of the vertices, we need to swap increments
 	if ( (needsSwapping && x1Ceil < x2Ceil) || (needsSwapping && x1Ceil >= x2Ceil && x2Ceil > x3Ceil) )
@@ -898,17 +873,6 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
 	const float lightAmntXIncr = calcIncr( lightAmnts, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
 	const float lightAmntYIncr = calcIncr( lightAmnts, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-
-	std::cout << "lightAmntXIncr: " << std::to_string( lightAmntXIncr ) << std::endl;
-	std::cout << "lightAmntYIncr: " << std::to_string( lightAmntYIncr ) << std::endl;
-	int xLeftSpan = x1Ceil - std::min( x2Ceil, x3Ceil );
-	int xRightSpan = std::max( x2Ceil, x3Ceil ) - x1Ceil;
-	int yTotalSpan = y3Ceil - y1Ceil;
-	int xTotalSpan = std::max( x1Ceil, std::max(x2Ceil, x3Ceil) ) - std::min( x1Ceil, std::min(x2Ceil, x3Ceil) );
-	std::cout << "x left span: " << std::to_string( xLeftSpan ) << "   *xIncr: " << std::to_string( xLeftSpan * lightAmntXIncr ) << std::endl;
-	std::cout << "x right span: " << std::to_string( xRightSpan ) << "   *xIncr: " << std::to_string( xRightSpan * lightAmntXIncr ) << std::endl;
-	std::cout << "y total span: " << std::to_string( yTotalSpan ) << "   *yIncr: " << std::to_string( yTotalSpan * lightAmntYIncr ) << std::endl;
-	std::cout << "x total span: " << std::to_string( xTotalSpan ) << "   *xIncr: " << std::to_string( xTotalSpan * lightAmntXIncr ) << std::endl;
 
 	int topHalfRow = y1Ceil;
 	while ( topHalfRow < y2Ceil && topHalfRow < 0 )
