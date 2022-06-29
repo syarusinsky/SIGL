@@ -4,6 +4,8 @@
 /**************************************************************************
  * The Vector class defines a vector of a statically given dimensions, as well
  * as some functions that can be performed on the vector.
+ * 
+ * Note: A Vector is a row matrix
 **************************************************************************/
 
 #define _USE_MATH_DEFINES
@@ -36,10 +38,13 @@ class Vector : public Matrix<1, dimensions>
 		float& w();
 		float w() const;
 
+		Vector operator* (const Matrix<dimensions, dimensions>& matrix) const;
+
 		float length() const;
 		unsigned int numDimensions() const { return dimensions; }
 
 		float dotProduct (const Vector<dimensions>& other) const;
+		Vector crossProduct (const Vector<dimensions>& other) const;
 		Vector normalize() const;
 
 	private:
@@ -169,6 +174,20 @@ float Vector<dimensions>::dotProduct (const Vector<dimensions>& other) const
 }
 
 template <unsigned int dimensions>
+Vector<dimensions> Vector<dimensions>::crossProduct (const Vector<dimensions>& other) const
+{
+	static_assert( dimensions == 4, "Vector must be 4D to take cross product, at least in my dumb library" );
+
+	Vector<dimensions> crossProduct;
+	crossProduct.m_Vals[0][0] = ( this->m_Vals[0][1] * other.m_Vals[0][2] ) - ( this->m_Vals[0][2] * other.m_Vals[0][1] );
+	crossProduct.m_Vals[0][1] = ( this->m_Vals[0][2] * other.m_Vals[0][0] ) - ( this->m_Vals[0][0] * other.m_Vals[0][2] );
+	crossProduct.m_Vals[0][2] = ( this->m_Vals[0][0] * other.m_Vals[0][1] ) - ( this->m_Vals[0][1] * other.m_Vals[0][0] );
+	crossProduct.m_Vals[0][3] = 1.0f;
+
+	return crossProduct;
+}
+
+template <unsigned int dimensions>
 Vector<dimensions> Vector<dimensions>::normalize() const
 {
 	float oneOverLength = 1.0f / this->length();
@@ -181,6 +200,22 @@ Vector<dimensions> Vector<dimensions>::normalize() const
 	}
 
 	return copy;
+}
+
+template <unsigned int dimensions>
+Vector<dimensions> Vector<dimensions>::operator* (const Matrix<dimensions, dimensions>& matrix) const
+{
+	Vector<4> outVec;
+
+	for ( unsigned int column = 0; column < dimensions; column++ )
+	{
+		for ( unsigned int row = 0; row < dimensions; row++ )
+		{
+			outVec.m_Vals[0][column] += ( this->m_Vals[0][row] * matrix.at(row, column) );
+		}
+	}
+
+	return outVec;
 }
 
 #endif // VECTOR_HPP

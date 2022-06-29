@@ -100,11 +100,6 @@ bool ObjFileLoader::createMeshFromFile (Mesh& meshOut, const std::string& filePa
 		meshOut.faces.push_back( Face{{vert1, vert2, vert3}} );
 	}
 
-	for ( Face& face : meshOut.faces )
-	{
-		face.calcFaceNormals();
-	}
-
 	return true;
 }
 

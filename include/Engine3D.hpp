@@ -10,8 +10,6 @@
 #include <Matrix.hpp>
 #include <Vector.hpp>
 
-Vector<4> mulVector4DByMatrix4D (const Vector<4>& vector, const Matrix<4, 4>& matrix);
-
 Matrix<4, 4> generateIdentityMatrix();
 Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegrees);
 
@@ -76,7 +74,5 @@ class Camera3D
 
 		void generateProjectionMatrix();
 };
-
-Mesh createCubeMesh();
 
 #endif // ENGINE3D_HPP

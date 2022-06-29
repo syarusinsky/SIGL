@@ -825,10 +825,10 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	float v1Depth = face.vertices[0].vec.z();
 	float v2Depth = face.vertices[1].vec.z();
 	float v3Depth = face.vertices[2].vec.z();
-	Vector<4> lightDir({1.0f, 0.0f, 0.0f, 0.0f}); // TODO remove this after testing
-	float v1LightAmnt = saturate( face.vertices[0].normal.dotProduct(lightDir) );
-	float v2LightAmnt = saturate( face.vertices[1].normal.dotProduct(lightDir) );
-	float v3LightAmnt = saturate( face.vertices[2].normal.dotProduct(lightDir) );
+	Vector<4> lightDir({-0.5f, -0.5f, 0.0f, 0.0f}); // TODO remove this after testing
+	float v1LightAmnt = saturate( face.vertices[0].normal.dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v2LightAmnt = saturate( face.vertices[1].normal.dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v3LightAmnt = saturate( face.vertices[2].normal.dotProduct(lightDir) ) * 0.8f + 0.2f;
 
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
 	float xLeftAccumulator  = x1FCeil;
