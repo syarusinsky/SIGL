@@ -67,13 +67,28 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 			m_GraphicsBuffer { nullptr },
 			m_GraphicsBufferReadIncr( 0 ),
 			m_GraphicsBufferWriteIncr( bufferSize - 1 ),
-			m_GraphicsThreadsDone{ false },
-			m_GraphicsRead( m_GraphicsBuffer[0] )
+			m_GraphicsThreadsDone{ true },
+			m_GraphicsRead( nullptr )
 		{
 			SurfaceBase<width, height, format, bufferSize>::m_Graphics = m_GraphicsBuffer[bufferSize - 1];
 			for ( unsigned int bufferNum = 0; bufferNum < bufferSize; bufferNum++ )
 			{
 				m_GraphicsBuffer[bufferNum] = new GRAPHICS();
+				m_GraphicsThreadsDone[bufferNum] = true;
+			}
+
+			m_GraphicsRead = m_GraphicsBuffer[0];
+		}
+
+		~SurfaceThreaded()
+		{
+			for ( unsigned int bufferNum = 0; bufferNum < bufferSize; bufferNum++ )
+			{
+				if ( m_GraphicsThreads[bufferNum].joinable() )
+				{
+					m_GraphicsThreads[bufferNum].join();
+				}
+				delete m_GraphicsBuffer[bufferNum];
 			}
 		}
 
@@ -127,7 +142,7 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 		unsigned int 				m_GraphicsBufferReadIncr;
 		unsigned int 				m_GraphicsBufferWriteIncr;
 		std::array<std::thread, bufferSize>	m_GraphicsThreads;
-		std::array<bool, bufferSize> 		m_GraphicsThreadsDone;
+		std::array<volatile bool, bufferSize> 	m_GraphicsThreadsDone;
 		using 		SurfaceBase<width, height, format, bufferSize>::m_Graphics;
 		GRAPHICS* 	m_GraphicsRead;
 
@@ -140,7 +155,11 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, bufferSize>
 
 		void updateGraphicsRead()
 		{
-			m_GraphicsBufferReadIncr = ( m_GraphicsBufferReadIncr + 1 ) % bufferSize;
+			// only advance if the frame is done rendering
+			unsigned int tempGraphicsBufferReadIncr = ( m_GraphicsBufferReadIncr + 1 ) % bufferSize;
+			while ( ! m_GraphicsThreadsDone[tempGraphicsBufferReadIncr] ) {}
+
+			m_GraphicsBufferReadIncr = tempGraphicsBufferReadIncr;
 			m_GraphicsRead = m_GraphicsBuffer[m_GraphicsBufferReadIncr];
 		}
 
@@ -159,6 +178,11 @@ class SurfaceSingleCore : public SurfaceBase<width, height, format, bufferSize>
 		SurfaceSingleCore()
 		{
 			SurfaceBase<width, height, format, bufferSize>::m_Graphics = new GRAPHICS();
+		}
+
+		~SurfaceSingleCore()
+		{
+			delete SurfaceBase<width, height, format, bufferSize>::m_Graphics;
 		}
 
 		FrameBuffer<width, height, format>& advanceFrameBuffer()
