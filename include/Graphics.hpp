@@ -26,6 +26,16 @@ class Camera3D;
 struct Face;
 struct PointLight;
 
+#ifdef SOFTWARE_RENDERING
+#define VSHADER void (*vShader)(TriShaderData<format>& vShaderData)
+#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
+#else
+class VShader;
+class FShader;
+#define VSHADER VShader
+#define FShader FShader
+#endif // SOFTWARE_RENDERING
+
 template <CP_FORMAT format>
 struct TriShaderData
 {
@@ -33,9 +43,8 @@ struct TriShaderData
 	Camera3D& camera;
 	Color color;
 	std::vector<PointLight>* lights;
-	void (*vShader)(TriShaderData<format>& vShaderData);
-	void (*fShader)(Color& colorOut, TriShaderData<format>& fShaderData, float v1Cur, float v2Cur, float v3Cur,
-			float texCoordX, float texCoordY, float lightAmnt);
+	VSHADER;
+	FSHADER;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Textures>

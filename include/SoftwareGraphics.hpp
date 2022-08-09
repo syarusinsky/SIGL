@@ -26,9 +26,6 @@
 #include <algorithm>
 #include <limits>
 
-// TODO remove after testing
-#include <iostream>
-
 template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
 class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 {
