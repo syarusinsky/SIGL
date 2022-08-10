@@ -32,8 +32,8 @@ struct PointLight;
 #else
 class VShader;
 class FShader;
-#define VSHADER VShader
-#define FShader FShader
+#define VSHADER VShader*
+#define FShader FShader*
 #endif // SOFTWARE_RENDERING
 
 template <CP_FORMAT format>
