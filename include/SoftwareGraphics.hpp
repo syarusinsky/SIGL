@@ -12,11 +12,12 @@
 
 #include "Graphics.hpp"
 
-#define m_CP Graphics<width, height, format, bufferSize>::m_ColorProfile
-#define m_CurrentFont Graphics<width, height, format, bufferSize>::m_CurrentFont
-#define m_Pxls Graphics<width, height, format, bufferSize>::m_FB.getPixels()
-#define m_DepthBuffer Graphics<width, height, format, bufferSize>::m_DepthBuffer
-#define m_NumPxls Graphics<width, height, format, bufferSize>::m_FB.getNumPixels()
+// just so code isn't insanely wide
+#define m_CP Graphics<width, height, format, include3D, shaderPassDataSize>::m_ColorProfile
+#define m_CurrentFont Graphics<width, height, format, include3D, shaderPassDataSize>::m_CurrentFont
+#define m_Pxls Graphics<width, height, format, include3D, shaderPassDataSize>::m_FB.getPixels()
+#define m_DepthBuffer Graphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
+#define m_NumPxls Graphics<width, height, format, include3D, shaderPassDataSize>::m_FB.getNumPixels()
 
 #include "Font.hpp"
 #include "Sprite.hpp"
@@ -26,12 +27,38 @@
 #include <algorithm>
 #include <limits>
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
+// just to avoid compilation error
+template <unsigned int width, unsigned int height, CP_FORMAT format>
+class SoftwareGraphicsNo3D : public Graphics<width, height, format, false, 0>
+{
+};
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+class SoftwareGraphics3D : public Graphics<width, height, format, true, shaderPassDataSize>
+{
+	public:
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData) override;
+		void drawDepthBuffer (Camera3D& camera) override;
+
+	protected:
+		template <CP_FORMAT texFormat>
+		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
+			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
+			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
+			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
+			float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
+		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData);
+};
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>,
+								SoftwareGraphicsNo3D<width, height, format>>::type
 {
 	// only a surface should be able to construct
-	template<unsigned int w, unsigned int h, CP_FORMAT f, unsigned int bS> friend class SurfaceThreaded;
-	template<unsigned int w, unsigned int h, CP_FORMAT f, unsigned int bS> friend class SurfaceSingleCore;
+	template<unsigned int w, unsigned int h, CP_FORMAT f, unsigned int nT, bool i3D, unsigned int sPDS> friend class SurfaceThreaded;
+	template<unsigned int w, unsigned int h, CP_FORMAT f, bool i3D, unsigned int sPDS> friend class SurfaceSingleCore;
 
 	public:
 		void setColor (float r, float g, float b) override;
@@ -54,25 +81,10 @@ class SoftwareGraphics 	: public Graphics<width, height, format, bufferSize>
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) override;
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
 
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData) override;
-
-		void drawDepthBuffer (Camera3D& camera) override;
-
 	protected:
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
-		template <CP_FORMAT texFormat>
-		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
-			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
-			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
-			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
-			float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
-
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
-
-		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData);
 
 		SoftwareGraphics();
 		~SoftwareGraphics() override;
@@ -85,37 +97,36 @@ inline bool floatsAreEqual (float x, float y, float diff = std::numeric_limits<f
 	return false;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-SoftwareGraphics<width, height, format, bufferSize>::SoftwareGraphics() :
-	Graphics<width, height, format, bufferSize>()
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::SoftwareGraphics()
 {
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-SoftwareGraphics<width, height, format, bufferSize>::~SoftwareGraphics()
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::~SoftwareGraphics()
 {
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::setColor (float r, float g, float b)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::setColor (float r, float g, float b)
 {
 	m_CP.setColor( r, g, b );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::setColor (bool val)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::setColor (bool val)
 {
 	m_CP.setColor( val );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::setFont (Font* font)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::setFont (Font* font)
 {
 	m_CurrentFont = font;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::fill()
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::fill()
 {
 	for ( unsigned int pixelNum = 0; pixelNum < width * height; pixelNum++ )
 	{
@@ -123,11 +134,11 @@ void SoftwareGraphics<width, height, format, bufferSize>::fill()
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
 	// clip line and return if line is off screen
-	if ( !Graphics<width, height, format, bufferSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
+	if ( !Graphics<width, height, format, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
 
 	unsigned int xStartUInt = xStart * (width  - 1);
 	unsigned int yStartUInt = yStart * (height - 1);
@@ -245,8 +256,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawLine (float xStart
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawBox (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawBox (float xStart, float yStart, float xEnd, float yEnd)
 {
 	drawLine( xStart, yStart, xEnd,   yStart );
 	drawLine( xEnd,   yStart, xEnd,   yEnd   );
@@ -254,8 +265,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawBox (float xStart,
 	drawLine( xStart, yEnd,   xStart, yStart );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
 {
 	int xStartUInt = xStart * (width  - 1);
 	int yStartUInt = yStart * (height - 1);
@@ -295,8 +306,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawBoxFilled (float x
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	drawLine( x1, y1, x2, y2 );
 	drawLine( x2, y2, x3, y3 );
@@ -456,8 +467,8 @@ static inline void triSortVertices (int& x1Sorted, int& y1Sorted, float& x1FSort
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	// getting the pixel values of the vertices
 	int x1UInt = x1 * (width  - 1);
@@ -535,7 +546,7 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleFilled (fl
 		}
 
 		// if after clipping this line exists within the screen, render the line
-		if ( Graphics<width, height, format, bufferSize>::clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
+		if ( Graphics<width, height, format, include3D, shaderPassDataSize>::clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
 		{
 			int tempX1Int = tempX1 * (width  - 1);
 			int tempY1Int = tempY1 * (height - 1);
@@ -650,20 +661,22 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleFilled (fl
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
+		TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
+		TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
@@ -679,10 +692,10 @@ inline float saturate (float val)
 	if ( val > 1.0f ) return 1.0f; else if ( val < 0.0f ) return 0.0f; else return val;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
-inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
-			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
+inline void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive, float x1,
+			float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
 			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
 			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
 			float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
@@ -751,9 +764,9 @@ inline void SoftwareGraphics<width, height, format, bufferSize>::renderScanlines
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
-void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData)
+void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData)
 {
 	Camera3D& camera = shaderData.camera;
 
@@ -917,8 +930,9 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawTriangleShadedHelp
 	m_CP.setColor( previousColor );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3,
+		float x4, float y4)
 {
 	drawLine( x1, y1, x2, y2 );
 	drawLine( x2, y2, x3, y3 );
@@ -926,15 +940,16 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawQuad (float x1, fl
 	drawLine( x4, y4, x1, y1 );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3,
+		float x4, float y4)
 {
 	drawTriangleFilled( x1, y1, x2, y2, x3, y3 );
 	drawTriangleFilled( x1, y1, x4, y4, x3, y3 );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawCircleHelper (int originX, int originY, int x, int y, bool filled)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawCircleHelper (int originX, int originY, int x, int y, bool filled)
 {
 	int x1_3 = originX + x;
 	int y1_2 = originY + y;
@@ -1035,8 +1050,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawCircleHelper (int 
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawCircle (float originX, float originY, float radius)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawCircle (float originX, float originY, float radius)
 {
 	// getting the pixel values of the vertices
 	int originXUInt = originX * (width  - 1);
@@ -1067,8 +1082,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawCircle (float orig
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawCircleFilled (float originX, float originY, float radius)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawCircleFilled (float originX, float originY, float radius)
 {
 	// getting the pixel values of the vertices
 	int originXUInt = originX * (width  - 1);
@@ -1099,8 +1114,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawCircleFilled (floa
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawText (float xStart, float yStart, const char* text, float scaleFactor)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawText (float xStart, float yStart, const char* text, float scaleFactor)
 {
 	// TODO text doesn't render if scale factor isn't an integer beyond 1.0f, fix later?
 	if ( scaleFactor > 1.0f )
@@ -1231,27 +1246,28 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawText (float xStart
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
+		Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite)
 {
 	this->drawSpriteHelper<Sprite<CP_FORMAT::MONOCHROME_1BIT>>( xStart, yStart, sprite );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite)
 {
 	this->drawSpriteHelper<Sprite<CP_FORMAT::RGBA_32BIT>>( xStart, yStart, sprite );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite)
 {
 	this->drawSpriteHelper<Sprite<CP_FORMAT::RGB_24BIT>>( xStart, yStart, sprite );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 template <typename S>
-void SoftwareGraphics<width, height, format, bufferSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
+void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
 {
 	// getting the pixel values of the vertices
 	int startXInt = xStart * (width - 1);
@@ -1377,8 +1393,8 @@ void SoftwareGraphics<width, height, format, bufferSize>::drawSpriteHelper (floa
 	}
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize>
-void SoftwareGraphics<width, height, format, bufferSize>::drawDepthBuffer (Camera3D& camera)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
 {
 	// get previous color, since we'll want to set it back when we're done with the shading colors
 	const Color previousColor = m_CP.getColor();

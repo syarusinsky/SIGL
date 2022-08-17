@@ -47,8 +47,34 @@ struct TriShaderData
 	FSHADER;
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Textures>
-class Graphics
+// just to avoid compilation error
+class GraphicsNo3D
+{
+};
+
+template <unsigned int width, unsigned int height, unsigned int shaderPassDataSize>
+class Graphics3D
+{
+	public:
+		Graphics3D() :
+			m_DepthBuffer{},
+			m_ShaderPassData{}
+		{
+		}
+
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData);
+		virtual void drawDepthBuffer (Camera3D& camera) = 0;
+		void clearDepthBuffer();
+
+	protected:
+		std::array<float, width * height> 		m_DepthBuffer;
+		std::array<uint8_t, shaderPassDataSize> 	m_ShaderPassData;
+};
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+class Graphics : public std::conditional<include3D, Graphics3D<width, height, shaderPassDataSize>, GraphicsNo3D>::type
 {
 	public:
 		inline unsigned int convertXPercentageToUInt (float x) { return x * (width  - 1); }
@@ -75,45 +101,36 @@ class Graphics
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) = 0;
 
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData);
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData);
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData);
-
-		virtual void drawDepthBuffer (Camera3D& camera) = 0;
-
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
 		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FB; }
 		const ColorProfile<format>& getColorProfile() const { return m_ColorProfile; }
 
-		void clearDepthBuffer();
-
 	protected:
-		FrameBuffer<width, height, format> 	m_FB;
-		std::array<float, width * height> 	m_DepthBuffer;
-		ColorProfile<format> 			m_ColorProfile;
-		Font* 					m_CurrentFont;
+		FrameBuffer<width, height, format> 		m_FB;
+		ColorProfile<format> 				m_ColorProfile;
+		Font* 						m_CurrentFont;
 
 		// helpers
 		static inline bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected
 
 		Graphics() :
 			m_FB(),
-			m_DepthBuffer{},
 			m_ColorProfile(),
 			m_CurrentFont( nullptr ) {}
 		virtual ~Graphics() {}
 
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Texture>
-void Graphics<width, height, format, bufferSize, Texture...>::clearDepthBuffer()
+template <unsigned int width, unsigned int height, unsigned int shaderPassDataSize>
+void Graphics3D<width, height, shaderPassDataSize>::clearDepthBuffer()
 {
 	std::fill( std::begin(m_DepthBuffer), std::end(m_DepthBuffer), std::numeric_limits<float>::max() );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int bufferSize, typename... Texture>
-inline bool Graphics<width, height, format, bufferSize, Texture...>::clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+inline bool Graphics<width, height, format, include3D, shaderPassDataSize>::clipLine (float* xStart, float* yStart,
+		float* xEnd, float* yEnd)
 {
 	// cache points
 	float xStartClipped = *xStart;
