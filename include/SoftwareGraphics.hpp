@@ -17,6 +17,7 @@
 #define m_CurrentFont Graphics<width, height, format, include3D, shaderPassDataSize>::m_CurrentFont
 #define m_Pxls Graphics<width, height, format, include3D, shaderPassDataSize>::m_FB.getPixels()
 #define m_DepthBuffer Graphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
+#define m_ShaderPassData Graphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
 #define m_NumPxls Graphics<width, height, format, include3D, shaderPassDataSize>::m_FB.getNumPixels()
 
 #include "Font.hpp"
@@ -37,19 +38,19 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, bool includ
 class SoftwareGraphics3D : public Graphics<width, height, format, true, shaderPassDataSize>
 {
 	public:
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) override;
 		void drawDepthBuffer (Camera3D& camera) override;
 
 	protected:
 		template <CP_FORMAT texFormat>
 		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
 			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
-			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
-			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
-			float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
-		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData);
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
+			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
+			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
+		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
@@ -663,20 +664,20 @@ void SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>::dra
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
-		TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData)
+		TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
-		TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData)
+		TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData)
+void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
@@ -696,9 +697,9 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, bool includ
 template <CP_FORMAT texFormat>
 inline void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive, float x1,
 			float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
-			TriShaderData<texFormat>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1, float texCoordXXIncr,
-			float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr, float depthXIncr,
-			float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
+			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
+			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
 {
 	// TODO this can be optimized by quite a bit, and likely will need to be
 	for (int row = startRow; row < endRowExclusive && row < height; row++)
@@ -711,7 +712,6 @@ inline void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataS
 
 		const unsigned int tempXY1 = ( (row * width) + leftX  );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
-
 		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX + 1) - static_cast<float>( leftX ) );
 		const float rowF = static_cast<float>( row );
 		const float leftXF  = std::min( std::max(xLeftAccumulator, 0.0f), width - 1.0f );
@@ -766,8 +766,11 @@ inline void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataS
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
-void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face, TriShaderData<texFormat>& shaderData)
+void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
 {
+	// setup shader data
+	shaderData.shaderPassData = m_ShaderPassData;
 	Camera3D& camera = shaderData.camera;
 
 	// TODO this is not how clipping should be done, need to do homogenous clipping in the future
@@ -1419,6 +1422,7 @@ void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::d
 #undef m_CurrentFont
 #undef m_Pxls
 #undef m_DepthBuffer
+#undef m_ShaderPassData
 #undef m_NumPxls
 
 #endif // SOFTWARE_GRAPHICS_HPP

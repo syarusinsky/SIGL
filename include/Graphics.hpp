@@ -27,8 +27,8 @@ struct Face;
 struct PointLight;
 
 #ifdef SOFTWARE_RENDERING
-#define VSHADER void (*vShader)(TriShaderData<format>& vShaderData)
-#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
+#define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
+#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
 #else
 class VShader;
 class FShader;
@@ -36,7 +36,7 @@ class FShader;
 #define FShader FShader*
 #endif // SOFTWARE_RENDERING
 
-template <CP_FORMAT format>
+template <CP_FORMAT format, unsigned int shaderPassDataSize>
 struct TriShaderData
 {
 	std::array<Texture<format>*, 5>& textures;
@@ -45,6 +45,7 @@ struct TriShaderData
 	std::vector<PointLight>* lights;
 	VSHADER;
 	FSHADER;
+	std::array<uint8_t, shaderPassDataSize> shaderPassData;
 };
 
 // just to avoid compilation error
@@ -62,9 +63,9 @@ class Graphics3D
 		{
 		}
 
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT>& shaderData);
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT>& shaderData);
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData);
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData);
 		virtual void drawDepthBuffer (Camera3D& camera) = 0;
 		void clearDepthBuffer();
 
