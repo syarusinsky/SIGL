@@ -30,10 +30,13 @@ struct PointLight;
 #define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
 #define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
 #else
-class VShader;
-class FShader;
-#define VSHADER VShader*
-#define FShader FShader*
+#define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
+#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
+// TODO use classes for hardware accelerated shaders (and maybe software rendered shaders too?)
+// class VShader;
+// class FShader;
+// #define VSHADER VShader*
+// #define FSHADER FShader*
 #endif // SOFTWARE_RENDERING
 
 template <CP_FORMAT format, unsigned int shaderPassDataSize>

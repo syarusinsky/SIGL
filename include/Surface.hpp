@@ -21,8 +21,8 @@
 #include "SoftwareGraphics.hpp"
 #define GRAPHICS SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>
 #else
-#include "SoftwareGraphics.hpp" // TODO if I ever implement hardware acceleration, this should be changed
-#define GRAPHICS Graphics<width, height, format, include3D, shaderPassDataSize>
+#include "OpenGlGraphics.hpp"
+#define GRAPHICS OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>
 #endif // SOFTWARE_RENDERING
 
 enum class CP_FORMAT;
@@ -220,6 +220,9 @@ class Surface : public std::conditional<(numRenderThreads > 1), SurfaceThreaded<
 		{
 		}
 		virtual ~Surface() {}
+
+		constexpr unsigned int getWidth() { return width; }
+		constexpr unsigned int getHeight() { return height; }
 
 	protected:
 		virtual void draw(GRAPHICS* graphics) = 0;

@@ -53,7 +53,7 @@ class Matrix
 
 template <unsigned int rows, unsigned int columns>
 Matrix<rows, columns>::Matrix (float initVal) :
-	m_Vals{ {initVal} }
+	m_Vals{ {{initVal}} }
 {
 	static_assert( rows > 0 && columns > 0, "Matrices must have at least one row and at least one column" );
 }
@@ -262,7 +262,7 @@ Matrix<rows, columns> Matrix<rows, columns>::transpose() const
 	static_assert( rows == columns, "Rows != columns for finding transpose of a matrix!" );
 
 	constexpr unsigned int dimensions = rows;
-	
+
 	Matrix<rows, columns> transpose;
 
 	for ( unsigned int row = 0; row < dimensions; row++ )
@@ -273,7 +273,7 @@ Matrix<rows, columns> Matrix<rows, columns>::transpose() const
 		}
 	}
 
-    return transpose;
+	return transpose;
 }
 
 template <unsigned int rows, unsigned int columns>
@@ -282,7 +282,7 @@ Matrix<rows, columns> Matrix<rows, columns>::inverse() const
 	static_assert( rows == columns, "Rows != columns for finding inverse of a matrix!" );
 
 	constexpr unsigned int dimensions = rows;
-	
+
 	double oneOverDeterminant = 1.0f / this->determinant( m_Vals );
 
 	Matrix inverse;

@@ -4,7 +4,7 @@
 /**************************************************************************
  * The Vector class defines a vector of a statically given dimensions, as well
  * as some functions that can be performed on the vector.
- * 
+ *
  * Note: A Vector is a row matrix
 **************************************************************************/
 

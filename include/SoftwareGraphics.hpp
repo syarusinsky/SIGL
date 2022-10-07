@@ -791,6 +791,7 @@ void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::d
 	// put through the vertex shader first
 	( *shaderData.vShader )( shaderData );
 
+	// TODO camera projection should be done in the vertex shader?
 	camera.projectFace( face );
 	camera.scaleXYToZeroToOne( face );
 
@@ -1425,4 +1426,4 @@ void SoftwareGraphics3D<width, height, format, include3D, shaderPassDataSize>::d
 #undef m_ShaderPassData
 #undef m_NumPxls
 
-#endif // SOFTWARE_GRAPHICS_HPP
+#endif // SOFTWAREGRAPHICS_HPP
