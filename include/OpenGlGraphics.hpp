@@ -11,10 +11,8 @@
 // just so code isn't insanely wide
 #define m_CP Graphics<width, height, format, include3D, shaderPassDataSize>::m_ColorProfile
 #define m_CurrentFont Graphics<width, height, format, include3D, shaderPassDataSize>::m_CurrentFont
-#define m_Pxls Graphics<width, height, format, include3D, shaderPassDataSize>::m_FB.getPixels()
 #define m_DepthBuffer Graphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
 #define m_ShaderPassData Graphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
-#define m_NumPxls Graphics<width, height, format, include3D, shaderPassDataSize>::m_FB.getNumPixels()
 
 #include "Font.hpp"
 #include "Sprite.hpp"
@@ -410,9 +408,7 @@ void OpenGlGraphics3D<width, height, format, include3D, shaderPassDataSize>::dra
 
 #undef m_CP
 #undef m_CurrentFont
-#undef m_Pxls
 #undef m_DepthBuffer
 #undef m_ShaderPassData
-#undef m_NumPxls
 
 #endif // OPENGLGRAPHICS_HPP

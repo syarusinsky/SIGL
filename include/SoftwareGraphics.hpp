@@ -32,12 +32,16 @@
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 class SoftwareGraphicsNo3D : public Graphics<width, height, format, false, 0>
 {
+	public:
+		virtual ~SoftwareGraphicsNo3D() {}
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 class SoftwareGraphics3D : public Graphics<width, height, format, true, shaderPassDataSize>
 {
 	public:
+		virtual ~SoftwareGraphics3D() {}
+
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) override;

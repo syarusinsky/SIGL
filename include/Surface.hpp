@@ -92,10 +92,10 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, include3D, sha
 			}
 		}
 
-		FrameBuffer<width, height, format>& advanceFrameBuffer()
+		FRAMEBUFFER& advanceFrameBuffer()
 		{
 			updateGraphicsRead();
-			FrameBuffer<width, height, format>& fb = m_GraphicsRead->getFrameBuffer();
+			FRAMEBUFFER& fb = m_GraphicsRead->getFrameBuffer();
 			return fb;
 		}
 
@@ -148,7 +148,10 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, include3D, sha
 
 		void drawWrapper(GRAPHICS* graphics, unsigned int bufferNum)
 		{
-			graphics->clearDepthBuffer();
+			if constexpr ( include3D )
+			{
+				graphics->clearDepthBuffer();
+			}
 			this->draw( graphics );
 			m_GraphicsThreadsDone[bufferNum] = true;
 		}
@@ -185,7 +188,7 @@ class SurfaceSingleCore : public SurfaceBase<width, height, format, include3D, s
 			delete SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics;
 		}
 
-		FrameBuffer<width, height, format>& advanceFrameBuffer()
+		FRAMEBUFFER& advanceFrameBuffer()
 		{
 			return SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics->getFrameBuffer();
 		}
@@ -197,7 +200,10 @@ class SurfaceSingleCore : public SurfaceBase<width, height, format, include3D, s
 
 		bool render()
 		{
-			m_Graphics->clearDepthBuffer();
+			if constexpr ( include3D )
+			{
+				m_Graphics->clearDepthBuffer();
+			}
 			draw( SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics );
 			return false;
 		}

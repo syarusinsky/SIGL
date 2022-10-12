@@ -29,9 +29,11 @@ struct PointLight;
 #ifdef SOFTWARE_RENDERING
 #define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
 #define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
+#define FRAMEBUFFER FrameBuffer<width, height, format>
 #else
 #define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
 #define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
+#define FRAMEBUFFER FrameBufferOpenGl<width, height, format>
 // TODO use classes for hardware accelerated shaders (and maybe software rendered shaders too?)
 // class VShader;
 // class FShader;
@@ -54,6 +56,8 @@ struct TriShaderData
 // just to avoid compilation error
 class GraphicsNo3D
 {
+	public:
+		virtual ~GraphicsNo3D() {}
 };
 
 template <unsigned int width, unsigned int height, unsigned int shaderPassDataSize>
@@ -65,6 +69,7 @@ class Graphics3D
 			m_ShaderPassData{}
 		{
 		}
+		virtual ~Graphics3D() {}
 
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData);
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData);
@@ -73,6 +78,7 @@ class Graphics3D
 		void clearDepthBuffer();
 
 	protected:
+		// TODO move depth buffer to framebuffer classes (this style for software rendering, gl style for opengl)
 		std::array<float, width * height> 		m_DepthBuffer;
 		std::array<uint8_t, shaderPassDataSize> 	m_ShaderPassData;
 };
@@ -107,11 +113,11 @@ class Graphics : public std::conditional<include3D, Graphics3D<width, height, sh
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
-		FrameBuffer<width, height, format>& getFrameBuffer() { return m_FB; }
+		FRAMEBUFFER& getFrameBuffer() { return m_FB; }
 		const ColorProfile<format>& getColorProfile() const { return m_ColorProfile; }
 
 	protected:
-		FrameBuffer<width, height, format> 		m_FB;
+		FRAMEBUFFER 			 		m_FB;
 		ColorProfile<format> 				m_ColorProfile;
 		Font* 						m_CurrentFont;
 
