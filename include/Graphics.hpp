@@ -13,6 +13,7 @@
 
 #define _USE_MATH_DEFINES
 
+#include "GraphicsHelpers.hpp"
 #include "FrameBuffer.hpp"
 #include "ColorProfile.hpp"
 #include "Sprite.hpp"
@@ -25,6 +26,12 @@ class Font;
 class Camera3D;
 struct Face;
 struct PointLight;
+
+enum class RENDER_API
+{
+	SOFTWARE,
+	OPENGL
+};
 
 #ifdef SOFTWARE_RENDERING
 #define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
