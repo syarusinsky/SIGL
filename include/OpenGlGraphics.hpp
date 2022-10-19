@@ -8,12 +8,6 @@
 
 #include "IGraphics.hpp"
 
-// just so code isn't insanely wide
-#define m_CP IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile
-#define m_CurrentFont IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont
-#define m_DepthBuffer IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
-#define m_ShaderPassData IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
-
 #include "Font.hpp"
 #include "Sprite.hpp"
 #include "Texture.hpp"
@@ -23,9 +17,11 @@
 #include <limits>
 
 // just to avoid compilation error
-template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
-class OpenGlGraphicsNo3D : public IGraphics<width, height, format, api, false, 0>
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+class OpenGlGraphicsNo3D : public IGraphics<width, height, format, api, include3D, shaderPassDataSize>
 {
+	public:
+		virtual ~OpenGlGraphicsNo3D() {}
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -39,11 +35,16 @@ class OpenGlGraphics3D : public IGraphics<width, height, format, api, true, shad
 
 	protected:
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
+
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
+		using IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer;
+		using IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>,
-								OpenGlGraphicsNo3D<width, height, format, api>>::type
+								OpenGlGraphicsNo3D<width, height, format, api, include3D, shaderPassDataSize>>::type
 {
 	// only a surface should be able to construct
 	template<RENDER_API rAPI, unsigned int w, unsigned int h, CP_FORMAT f, unsigned int nT, bool i3D, unsigned int sPDS> friend class SurfaceThreaded;
@@ -76,6 +77,10 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 
 		OpenGlGraphics();
 		virtual ~OpenGlGraphics() override;
+
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -91,13 +96,13 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::~Open
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::setColor (float r, float g, float b)
 {
-	m_CP.setColor( r, g, b );
+	m_ColorProfile.setColor( r, g, b );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::setColor (bool val)
 {
-	m_CP.setColor( val );
+	m_ColorProfile.setColor( val );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -249,10 +254,5 @@ void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>
 {
 	// TODO render depth buffer
 }
-
-#undef m_CP
-#undef m_CurrentFont
-#undef m_DepthBuffer
-#undef m_ShaderPassData
 
 #endif // OPENGLGRAPHICS_HPP

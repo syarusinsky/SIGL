@@ -12,14 +12,6 @@
 
 #include "IGraphics.hpp"
 
-// just so code isn't insanely wide
-#define m_CP IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile
-#define m_CurrentFont IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont
-#define m_Pxls IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB.getPixels()
-#define m_DepthBuffer IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
-#define m_ShaderPassData IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
-#define m_NumPxls IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB.getNumPixels()
-
 #include "Font.hpp"
 #include "Sprite.hpp"
 #include "Texture.hpp"
@@ -29,15 +21,15 @@
 #include <limits>
 
 // just to avoid compilation error
-template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
-class SoftwareGraphicsNo3D : public IGraphics<width, height, format, api, false, 0>
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+class SoftwareGraphicsNo3D : public IGraphics<width, height, format, api, include3D, shaderPassDataSize>
 {
 	public:
 		virtual ~SoftwareGraphicsNo3D() {}
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-class SoftwareGraphics3D : public IGraphics<width, height, format, api, true, shaderPassDataSize>
+class SoftwareGraphics3D : public IGraphics<width, height, format, api, include3D, shaderPassDataSize>
 {
 	public:
 		virtual ~SoftwareGraphics3D() {}
@@ -55,11 +47,16 @@ class SoftwareGraphics3D : public IGraphics<width, height, format, api, true, sh
 			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
 			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
+
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
+		using IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer;
+		using IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>,
-								SoftwareGraphicsNo3D<width, height, format, api>>::type
+								SoftwareGraphicsNo3D<width, height, format, api, include3D, shaderPassDataSize>>::type
 {
 	// only a surface should be able to construct
 	template<RENDER_API rAPI, unsigned int w, unsigned int h, CP_FORMAT f, unsigned int nT, bool i3D, unsigned int sPDS> friend class SurfaceThreaded;
@@ -93,6 +90,10 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 
 		SoftwareGraphics();
 		virtual ~SoftwareGraphics() override;
+
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -108,13 +109,13 @@ SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::~So
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::setColor (float r, float g, float b)
 {
-	m_CP.setColor( r, g, b );
+	m_ColorProfile.setColor( r, g, b );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::setColor (bool val)
 {
-	m_CP.setColor( val );
+	m_ColorProfile.setColor( val );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -128,7 +129,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 {
 	for ( unsigned int pixelNum = 0; pixelNum < width * height; pixelNum++ )
 	{
-		m_CP.template putPixel<width, height>( m_Pxls, pixelNum );
+		m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixelNum );
 	}
 }
 
@@ -167,13 +168,13 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			// x stride
 			if (std::isinf(slope)) // don't stride along the x-axis at all
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 			}
 			else if (slope < 1.0f) // stride along x-axis across multiple pixels
 			{
 				while (xAccumulator < 1.0f && pixel <= pixelEnd)
 				{
-					m_CP.template putPixel<width, height>( m_Pxls, pixel );
+					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 
 					xAccumulator += slope;
 					pixel += 1;
@@ -182,7 +183,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			}
 			else // stride along x-axis by one pixel
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 
 				pixel += 1;
 			}
@@ -192,7 +193,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			{
 				while (yAccumulator >= 1.0f && pixel <= pixelEnd)
 				{
-					m_CP.template putPixel<width, height>( m_Pxls, pixel );
+					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 
 					yAccumulator -= 1.0f;
 					pixel += width;
@@ -212,13 +213,13 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			// x stride
 			if (std::isinf(slope)) // don't stride along the x-axis at all
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 			}
 			else if (slope > -1.0f) // stride along x-axis across multiple pixels
 			{
 				while (xAccumulator > -1.0f && pixel <= pixelEnd)
 				{
-					m_CP.template putPixel<width, height>( m_Pxls, pixel );
+					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 
 					xAccumulator += slope;
 					pixel -= 1;
@@ -227,7 +228,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			}
 			else // stride along x-axis by one pixel
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 
 				pixel -= 1;
 			}
@@ -237,7 +238,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			{
 				while (yAccumulator <= 1.0f && pixel <= pixelEnd)
 				{
-					m_CP.template putPixel<width, height>( m_Pxls, pixel );
+					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 
 					yAccumulator += 1.0f;
 					pixel += width;
@@ -248,7 +249,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			{
 				pixel += width;
 
-				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 			}
 		}
 	}
@@ -299,7 +300,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 
 		for (unsigned int rowPixel = pixel; rowPixel < pixelRowEnd; rowPixel += 1)
 		{
-			m_CP.template putPixel<width, height>( m_Pxls, rowPixel );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), rowPixel );
 		}
 	}
 }
@@ -404,7 +405,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 
 			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 			}
 		}
 	}
@@ -429,7 +430,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					m_CP.template putPixel<width, height>( m_Pxls, pixel );
+					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 				}
 
 				// increment accumulators
@@ -496,7 +497,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 
 				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 				{
-					m_CP.template putPixel<width, height>( m_Pxls, pixel );
+					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 				}
 
 				// increment accumulators
@@ -590,8 +591,8 @@ inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPass
 				const float texCoordX = texX * perspOffset;
 				const float texCoordY = texY * perspOffset;
 				( *shaderData.fShader )( currentColor, shaderData, 0.0f, 0.0f, 0.0f, texCoordX, texCoordY, light );
-				m_CP.setColor( currentColor );
-				m_CP.template putPixel<width, height>( m_Pxls, pixel );
+				m_ColorProfile.setColor( currentColor );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 
 				m_DepthBuffer[pixel] = depth;
 			}
@@ -628,10 +629,10 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 			|| face.vertices[2].vec.z() < nearClipDepth || face.vertices[2].vec.z() > farClipDepth ) return;
 
 	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_CP.getColor();
+	const Color previousColor = m_ColorProfile.getColor();
 
 	// a color to store for fragment shading
-	Color currentColor = m_CP.getColor();
+	Color currentColor = m_ColorProfile.getColor();
 
 	// put through the vertex shader first
 	( *shaderData.vShader )( shaderData );
@@ -776,7 +777,7 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 			perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
 
 	// set the previously used color back since we're done with the gradients
-	m_CP.setColor( previousColor );
+	m_ColorProfile.setColor( previousColor );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -836,7 +837,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		{
 			while (tempPixel < pixel1)
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -847,7 +848,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			tempPixel = pixel4;
 			while (tempPixel < pixel3)
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -858,7 +859,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			tempPixel = pixel6;
 			while (tempPixel < pixel5)
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -869,7 +870,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			tempPixel = pixel8;
 			while (tempPixel < pixel7)
 			{
-				m_CP.template putPixel<width, height>( m_Pxls, tempPixel );
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), tempPixel );
 				tempPixel += 1;
 			}
 		}
@@ -878,23 +879,23 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	{
 		if (y1_2 >= 0 && y1_2 < (int)height)
 		{
-			m_CP.template putPixel<width, height>( m_Pxls, pixel1 );
-			m_CP.template putPixel<width, height>( m_Pxls, pixel2 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel1 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel2 );
 		}
 		if (y3_4 >= 0 && y3_4 < (int)height)
 		{
-			m_CP.template putPixel<width, height>( m_Pxls, pixel3 );
-			m_CP.template putPixel<width, height>( m_Pxls, pixel4 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel3 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel4 );
 		}
 		if (y5_6 >= 0 && y5_6 < (int)height)
 		{
-			m_CP.template putPixel<width, height>( m_Pxls, pixel5 );
-			m_CP.template putPixel<width, height>( m_Pxls, pixel6 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel5 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel6 );
 		}
 		if (y7_8 >= 0 && y7_8 < (int)height)
 		{
-			m_CP.template putPixel<width, height>( m_Pxls, pixel7 );
-			m_CP.template putPixel<width, height>( m_Pxls, pixel8 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel7 );
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel8 );
 		}
 	}
 }
@@ -1056,7 +1057,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 								&& xPixelsSkipped >= numXPixelsToSkip
 								&& pixelToWrite < rightClipX )
 						{
-							m_CP.template putPixel<width, height>( m_Pxls, pixelToWrite );
+							m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixelToWrite );
 						}
 
 						rightClipX += width;
@@ -1196,8 +1197,8 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 							! (color.m_A == 0.0f) // color transparency
 							)
 					{
-							m_CP.setColor( color );
-							m_CP.template putPixel<width, height>( m_Pxls, pixelToWrite );
+							m_ColorProfile.setColor( color );
+							m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixelToWrite );
 					}
 
 					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
@@ -1210,7 +1211,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 					// 		xTranslatedBack + 1 < m_FBWidth && // right clipping
 					// 		! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					// {
-					// 		m_CP->putPixel( m_FBPixels, m_FBNumPixels, sbPixelRight );
+					// 		m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelRight );
 					// }
 					// int sbPixelDown = pixelToWrite + m_FBWidth;
 					// if ( sbPixelDown >= 0 &&  // top clipping
@@ -1219,7 +1220,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 					// 		xTranslatedBack < m_FBWidth && // right clipping
 					// 		! (color.m_IsMonochrome && color.m_M == 0.0f) )
 					// {
-					// 		m_CP->putPixel( m_FBPixels, m_FBNumPixels, sbPixelDown );
+					// 		m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelDown );
 					// }
 
 					nNCurrentY += 1.0f;
@@ -1247,7 +1248,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
 {
 	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_CP.getColor();
+	const Color previousColor = m_ColorProfile.getColor();
 
 	Color color;
 	const float mul = 1.0f / ( camera.getFarClip() - camera.getNearClip() );
@@ -1257,19 +1258,12 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 		color.m_R = depthVal;
 		color.m_G = depthVal;
 		color.m_B = depthVal;
-		m_CP.setColor( color );
-		m_CP.template putPixel<width, height>( m_Pxls, pixelNum );
+		m_ColorProfile.setColor( color );
+		m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixelNum );
 	}
 
 	// set the previously used color back since we're done with the gradients
-	m_CP.setColor( previousColor );
+	m_ColorProfile.setColor( previousColor );
 }
-
-#undef m_CP
-#undef m_CurrentFont
-#undef m_Pxls
-#undef m_DepthBuffer
-#undef m_ShaderPassData
-#undef m_NumPxls
 
 #endif // SOFTWAREGRAPHICS_HPP
