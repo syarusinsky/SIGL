@@ -9,8 +9,8 @@
 #include "Graphics.hpp"
 
 // just so code isn't insanely wide
-#define m_CP Graphics<width, height, format, include3D, shaderPassDataSize>::m_ColorProfile
-#define m_CurrentFont Graphics<width, height, format, include3D, shaderPassDataSize>::m_CurrentFont
+#define m_CP Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile
+#define m_CurrentFont Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont
 #define m_DepthBuffer Graphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
 #define m_ShaderPassData Graphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
 
@@ -23,13 +23,13 @@
 #include <limits>
 
 // just to avoid compilation error
-template <unsigned int width, unsigned int height, CP_FORMAT format>
-class OpenGlGraphicsNo3D : public Graphics<width, height, format, false, 0>
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
+class OpenGlGraphicsNo3D : public Graphics<width, height, format, api, false, 0>
 {
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-class OpenGlGraphics3D : public Graphics<width, height, format, true, shaderPassDataSize>
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+class OpenGlGraphics3D : public Graphics<width, height, format, api, true, shaderPassDataSize>
 {
 	public:
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) override;
@@ -41,13 +41,13 @@ class OpenGlGraphics3D : public Graphics<width, height, format, true, shaderPass
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<width, height, format, include3D, shaderPassDataSize>,
-								OpenGlGraphicsNo3D<width, height, format>>::type
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>,
+								OpenGlGraphicsNo3D<width, height, format, api>>::type
 {
 	// only a surface should be able to construct
-	template<RENDER_API api, unsigned int w, unsigned int h, CP_FORMAT f, unsigned int nT, bool i3D, unsigned int sPDS> friend class SurfaceThreaded;
-	template<RENDER_API api, unsigned int w, unsigned int h, CP_FORMAT f, bool i3D, unsigned int sPDS> friend class SurfaceSingleCore;
+	template<RENDER_API rAPI, unsigned int w, unsigned int h, CP_FORMAT f, unsigned int nT, bool i3D, unsigned int sPDS> friend class SurfaceThreaded;
+	template<RENDER_API rAPI, unsigned int w, unsigned int h, CP_FORMAT f, bool i3D, unsigned int sPDS> friend class SurfaceSingleCore;
 
 	public:
 		void setColor (float r, float g, float b) override;
@@ -78,51 +78,51 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 		~OpenGlGraphics() override;
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::OpenGlGraphics()
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenGlGraphics()
 {
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::~OpenGlGraphics()
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::~OpenGlGraphics()
 {
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::setColor (float r, float g, float b)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::setColor (float r, float g, float b)
 {
 	m_CP.setColor( r, g, b );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::setColor (bool val)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::setColor (bool val)
 {
 	m_CP.setColor( val );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::setFont (Font* font)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::setFont (Font* font)
 {
 	m_CurrentFont = font;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::fill()
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::fill()
 {
 	// TODO get the color from the color profile, fill the framebuffer
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
 	// clip line and return if line is off screen
-	if ( !Graphics<width, height, format, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
+	if ( !Graphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
 
 	// TODO get the color from the color profile, draw the line
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawBox (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawBox (float xStart, float yStart, float xEnd, float yEnd)
 {
 	drawLine( xStart, yStart, xEnd,   yStart );
 	drawLine( xEnd,   yStart, xEnd,   yEnd   );
@@ -130,56 +130,58 @@ void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawB
 	drawLine( xStart, yEnd,   xStart, yStart );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
 {
 	// TODO clip the box from 0.0 to 1.0, get color from color profile, draw filled box
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangle (float x1, float y1, float x2, float y2, float x3, float y3)
 {
 	drawLine( x1, y1, x2, y2 );
 	drawLine( x2, y2, x3, y3 );
 	drawLine( x3, y3, x1, y1 );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3, float y3)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3,
+		float y3)
 {
 	// TODO possibly clip, get color from color profile, then draw filled triangle
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
 		TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
 		TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT,
+		shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
-void OpenGlGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
+void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
 			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
 {
 	// TODO draw shaded triangle using shaderData
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3,
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawQuad (float x1, float y1, float x2, float y2, float x3, float y3,
 		float x4, float y4)
 {
 	drawLine( x1, y1, x2, y2 );
@@ -188,60 +190,62 @@ void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawQ
 	drawLine( x4, y4, x1, y1 );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3,
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawQuadFilled (float x1, float y1, float x2, float y2, float x3, float y3,
 		float x4, float y4)
 {
 	drawTriangleFilled( x1, y1, x2, y2, x3, y3 );
 	drawTriangleFilled( x1, y1, x4, y4, x3, y3 );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawCircle (float originX, float originY, float radius)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawCircle (float originX, float originY, float radius)
 {
 	// TODO get color from color profile, draw circle
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawCircleFilled (float originX, float originY, float radius)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawCircleFilled (float originX, float originY, float radius)
 {
 	// TODO get color from color profile, draw filled circle
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawText (float xStart, float yStart, const char* text, float scaleFactor)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawText (float xStart, float yStart, const char* text, float scaleFactor)
 {
 	// TODO get color from color profile, draw text
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
 		Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite)
 {
 	this->drawSpriteHelper<Sprite<CP_FORMAT::MONOCHROME_1BIT>>( xStart, yStart, sprite );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
+		Sprite<CP_FORMAT::RGBA_32BIT>& sprite)
 {
 	this->drawSpriteHelper<Sprite<CP_FORMAT::RGBA_32BIT>>( xStart, yStart, sprite );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
+		Sprite<CP_FORMAT::RGB_24BIT>& sprite)
 {
 	this->drawSpriteHelper<Sprite<CP_FORMAT::RGB_24BIT>>( xStart, yStart, sprite );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <typename S>
-void OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
 {
 	// TODO draw sprite
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics3D<width, height, format, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
 {
 	// TODO render depth buffer
 }

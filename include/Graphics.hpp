@@ -27,20 +27,12 @@ class Camera3D;
 struct Face;
 struct PointLight;
 
-enum class RENDER_API
-{
-	SOFTWARE,
-	OPENGL
-};
-
 #ifdef SOFTWARE_RENDERING
 #define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
 #define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
-#define FRAMEBUFFER FrameBuffer<width, height, format>
 #else
 #define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
 #define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
-#define FRAMEBUFFER FrameBufferOpenGl<width, height, format>
 // TODO use classes for hardware accelerated shaders (and maybe software rendered shaders too?)
 // class VShader;
 // class FShader;
@@ -90,7 +82,7 @@ class Graphics3D
 		std::array<uint8_t, shaderPassDataSize> 	m_ShaderPassData;
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 class Graphics : public std::conditional<include3D, Graphics3D<width, height, shaderPassDataSize>, GraphicsNo3D>::type
 {
 	public:
@@ -120,11 +112,11 @@ class Graphics : public std::conditional<include3D, Graphics3D<width, height, sh
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 
-		FRAMEBUFFER& getFrameBuffer() { return m_FB; }
+		FrameBufferFixed<width, height, format, api>& getFrameBuffer() { return m_FB; }
 		const ColorProfile<format>& getColorProfile() const { return m_ColorProfile; }
 
 	protected:
-		FRAMEBUFFER 			 		m_FB;
+		FrameBufferFixed<width, height, format, api> 	m_FB;
 		ColorProfile<format> 				m_ColorProfile;
 		Font* 						m_CurrentFont;
 
@@ -145,8 +137,8 @@ void Graphics3D<width, height, shaderPassDataSize>::clearDepthBuffer()
 	std::fill( std::begin(m_DepthBuffer), std::end(m_DepthBuffer), std::numeric_limits<float>::max() );
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-inline bool Graphics<width, height, format, include3D, shaderPassDataSize>::clipLine (float* xStart, float* yStart,
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+inline bool Graphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine (float* xStart, float* yStart,
 		float* xEnd, float* yEnd)
 {
 	// cache points

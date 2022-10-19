@@ -11,11 +11,8 @@
 #include <array>
 #include "ColorProfile.hpp"
 
-#ifdef SOFTWARE_RENDERING
 #include "FrameBufferSoftwareGraphics.hpp"
-#else
 #include "FrameBufferOpenGl.hpp"
-#endif // SOFTWARE_RENDERING
 
 class FormatInitializer
 {
@@ -46,6 +43,15 @@ class FormatInitializer
 		CP_FORMAT m_Format;
 };
 
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
+class FrameBufferFixed : public std::conditional<(api == RENDER_API::SOFTWARE), FrameBufferSoftwareGraphics<width, height, format>,
+					FrameBufferOpenGl<width, height, format>>::type
+{
+	public:
+		FrameBufferFixed();
+		virtual ~FrameBufferFixed();
+};
+
 template <CP_FORMAT format>
 class FrameBufferDynamic
 {
@@ -67,6 +73,18 @@ class FrameBufferDynamic
 		const unsigned int m_Width;
 		const unsigned int m_Height;
 };
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
+FrameBufferFixed<width, height, format, api>::FrameBufferFixed() :
+	std::conditional<(api == RENDER_API::SOFTWARE), FrameBufferSoftwareGraphics<width, height, format>,
+		FrameBufferOpenGl<width, height, format>>::type()
+{
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
+FrameBufferFixed<width, height, format, api>::~FrameBufferFixed()
+{
+}
 
 template <CP_FORMAT format>
 FrameBufferDynamic<format>::FrameBufferDynamic (unsigned int width, unsigned int height) :

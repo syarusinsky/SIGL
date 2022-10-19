@@ -45,24 +45,24 @@ class FrameBufferMonochrome
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
-class FrameBuffer : public std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGB<width, height, format>,
+class FrameBufferSoftwareGraphics : public std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGB<width, height, format>,
 
-				typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochrome<width, height, format>,
-				FrameBufferRGBA<width, height, format>>::type
+					typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochrome<width, height, format>,
+					FrameBufferRGBA<width, height, format>>::type
 
-				>::type
+					>::type
 {
 	public:
-		FrameBuffer();
-		FrameBuffer (uint8_t* pixelData);
-		virtual ~FrameBuffer() {}
+		FrameBufferSoftwareGraphics();
+		FrameBufferSoftwareGraphics (uint8_t* pixelData);
+		virtual ~FrameBufferSoftwareGraphics() {}
 
 		constexpr unsigned int getWidth() const { return width; }
 		constexpr unsigned int getHeight() const { return height; }
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
-FrameBuffer<width, height, format>::FrameBuffer() :
+FrameBufferSoftwareGraphics<width, height, format>::FrameBufferSoftwareGraphics() :
 	std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGB<width, height, format>,
 
 	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochrome<width, height, format>,
@@ -73,7 +73,7 @@ FrameBuffer<width, height, format>::FrameBuffer() :
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
-FrameBuffer<width, height, format>::FrameBuffer (uint8_t* pixelData)
+FrameBufferSoftwareGraphics<width, height, format>::FrameBufferSoftwareGraphics (uint8_t* pixelData)
 {
 	if constexpr ( format == CP_FORMAT::MONOCHROME_1BIT )
 	{
