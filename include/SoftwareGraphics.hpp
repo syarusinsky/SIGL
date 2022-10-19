@@ -10,15 +10,15 @@
  * surface.
 **************************************************************************/
 
-#include "Graphics.hpp"
+#include "IGraphics.hpp"
 
 // just so code isn't insanely wide
-#define m_CP Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile
-#define m_CurrentFont Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont
-#define m_Pxls Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB.getPixels()
-#define m_DepthBuffer Graphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
-#define m_ShaderPassData Graphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
-#define m_NumPxls Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB.getNumPixels()
+#define m_CP IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile
+#define m_CurrentFont IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont
+#define m_Pxls IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB.getPixels()
+#define m_DepthBuffer IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
+#define m_ShaderPassData IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
+#define m_NumPxls IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB.getNumPixels()
 
 #include "Font.hpp"
 #include "Sprite.hpp"
@@ -30,14 +30,14 @@
 
 // just to avoid compilation error
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
-class SoftwareGraphicsNo3D : public Graphics<width, height, format, api, false, 0>
+class SoftwareGraphicsNo3D : public IGraphics<width, height, format, api, false, 0>
 {
 	public:
 		virtual ~SoftwareGraphicsNo3D() {}
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-class SoftwareGraphics3D : public Graphics<width, height, format, api, true, shaderPassDataSize>
+class SoftwareGraphics3D : public IGraphics<width, height, format, api, true, shaderPassDataSize>
 {
 	public:
 		virtual ~SoftwareGraphics3D() {}
@@ -92,7 +92,7 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
 
 		SoftwareGraphics();
-		~SoftwareGraphics() override;
+		virtual ~SoftwareGraphics() override;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -136,7 +136,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
 	// clip line and return if line is off screen
-	if ( !Graphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
+	if ( !IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
 
 	unsigned int xStartUInt = xStart * (width  - 1);
 	unsigned int yStartUInt = yStart * (height - 1);
@@ -392,7 +392,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		}
 
 		// if after clipping this line exists within the screen, render the line
-		if ( Graphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
+		if ( IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
 		{
 			int tempX1Int = tempX1 * (width  - 1);
 			int tempY1Int = tempY1 * (height - 1);

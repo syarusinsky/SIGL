@@ -15,35 +15,15 @@
 
 #include "ColorProfile.hpp"
 #include "FrameBuffer.hpp"
+#include "Graphics.hpp"
 #include <thread>
 
-#include "SoftwareGraphics.hpp"
-#include "OpenGlGraphics.hpp"
-
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-class SurfaceBaseSoftwareRendering
-{
-	protected:
-		virtual void draw(SoftwareGraphics<width, height, format, RENDER_API::SOFTWARE, include3D, shaderPassDataSize>* graphics) = 0;
-
-		SoftwareGraphics<width, height, format, RENDER_API::SOFTWARE, include3D, shaderPassDataSize>* m_Graphics;
-};
-
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-class SurfaceBaseOpenGl
-{
-	protected:
-		virtual void draw(OpenGlGraphics<width, height, format, RENDER_API::SOFTWARE, include3D, shaderPassDataSize>* graphics) = 0;
-
-		OpenGlGraphics<width, height, format, RENDER_API::SOFTWARE, include3D, shaderPassDataSize>* m_Graphics;
-};
-
 template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-class SurfaceBase : public std::conditional<(api == RENDER_API::SOFTWARE),
-				SurfaceBaseSoftwareRendering<width, height, format, include3D, shaderPassDataSize>,
-				SurfaceBaseOpenGl<width, height, format, include3D, shaderPassDataSize>>::type
+class SurfaceBase
 {
 	public:
+		virtual void draw(Graphics<width, height, format, RENDER_API::SOFTWARE, include3D, shaderPassDataSize>* graphics) = 0;
+
 		const ColorProfile<format>& getColorProfile() const { return m_Graphics->getColorProfile(); }
 
 		unsigned int getPixelWidthInBits() const
@@ -67,19 +47,13 @@ class SurfaceBase : public std::conditional<(api == RENDER_API::SOFTWARE),
 		unsigned int getHeight() { return height; }
 
 	protected:
-		using std::conditional<(api == RENDER_API::SOFTWARE),
-			SurfaceBaseSoftwareRendering<width, height, format, include3D, shaderPassDataSize>,
-			SurfaceBaseOpenGl<width, height, format, include3D, shaderPassDataSize>>::type::m_Graphics;
+		Graphics<width, height, format, api, include3D, shaderPassDataSize>* m_Graphics;
 };
 
 template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, unsigned int numRenderThreads, bool include3D,
 		unsigned int shaderPassDataSize>
 class SurfaceThreaded : public SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>
 {
-	using GRAPHICS = typename std::conditional<(api == RENDER_API::SOFTWARE),
-						SoftwareGraphics<width, height, format, RENDER_API::SOFTWARE, include3D, shaderPassDataSize>,
-						OpenGlGraphics<width, height, format, RENDER_API::OPENGL, include3D, shaderPassDataSize>>::type;
-
 	public:
 		SurfaceThreaded() :
 			m_GraphicsBuffer { nullptr },
@@ -91,7 +65,7 @@ class SurfaceThreaded : public SurfaceBase<api, width, height, format, include3D
 			m_Graphics = m_GraphicsBuffer[numRenderThreads - 1];
 			for ( unsigned int bufferNum = 0; bufferNum < numRenderThreads; bufferNum++ )
 			{
-				m_GraphicsBuffer[bufferNum] = new GRAPHICS();
+				m_GraphicsBuffer[bufferNum] = new Graphics<width, height, format, api, include3D, shaderPassDataSize>();
 				m_GraphicsThreadsDone[bufferNum] = true;
 			}
 
@@ -152,16 +126,16 @@ class SurfaceThreaded : public SurfaceBase<api, width, height, format, include3D
 		}
 
 	private:
-		std::array<GRAPHICS*, numRenderThreads> 	m_GraphicsBuffer;
+		std::array<Graphics<width, height, format, api, include3D, shaderPassDataSize>*, numRenderThreads> 	m_GraphicsBuffer;
 		unsigned int 					m_GraphicsBufferReadIncr;
 		unsigned int 					m_GraphicsBufferWriteIncr;
 		std::array<std::thread, numRenderThreads>	m_GraphicsThreads;
 		std::array<volatile bool, numRenderThreads> 	m_GraphicsThreadsDone;
 
 		using 		SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>::m_Graphics;
-		GRAPHICS* 	m_GraphicsRead;
+		Graphics<width, height, format, api, include3D, shaderPassDataSize>* 	m_GraphicsRead;
 
-		void drawWrapper(GRAPHICS* graphics, unsigned int bufferNum)
+		void drawWrapper(Graphics<width, height, format, api, include3D, shaderPassDataSize>* graphics, unsigned int bufferNum)
 		{
 			if constexpr ( include3D )
 			{
@@ -192,14 +166,10 @@ class SurfaceThreaded : public SurfaceBase<api, width, height, format, include3D
 template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 class SurfaceSingleCore : public SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>
 {
-	using GRAPHICS = typename std::conditional<(api == RENDER_API::SOFTWARE),
-						SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>,
-						OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>>::type;
-
 	public:
 		SurfaceSingleCore()
 		{
-			m_Graphics = new GRAPHICS();
+			m_Graphics = new Graphics<width, height, format, api, include3D, shaderPassDataSize>();
 		}
 
 		~SurfaceSingleCore()

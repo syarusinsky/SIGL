@@ -6,13 +6,13 @@
  * with the OpenGL api rendering api.
 **************************************************************************/
 
-#include "Graphics.hpp"
+#include "IGraphics.hpp"
 
 // just so code isn't insanely wide
-#define m_CP Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile
-#define m_CurrentFont Graphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont
-#define m_DepthBuffer Graphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
-#define m_ShaderPassData Graphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
+#define m_CP IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile
+#define m_CurrentFont IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont
+#define m_DepthBuffer IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer
+#define m_ShaderPassData IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData
 
 #include "Font.hpp"
 #include "Sprite.hpp"
@@ -24,12 +24,12 @@
 
 // just to avoid compilation error
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api>
-class OpenGlGraphicsNo3D : public Graphics<width, height, format, api, false, 0>
+class OpenGlGraphicsNo3D : public IGraphics<width, height, format, api, false, 0>
 {
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-class OpenGlGraphics3D : public Graphics<width, height, format, api, true, shaderPassDataSize>
+class OpenGlGraphics3D : public IGraphics<width, height, format, api, true, shaderPassDataSize>
 {
 	public:
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) override;
@@ -75,7 +75,7 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
 
 		OpenGlGraphics();
-		~OpenGlGraphics() override;
+		virtual ~OpenGlGraphics() override;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -116,7 +116,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
 	// clip line and return if line is off screen
-	if ( !Graphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
+	if ( !IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
 
 	// TODO get the color from the color profile, draw the line
 }
