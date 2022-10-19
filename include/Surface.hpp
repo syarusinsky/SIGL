@@ -22,7 +22,7 @@ template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT for
 class SurfaceBase
 {
 	public:
-		virtual void draw(Graphics<width, height, format, RENDER_API::SOFTWARE, include3D, shaderPassDataSize>* graphics) = 0;
+		virtual void draw(Graphics<width, height, format, api, include3D, shaderPassDataSize>* graphics) = 0;
 
 		const ColorProfile<format>& getColorProfile() const { return m_Graphics->getColorProfile(); }
 

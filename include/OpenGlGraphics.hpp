@@ -25,7 +25,7 @@ class OpenGlGraphicsNo3D : public IGraphics<width, height, format, api, include3
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-class OpenGlGraphics3D : public IGraphics<width, height, format, api, true, shaderPassDataSize>
+class OpenGlGraphics3D : public IGraphics<width, height, format, api, include3D, shaderPassDataSize>
 {
 	public:
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) override;
