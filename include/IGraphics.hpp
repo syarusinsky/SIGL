@@ -93,6 +93,7 @@ class IGraphics : public std::conditional<include3D, IGraphics3D<width, height, 
 		virtual void setColor (bool val) = 0;
 
 		virtual void setFont (Font* font) = 0;
+		virtual Font* getFont() = 0;
 
 		virtual void fill() = 0;
 		virtual void drawLine (float xStart, float yStart, float xEnd, float yEnd) = 0;

@@ -1,3 +1,10 @@
+#ifndef FRAMEBUFFERSOFTWAREGRAPHICS_HPP
+#define FRAMEBUFFERSOFTWAREGRAPHICS_HPP
+
+/**************************************************************************
+ * The software rendering implementation of the FrameBuffer class.
+**************************************************************************/
+
 #include <stdint.h>
 #include <array>
 #include "ColorProfile.hpp"
@@ -103,3 +110,5 @@ FrameBufferSoftwareGraphics<width, height, format>::FrameBufferSoftwareGraphics 
 		}
 	}
 }
+
+#endif // FRAMEBUFFERSOFTWAREGRAPHICS_HPP

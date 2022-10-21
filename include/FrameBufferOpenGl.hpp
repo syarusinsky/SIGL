@@ -1,3 +1,10 @@
+#ifndef FRAMEBUFFEROPENGL_HPP
+#define FRAMEBUFFEROPENGL_HPP
+
+/**************************************************************************
+ * The OpenGL implementation of the FrameBuffer class.
+**************************************************************************/
+
 #include <GL/glew.h>
 
 #include "ColorProfile.hpp"
@@ -61,3 +68,5 @@ FrameBufferOpenGl<width, height, format>::~FrameBufferOpenGl()
 	glDeleteFramebuffers( 1, &m_FBO );
 	glDeleteTextures( 1, &m_Tex );
 }
+
+#endif // FRAMEBUFFEROPENGL_HPP

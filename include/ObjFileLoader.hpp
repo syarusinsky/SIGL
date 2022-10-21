@@ -1,6 +1,10 @@
 #ifndef OBJFILELOADER_HPP
 #define OBJFILELOADER_HPP
 
+/**************************************************************************
+ * A utility class to load object files and output a mesh.
+**************************************************************************/
+
 #include "Engine3D.hpp"
 
 #include <vector>

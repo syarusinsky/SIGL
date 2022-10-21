@@ -65,7 +65,9 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 	public:
 		void setColor (float r, float g, float b) override;
 		void setColor (bool val) override;
+
 		void setFont (Font* font) override;
+		Font* getFont() override;
 
 		void fill() override;
 		void drawLine (float xStart, float yStart, float xEnd, float yEnd) override;
@@ -122,6 +124,12 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::setFont (Font* font)
 {
 	m_CurrentFont = font;
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+Font* SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::getFont()
+{
+	return m_CurrentFont;
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>

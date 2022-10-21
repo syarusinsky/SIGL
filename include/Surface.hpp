@@ -6,9 +6,6 @@
  * by calling the draw() function. Typically, a subclass will represent
  * a screen on a device and the rest of the application will periodically
  * call the draw function to update the screen.
- *
- * NOTE: SOFTWARE_RENDERING must be defined to use software rendering.
- * This can be done in the makefile with CPP_FLAGS, ect.
 **************************************************************************/
 
 #define _USE_MATH_DEFINES
