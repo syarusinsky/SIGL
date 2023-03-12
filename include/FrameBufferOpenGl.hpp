@@ -53,8 +53,7 @@ FrameBufferOpenGl<width, height, format>::FrameBufferOpenGl() :
 	}
 	else
 	{
-		// TODO remove after testing, clearing to red
-		glClearColor( 1.0f, 0.0f, 0.0f, 1.0f );
+		glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
 		glClear( GL_COLOR_BUFFER_BIT );
 
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
