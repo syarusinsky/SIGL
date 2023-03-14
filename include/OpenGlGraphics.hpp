@@ -123,22 +123,9 @@ Font* OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>:
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::fill()
 {
-	// TODO this works, but compilation is broken since every code change requires a recompile :(
-	// maybe since only header files are being changes as opposed to source???
-	// -- UPDATE --
-	// I have it recompiling, but it doesn't seem to take the changes that are provided in the header,
-	// it just notices them and recompiles the associated source file :(
-	// -- UPDATE --
-	// So looks like changes in SurfaceTest.hpp are recompiling SurfaceTest.cpp, but I actually need the
-	// changes in SurfaceTest.hpp to force a recompile in main.cpp, which has a dependency on SurfaceHandler.hpp,
-	// which has a dependency on SurfaceTest.hpp... I really need to redo and understand the makefile
 	glBindFramebuffer( GL_FRAMEBUFFER, m_FB.getFrameBufferObject() );
 
 	const Color color = m_ColorProfile.getColor();
-	std::cout << "COLOR: " << std::to_string(color.m_R) << ", "
-	<< std::to_string(color.m_G) << ", "
-	<< std::to_string(color.m_B) << ", "
-	<< std::to_string(color.m_A) << std::endl;
 
 	glClearColor( color.m_R, color.m_G, color.m_B, color.m_A );
 	glClear( GL_COLOR_BUFFER_BIT );
