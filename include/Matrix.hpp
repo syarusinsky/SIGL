@@ -16,6 +16,7 @@ class Matrix
 {
 	public:
 		Matrix (float initVal = 0.0f);
+		Matrix (std::array<std::array<float, columns>, rows> vals);
 		~Matrix() {}
 
 		Matrix& operator= (const Matrix<rows, columns>& other);
@@ -51,9 +52,19 @@ class Matrix
 		std::array<std::array<float, columns>, rows> getCofactor(const std::array<std::array<float, columns>, rows>& vals) const;
 };
 
+template <unsigned int mat1Rows, unsigned int mat1Cols, unsigned int mat2Rows, unsigned int mat2Cols>
+Matrix<mat1Rows, mat2Cols> matrixDotProduct(const Matrix<mat1Rows, mat1Cols>& mat1, const Matrix<mat2Rows, mat2Cols>& mat2);
+
 template <unsigned int rows, unsigned int columns>
 Matrix<rows, columns>::Matrix (float initVal) :
 	m_Vals{ {{initVal}} }
+{
+	static_assert( rows > 0 && columns > 0, "Matrices must have at least one row and at least one column" );
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns>::Matrix (std::array<std::array<float, columns>, rows> vals) :
+	m_Vals{ vals }
 {
 	static_assert( rows > 0 && columns > 0, "Matrices must have at least one row and at least one column" );
 }
@@ -388,6 +399,27 @@ std::array<std::array<float, columns>, rows> Matrix<rows, columns>::getCofactor(
 		}
 	}
 	return solution;
+}
+
+template <unsigned int mat1Rows, unsigned int mat1Cols, unsigned int mat2Rows, unsigned int mat2Cols>
+Matrix<mat1Rows, mat2Cols> matrixDotProduct(const Matrix<mat1Rows, mat1Cols>& mat1, const Matrix<mat2Rows, mat2Cols>& mat2)
+{
+	static_assert( mat1Cols == mat2Rows, "mat1Cols != mat2Rows for finding matrix dot product!" );
+
+	Matrix<mat1Rows, mat2Cols> retMatrix;
+
+	for ( unsigned int mat2Col = 0; mat2Col < mat2Cols; mat2Col++ )
+	{
+		for ( unsigned int mat1Row = 0; mat1Row < mat1Rows; mat1Row++ )
+		{
+			for ( unsigned int mat2Row = 0; mat2Row < mat2Rows; mat2Row++ )
+			{
+				retMatrix.at( mat1Row, mat2Col ) += mat1.at( mat1Row, mat2Row ) * mat2.at( mat2Row, mat2Col );
+			}
+		}
+	}
+
+	return retMatrix;
 }
 
 #endif // MATRIX_HPP
