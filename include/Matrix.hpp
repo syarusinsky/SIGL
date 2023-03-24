@@ -41,6 +41,8 @@ class Matrix
 		Matrix transpose() const;
 		Matrix inverse() const;
 
+		Matrix normalize() const;
+
 		unsigned int numRows() const { return rows; }
 		unsigned int numColumns() const { return columns; }
 
@@ -309,6 +311,70 @@ Matrix<rows, columns> Matrix<rows, columns>::inverse() const
 	}
 
 	return inverse;
+}
+
+template <unsigned int rows, unsigned int columns>
+Matrix<rows, columns> Matrix<rows, columns>::normalize() const
+{
+	Matrix<rows, columns> copy = *this;
+
+	if constexpr ( rows == columns )
+	{
+		const float determinant = this->determinant( m_Vals );
+
+		if ( determinant != 0.0f )
+		{
+			const float oneOverDeterminant = 1.0f / determinant;
+
+			for ( unsigned int row = 0; row < rows; row++ )
+			{
+				for ( unsigned int col = 0; col < columns; col++ )
+				{
+					copy.at( row, col ) *= oneOverDeterminant;
+				}
+			}
+
+			return copy;
+		}
+	}
+
+	// find the minimum value
+	float min = 0.0f;
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int col = 0; col < columns; col++ )
+		{
+			min = ( copy.at(row, col) < min )  ? copy.at( row, col ) : min;
+		}
+	}
+	// subtract the minimum value
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int col = 0; col < columns; col++ )
+		{
+			copy.at( row, col ) -= min;
+		}
+	}
+	// find the maximum
+	float max = 1.0f;
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int col = 0; col < columns; col++ )
+		{
+			max = ( copy.at(row, col) > max ) ? copy.at( row, col ) : max;
+		}
+	}
+	// divide by maximum
+	float oneOverMax = 1.0f / max;
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int col = 0; col < columns; col++ )
+		{
+			copy.at( row, col ) *= oneOverMax;
+		}
+	}
+
+	return copy;
 }
 
 template <unsigned int rows, unsigned int columns>

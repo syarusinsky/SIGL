@@ -45,6 +45,7 @@ class Vector : public Matrix<1, dimensions>
 
 		float dotProduct (const Vector<dimensions>& other) const;
 		Vector crossProduct (const Vector<dimensions>& other) const;
+
 		Vector normalize() const;
 
 	private:
@@ -190,7 +191,7 @@ Vector<dimensions> Vector<dimensions>::crossProduct (const Vector<dimensions>& o
 template <unsigned int dimensions>
 Vector<dimensions> Vector<dimensions>::normalize() const
 {
-	float oneOverLength = 1.0f / this->length();
+	const float oneOverLength = 1.0f / this->length();
 
 	Vector<dimensions> copy = *this;
 
