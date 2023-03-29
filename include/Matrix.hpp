@@ -38,7 +38,7 @@ class Matrix
 		Matrix operator* (const Matrix<rows, columns>& other) const;
 		Matrix& operator*= (const Matrix<rows, columns>& other);
 
-		Matrix transpose() const;
+		Matrix<columns, rows> transpose() const;
 		Matrix inverse() const;
 
 		Matrix normalize() const;
@@ -46,10 +46,8 @@ class Matrix
 		unsigned int numRows() const { return rows; }
 		unsigned int numColumns() const { return columns; }
 
-	protected:
 		std::array<std::array<float, columns>, rows> m_Vals;
 
-	private:
 		float determinant (const std::array<std::array<float, columns>, rows>& vals, int dimensions = rows) const;
 		std::array<std::array<float, columns>, rows> getCofactor(const std::array<std::array<float, columns>, rows>& vals) const;
 };
@@ -270,17 +268,13 @@ Matrix<rows, columns>& Matrix<rows, columns>::operator*= (const Matrix<rows, col
 }
 
 template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::transpose() const
+Matrix<columns, rows> Matrix<rows, columns>::transpose() const
 {
-	static_assert( rows == columns, "Rows != columns for finding transpose of a matrix!" );
+	Matrix<columns, rows> transpose;
 
-	constexpr unsigned int dimensions = rows;
-
-	Matrix<rows, columns> transpose;
-
-	for ( unsigned int row = 0; row < dimensions; row++ )
+	for ( unsigned int row = 0; row < rows; row++ )
 	{
-		for ( unsigned int column = 0; column < dimensions; column++ )
+		for ( unsigned int column = 0; column < columns; column++ )
 		{
 			transpose.m_Vals[column][row] = m_Vals[row][column];
 		}
