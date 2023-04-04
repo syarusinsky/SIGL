@@ -138,7 +138,9 @@ class SurfaceThreaded : public SurfaceBase<api, width, height, format, include3D
 			{
 				graphics->clearDepthBuffer();
 			}
+			graphics->startFrame();
 			this->draw( graphics );
+			graphics->endFrame();
 			m_GraphicsThreadsDone[bufferNum] = true;
 		}
 
@@ -190,7 +192,9 @@ class SurfaceSingleCore : public SurfaceBase<api, width, height, format, include
 			{
 				m_Graphics->clearDepthBuffer();
 			}
+			m_Graphics->startFrame();
 			this->draw( m_Graphics );
+			m_Graphics->endFrame();
 			return false;
 		}
 

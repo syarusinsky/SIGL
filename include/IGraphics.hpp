@@ -130,6 +130,8 @@ class IGraphics : public std::conditional<include3D, IGraphics3D<width, height, 
 			m_CurrentFont( nullptr ) {}
 		virtual ~IGraphics() {}
 
+		virtual void startFrame() = 0;
+		virtual void endFrame() = 0;
 };
 
 template <unsigned int width, unsigned int height, unsigned int shaderPassDataSize>

@@ -86,6 +86,9 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 		OpenGlGraphics();
 		virtual ~OpenGlGraphics() override;
 
+		void startFrame() override;
+		void endFrame() override;
+
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
@@ -178,26 +181,32 @@ Font* OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>:
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::fill()
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::startFrame()
 {
 	glBindFramebuffer( GL_FRAMEBUFFER, m_FB.getFrameBufferObject() );
 
+	glViewport( 0, 0, width, height );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::endFrame()
+{
+	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::fill()
+{
 	const Color color = m_ColorProfile.getColor();
 
 	glClearColor( color.m_R, color.m_G, color.m_B, color.m_A );
 	glClear( GL_COLOR_BUFFER_BIT );
-
-	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
 	const Color color = m_ColorProfile.getColor();
-
-	glBindFramebuffer( GL_FRAMEBUFFER, m_FB.getFrameBufferObject() );
-
-	glViewport( 0, 0, width, height );
 
 	openGLOffsetVerts( xStart, yStart, xEnd, yEnd );
 	const float vertices[] = { xStart, yStart, 0.0f, xEnd, yEnd, 0.0f };
@@ -221,7 +230,6 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 
 	glDrawArrays( GL_LINES, 0, 2 );
 
-	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 	glDeleteVertexArrays( 1, &VAO );
 	glDeleteBuffers( 1, &VBO );
 }
@@ -253,11 +261,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3,
 		float y3)
 {
-	glBindFramebuffer( GL_FRAMEBUFFER, m_FB.getFrameBufferObject() );
-
 	const Color color = m_ColorProfile.getColor();
-
-	glViewport( 0, 0, width, height );
 
 	openGLOffsetVerts( x1, y1, x2, y2, x3, y3 );
 
@@ -286,12 +290,8 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 
 	glDrawArrays( GL_TRIANGLES, 0, 3 );
 
-	glDisable( GL_DEPTH_TEST );
-
-	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-	glBindTexture( GL_TEXTURE_2D, 0 );
-
-	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+	glDeleteVertexArrays( 1, &VAO );
+	glDeleteBuffers( 1, &VBO );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>

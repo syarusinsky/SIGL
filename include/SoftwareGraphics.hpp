@@ -93,6 +93,9 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		SoftwareGraphics();
 		virtual ~SoftwareGraphics() override;
 
+		void startFrame() override;
+		void endFrame() override;
+
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
@@ -130,6 +133,16 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 Font* SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::getFont()
 {
 	return m_CurrentFont;
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::startFrame()
+{
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::endFrame()
+{
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
