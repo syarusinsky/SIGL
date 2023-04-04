@@ -20,6 +20,7 @@ class FrameBufferOpenGl
 		virtual ~FrameBufferOpenGl();
 
 		GLuint getFrameBufferObject() { return m_FBO; }
+		GLuint getRenderBufferObject() { return m_RBO; }
 		GLuint getTexture() { return m_Tex; }
 
 		constexpr unsigned int getWidth() const { return width; }
@@ -27,12 +28,15 @@ class FrameBufferOpenGl
 
 	private:
 		GLuint 	m_FBO;
+		GLuint 	m_RBO;
 		GLuint 	m_Tex;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 FrameBufferOpenGl<width, height, format>::FrameBufferOpenGl() :
-	m_FBO( 0 )
+	m_FBO( 0 ),
+	m_RBO( 0 ),
+	m_Tex( 0 )
 {
 	glGenFramebuffers( 1, &m_FBO );
 	glBindFramebuffer( GL_FRAMEBUFFER, m_FBO );
@@ -47,6 +51,11 @@ FrameBufferOpenGl<width, height, format>::FrameBufferOpenGl() :
 
 	glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_Tex, 0 );
 
+	glGenRenderbuffers( 1, &m_RBO );
+	glBindRenderbuffer( GL_RENDERBUFFER, m_RBO );
+	glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height );
+	glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_RBO );
+
 	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
 	{
 		std::cout << "SOMETHING WEIRD HAPPENED :(" << std::endl;
@@ -57,7 +66,6 @@ FrameBufferOpenGl<width, height, format>::FrameBufferOpenGl() :
 		glClear( GL_COLOR_BUFFER_BIT );
 
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-		glBindTexture( GL_TEXTURE_2D, 0 );
 	}
 }
 

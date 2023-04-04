@@ -16,6 +16,10 @@
 #include <algorithm>
 #include <limits>
 
+inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3);
+inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2);
+inline void openGLOffsetVerts (float& x1, float& y1);
+
 // just to avoid compilation error
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 class OpenGlGraphicsNo3D : public IGraphics<width, height, format, api, include3D, shaderPassDataSize>
@@ -74,6 +78,8 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
 
 	protected:
+		GLuint 	m_BasicColorProgram;
+
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
 
@@ -86,13 +92,64 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenGlGraphics()
+OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenGlGraphics() :
+	m_BasicColorProgram( 0 )
 {
+	const char *basicColorVertexShaderSource = 	"#version 330 core\n"
+							"\n"
+							"layout (location = 0) in vec3 aPos;\n"
+							"void main()\n"
+							"{\n"
+							"   gl_Position = vec4( aPos.x, aPos.y, aPos.z, 1.0 );\n"
+							"}";
+	const char *basicColorFragmentShaderSource = 	"#version 330 core\n"
+							"layout (location = 0) out vec4 FragColor;\n"
+							"uniform vec4 color;\n"
+							"void main()\n"
+							"{\n"
+							"   FragColor = color;\n"
+							"}\n\0";
+
+	GLuint basicColorVertexShader = glCreateShader( GL_VERTEX_SHADER );
+	GLuint basicColorFragmentShader = glCreateShader( GL_FRAGMENT_SHADER );
+	glShaderSource( basicColorVertexShader, 1, &basicColorVertexShaderSource, NULL );
+	glShaderSource( basicColorFragmentShader, 1, &basicColorFragmentShaderSource, NULL );
+	glCompileShader( basicColorVertexShader );
+	int success;
+	glGetShaderiv( basicColorVertexShader, GL_COMPILE_STATUS, &success );
+	if ( ! success )
+	{
+		char infoLog[512];
+		glGetShaderInfoLog( basicColorVertexShader, 512, NULL, infoLog );
+		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+	glCompileShader( basicColorFragmentShader );
+	glGetShaderiv( basicColorFragmentShader, GL_COMPILE_STATUS, &success );
+	if ( ! success )
+	{
+		char infoLog[512];
+		glGetShaderInfoLog( basicColorFragmentShader, 512, NULL, infoLog );
+		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+	m_BasicColorProgram = glCreateProgram();
+	glAttachShader( m_BasicColorProgram, basicColorVertexShader );
+	glAttachShader( m_BasicColorProgram, basicColorFragmentShader );
+	glLinkProgram( m_BasicColorProgram );
+	glGetProgramiv( m_BasicColorProgram, GL_LINK_STATUS, &success );
+	if( ! success )
+	{
+		char infoLog[512];
+		glGetProgramInfoLog( m_BasicColorProgram, 512, NULL, infoLog );
+		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+	}
+	glDeleteShader( basicColorVertexShader );
+	glDeleteShader( basicColorFragmentShader );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::~OpenGlGraphics()
 {
+	glDeleteProgram( m_BasicColorProgram );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -136,10 +193,37 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
-	// clip line and return if line is off screen
-	if ( !IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
+	const Color color = m_ColorProfile.getColor();
 
-	// TODO get the color from the color profile, draw the line
+	glBindFramebuffer( GL_FRAMEBUFFER, m_FB.getFrameBufferObject() );
+
+	glViewport( 0, 0, width, height );
+
+	openGLOffsetVerts( xStart, yStart, xEnd, yEnd );
+	const float vertices[] = { xStart, yStart, 0.0f, xEnd, yEnd, 0.0f };
+
+	GLuint VAO;
+	glGenVertexArrays( 1, &VAO );
+	glBindVertexArray( VAO );
+
+	GLuint VBO;
+	glGenBuffers( 1, &VBO );
+	glBindBuffer( GL_ARRAY_BUFFER, VBO );
+	glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW );
+
+	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 );
+	glEnableVertexAttribArray( 0 );
+
+	glUseProgram( m_BasicColorProgram );
+
+	const float lineColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
+	glUniform4fv( glGetUniformLocation(m_BasicColorProgram, "color"), 1, &lineColor[0] );
+
+	glDrawArrays( GL_LINES, 0, 2 );
+
+	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+	glDeleteVertexArrays( 1, &VAO );
+	glDeleteBuffers( 1, &VBO );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -169,7 +253,45 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3,
 		float y3)
 {
-	// TODO possibly clip, get color from color profile, then draw filled triangle
+	glBindFramebuffer( GL_FRAMEBUFFER, m_FB.getFrameBufferObject() );
+
+	const Color color = m_ColorProfile.getColor();
+
+	glViewport( 0, 0, width, height );
+
+	openGLOffsetVerts( x1, y1, x2, y2, x3, y3 );
+
+	const float vertices[] = {
+		x1, y1, 0.0f,
+		x2, y2, 0.0f,
+		x3,  y3, 0.0f
+	};
+
+	unsigned int VAO;
+	glGenVertexArrays( 1, &VAO );
+	glBindVertexArray( VAO );
+
+	unsigned int VBO;
+	glGenBuffers( 1, &VBO );
+	glBindBuffer( GL_ARRAY_BUFFER, VBO );
+	glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW );
+
+	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 );
+	glEnableVertexAttribArray(0);
+
+	glUseProgram( m_BasicColorProgram );
+
+	const float triColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
+	glUniform4fv( glGetUniformLocation(m_BasicColorProgram, "color"), 1, &triColor[0] );
+
+	glDrawArrays( GL_TRIANGLES, 0, 3 );
+
+	glDisable( GL_DEPTH_TEST );
+
+	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+	glBindTexture( GL_TEXTURE_2D, 0 );
+
+	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -269,6 +391,42 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
 {
 	// TODO render depth buffer
+}
+
+inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3)
+{
+	x1 *= 2.0f;
+	x2 *= 2.0f;
+	x3 *= 2.0f;
+	y1 *= -2.0f;
+	y2 *= -2.0f;
+	y3 *= -2.0f;
+	x1 -= 1.0f;
+	x2 -= 1.0f;
+	x3 -= 1.0f;
+	y1 += 1.0f;
+	y2 += 1.0f;
+	y3 += 1.0f;
+}
+
+inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2)
+{
+	x1 *= 2.0f;
+	x2 *= 2.0f;
+	y1 *= -2.0f;
+	y2 *= -2.0f;
+	x1 -= 1.0f;
+	x2 -= 1.0f;
+	y1 += 1.0f;
+	y2 += 1.0f;
+}
+
+inline void openGLOffsetVerts (float& x1, float& y1)
+{
+	x1 *= 2.0f;
+	y1 *= -2.0f;
+	x1 -= 1.0f;
+	y1 += 1.0f;
 }
 
 #endif // OPENGLGRAPHICS_HPP
