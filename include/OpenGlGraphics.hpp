@@ -246,7 +246,43 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
 {
-	// TODO clip the box from 0.0 to 1.0, get color from color profile, draw filled box
+	const Color color = m_ColorProfile.getColor();
+
+	openGLOffsetVerts( xStart, yStart, xEnd, yEnd );
+
+	const float xDist = xEnd - xStart;
+	const float yDist = yEnd - yStart;
+
+	const float vertices[] = {
+		xStart, yStart, 0.0f,
+		xStart + xDist, yStart, 0.0f,
+		xStart, yStart + yDist, 0.0f,
+		xStart + xDist, yStart, 0.0f,
+		xStart, yStart + yDist, 0.0f,
+		xEnd, yEnd, 0.0f
+	};
+
+	GLuint VAO;
+	glGenVertexArrays( 1, &VAO );
+	glBindVertexArray( VAO );
+
+	GLuint VBO;
+	glGenBuffers( 1, &VBO );
+	glBindBuffer( GL_ARRAY_BUFFER, VBO );
+	glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW );
+
+	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 );
+	glEnableVertexAttribArray( 0 );
+
+	glUseProgram( m_BasicColorProgram );
+
+	const float boxColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
+	glUniform4fv( glGetUniformLocation(m_BasicColorProgram, "color"), 1, &boxColor[0] );
+
+	glDrawArrays( GL_TRIANGLES, 0, sizeof(vertices) );
+
+	glDeleteVertexArrays( 1, &VAO );
+	glDeleteBuffers( 1, &VBO );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>

@@ -214,6 +214,10 @@ class Surface : public std::conditional<(numRenderThreads > 1),
 				SurfaceThreaded<api, width, height, format, numRenderThreads, include3D, shaderPassDataSize>,
 				SurfaceSingleCore<api, width, height, format, include3D, shaderPassDataSize>>::type()
 		{
+			if constexpr ( api == RENDER_API::OPENGL )
+			{
+				static_assert( numRenderThreads == 1, "If using hardware graphics acceleration, multithreading is not available" );
+			}
 		}
 		virtual ~Surface() {}
 
