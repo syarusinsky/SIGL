@@ -6,31 +6,21 @@
  * by calling the draw() function. Typically, a subclass will represent
  * a screen on a device and the rest of the application will periodically
  * call the draw function to update the screen.
- *
- * NOTE: SOFTWARE_RENDERING must be defined to use software rendering.
- * This can be done in the makefile with CPP_FLAGS, ect.
 **************************************************************************/
 
 #define _USE_MATH_DEFINES
 
 #include "ColorProfile.hpp"
 #include "FrameBuffer.hpp"
+#include "Graphics.hpp"
 #include <thread>
 
-#ifdef SOFTWARE_RENDERING
-#include "SoftwareGraphics.hpp"
-#define GRAPHICS SoftwareGraphics<width, height, format, include3D, shaderPassDataSize>
-#else
-#include "OpenGlGraphics.hpp"
-#define GRAPHICS OpenGlGraphics<width, height, format, include3D, shaderPassDataSize>
-#endif // SOFTWARE_RENDERING
-
-enum class CP_FORMAT;
-
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 class SurfaceBase
 {
 	public:
+		virtual void draw(Graphics<width, height, format, api, include3D, shaderPassDataSize>* graphics) = 0;
+
 		const ColorProfile<format>& getColorProfile() const { return m_Graphics->getColorProfile(); }
 
 		unsigned int getPixelWidthInBits() const
@@ -54,13 +44,12 @@ class SurfaceBase
 		unsigned int getHeight() { return height; }
 
 	protected:
-		GRAPHICS* 	m_Graphics;
-
-		virtual void draw(GRAPHICS* graphics) = 0;
+		Graphics<width, height, format, api, include3D, shaderPassDataSize>* m_Graphics;
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int numRenderThreads, bool include3D, unsigned int shaderPassDataSize>
-class SurfaceThreaded : public SurfaceBase<width, height, format, include3D, shaderPassDataSize>
+template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, unsigned int numRenderThreads, bool include3D,
+		unsigned int shaderPassDataSize>
+class SurfaceThreaded : public SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>
 {
 	public:
 		SurfaceThreaded() :
@@ -70,10 +59,10 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, include3D, sha
 			m_GraphicsThreadsDone{ true },
 			m_GraphicsRead( nullptr )
 		{
-			SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics = m_GraphicsBuffer[numRenderThreads - 1];
+			m_Graphics = m_GraphicsBuffer[numRenderThreads - 1];
 			for ( unsigned int bufferNum = 0; bufferNum < numRenderThreads; bufferNum++ )
 			{
-				m_GraphicsBuffer[bufferNum] = new GRAPHICS();
+				m_GraphicsBuffer[bufferNum] = new Graphics<width, height, format, api, include3D, shaderPassDataSize>();
 				m_GraphicsThreadsDone[bufferNum] = true;
 			}
 
@@ -92,10 +81,10 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, include3D, sha
 			}
 		}
 
-		FrameBuffer<width, height, format>& advanceFrameBuffer()
+		FrameBufferFixed<width, height, format, api>& advanceFrameBuffer()
 		{
 			updateGraphicsRead();
-			FrameBuffer<width, height, format>& fb = m_GraphicsRead->getFrameBuffer();
+			FrameBufferFixed<width, height, format, api>& fb = m_GraphicsRead->getFrameBuffer();
 			return fb;
 		}
 
@@ -127,29 +116,31 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, include3D, sha
 
 			// launch a new thread to render the frame
 			m_GraphicsThreadsDone[m_GraphicsBufferWriteIncr] = false;
-			m_GraphicsThreads[m_GraphicsBufferWriteIncr] = std::thread(
-					&SurfaceThreaded::drawWrapper, this, SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics,
-					m_GraphicsBufferWriteIncr );
+			m_GraphicsThreads[m_GraphicsBufferWriteIncr] = std::thread( &SurfaceThreaded::drawWrapper, this, m_Graphics,
+											m_GraphicsBufferWriteIncr );
 
 			return true;
 		}
 
-	protected:
-		virtual void draw(GRAPHICS* graphics) override = 0;
-
 	private:
-		std::array<GRAPHICS*, numRenderThreads> 	m_GraphicsBuffer;
+		std::array<Graphics<width, height, format, api, include3D, shaderPassDataSize>*, numRenderThreads> 	m_GraphicsBuffer;
 		unsigned int 					m_GraphicsBufferReadIncr;
 		unsigned int 					m_GraphicsBufferWriteIncr;
 		std::array<std::thread, numRenderThreads>	m_GraphicsThreads;
 		std::array<volatile bool, numRenderThreads> 	m_GraphicsThreadsDone;
-		using 		SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics;
-		GRAPHICS* 	m_GraphicsRead;
 
-		void drawWrapper(GRAPHICS* graphics, unsigned int bufferNum)
+		using 		SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>::m_Graphics;
+		Graphics<width, height, format, api, include3D, shaderPassDataSize>* 	m_GraphicsRead;
+
+		void drawWrapper(Graphics<width, height, format, api, include3D, shaderPassDataSize>* graphics, unsigned int bufferNum)
 		{
-			graphics->clearDepthBuffer();
+			if constexpr ( include3D )
+			{
+				graphics->clearDepthBuffer();
+			}
+			graphics->startFrame();
 			this->draw( graphics );
+			graphics->endFrame();
 			m_GraphicsThreadsDone[bufferNum] = true;
 		}
 
@@ -167,67 +158,67 @@ class SurfaceThreaded : public SurfaceBase<width, height, format, include3D, sha
 		{
 			m_GraphicsBufferWriteIncr = ( m_GraphicsBufferWriteIncr + 1 ) % numRenderThreads;
 
-			SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics = m_GraphicsBuffer[m_GraphicsBufferWriteIncr];
+			m_Graphics = m_GraphicsBuffer[m_GraphicsBufferWriteIncr];
 		}
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
-class SurfaceSingleCore : public SurfaceBase<width, height, format, include3D, shaderPassDataSize>
+template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
+class SurfaceSingleCore : public SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>
 {
 	public:
 		SurfaceSingleCore()
 		{
-			SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics = new GRAPHICS();
+			m_Graphics = new Graphics<width, height, format, api, include3D, shaderPassDataSize>();
 		}
 
 		~SurfaceSingleCore()
 		{
-			delete SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics;
+			delete m_Graphics;
 		}
 
-		FrameBuffer<width, height, format>& advanceFrameBuffer()
+		FrameBufferFixed<width, height, format, api>& advanceFrameBuffer()
 		{
-			return SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics->getFrameBuffer();
+			return m_Graphics->getFrameBuffer();
 		}
 
 		void setFont (Font* font) override
 		{
-			SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics->setFont( font );
+			m_Graphics->setFont( font );
 		}
 
 		bool render()
 		{
-			m_Graphics->clearDepthBuffer();
-			draw( SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics );
+			if constexpr ( include3D )
+			{
+				m_Graphics->clearDepthBuffer();
+			}
+			m_Graphics->startFrame();
+			this->draw( m_Graphics );
+			m_Graphics->endFrame();
 			return false;
 		}
 
-	protected:
-		virtual void draw(GRAPHICS* graphics) override = 0;
-
 	private:
-		using 	SurfaceBase<width, height, format, include3D, shaderPassDataSize>::m_Graphics;
+		using 		SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>::m_Graphics;
 };
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, unsigned int numRenderThreads, bool include3D, unsigned int shaderPassDataSize>
-class Surface : public std::conditional<(numRenderThreads > 1), SurfaceThreaded<width, height, format, numRenderThreads, include3D, shaderPassDataSize>,
-					SurfaceSingleCore<width, height, format, include3D, shaderPassDataSize>>::type
+template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, unsigned int numRenderThreads, bool include3D,
+		unsigned int shaderPassDataSize>
+class Surface : public std::conditional<(numRenderThreads > 1),
+				SurfaceThreaded<api, width, height, format, numRenderThreads, include3D, shaderPassDataSize>,
+				SurfaceSingleCore<api, width, height, format, include3D, shaderPassDataSize>>::type
 {
 	public:
 		Surface() :
-			std::conditional<(numRenderThreads > 1), SurfaceThreaded<width, height, format, numRenderThreads, include3D, shaderPassDataSize>,
-					SurfaceSingleCore<width, height, format, include3D, shaderPassDataSize>>::type()
+			std::conditional<(numRenderThreads > 1),
+				SurfaceThreaded<api, width, height, format, numRenderThreads, include3D, shaderPassDataSize>,
+				SurfaceSingleCore<api, width, height, format, include3D, shaderPassDataSize>>::type()
 		{
 		}
 		virtual ~Surface() {}
 
 		constexpr unsigned int getWidth() { return width; }
 		constexpr unsigned int getHeight() { return height; }
-
-	protected:
-		virtual void draw(GRAPHICS* graphics) = 0;
 };
-
-#undef GRAPHICS
 
 #endif // SURFACE_HPP

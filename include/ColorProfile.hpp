@@ -12,6 +12,12 @@
 #include <array>
 #include <math.h>
 
+enum class RENDER_API
+{
+	SOFTWARE,
+	OPENGL
+};
+
 struct Color
 {
 	float m_R = 0.0f;
