@@ -279,7 +279,7 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	const float boxColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
 	glUniform4fv( glGetUniformLocation(m_BasicColorProgram, "color"), 1, &boxColor[0] );
 
-	glDrawArrays( GL_TRIANGLES, 0, sizeof(vertices) );
+	glDrawArrays( GL_TRIANGLES, 0, sizeof(vertices) / sizeof(float) / 3 );
 
 	glDeleteVertexArrays( 1, &VAO );
 	glDeleteBuffers( 1, &VBO );
@@ -324,7 +324,7 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	const float triColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
 	glUniform4fv( glGetUniformLocation(m_BasicColorProgram, "color"), 1, &triColor[0] );
 
-	glDrawArrays( GL_TRIANGLES, 0, 3 );
+	glDrawArrays( GL_TRIANGLES, 0, sizeof(vertices) / sizeof(float) / 3 );
 
 	glDeleteVertexArrays( 1, &VAO );
 	glDeleteBuffers( 1, &VBO );
@@ -377,16 +377,68 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	drawTriangleFilled( x1, y1, x4, y4, x3, y3 );
 }
 
+template <unsigned int width, unsigned int height>
+inline void drawCircleHelper (const GLuint program, const Color& color, float originX, float originY, float radius, bool filled)
+{
+	openGLOffsetVerts( originX, originY );
+
+	// TODO this should probably be set dynamically
+	constexpr unsigned int numSegments = 100;
+
+	// need to squish or expand vertical radius to account for aspect ratio
+	radius *= 2.0f;
+	const float rW = radius;
+	const float rH = radius * static_cast<float>( width ) / static_cast<float>( height );
+
+	float vertices[numSegments * 3];
+
+	for ( int segment = 0; segment < numSegments; segment++ )
+	{
+		float theta = 2.0f * M_PI * static_cast<float>( segment ) / static_cast<float>( numSegments );
+		float x = rW * cosf( theta );
+		float y = rH * sinf( theta );
+		vertices[(segment * 3) + 0] = x + originX;
+		vertices[(segment * 3) + 1] = y + originY;
+		vertices[(segment * 3) + 2] = 0.0f;
+	}
+
+	unsigned int VAO;
+	glGenVertexArrays( 1, &VAO );
+	glBindVertexArray( VAO );
+
+	unsigned int VBO;
+	glGenBuffers( 1, &VBO );
+	glBindBuffer( GL_ARRAY_BUFFER, VBO );
+	glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW );
+
+	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 );
+	glEnableVertexAttribArray(0);
+
+	glUseProgram( program );
+
+	const float circleColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
+	glUniform4fv( glGetUniformLocation(program, "color"), 1, &circleColor[0] );
+
+	glDrawArrays( (filled) ? GL_TRIANGLE_FAN : GL_LINE_LOOP, 0, sizeof(vertices) / sizeof(float) / 3 );
+
+	glDeleteVertexArrays( 1, &VAO );
+	glDeleteBuffers( 1, &VBO );
+}
+
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawCircle (float originX, float originY, float radius)
 {
-	// TODO get color from color profile, draw circle
+	const Color color = m_ColorProfile.getColor();
+
+	drawCircleHelper<width, height>( m_BasicColorProgram, color, originX, originY, radius, false );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawCircleFilled (float originX, float originY, float radius)
 {
-	// TODO get color from color profile, draw filled circle
+	const Color color = m_ColorProfile.getColor();
+
+	drawCircleHelper<width, height>( m_BasicColorProgram, color, originX, originY, radius, true );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
