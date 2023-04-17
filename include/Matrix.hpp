@@ -35,8 +35,8 @@ class Matrix
 		Matrix& operator+= (const Matrix<rows, columns>& other);
 		Matrix operator- (const Matrix<rows, columns>& other) const;
 		Matrix& operator-= (const Matrix<rows, columns>& other);
-		Matrix operator* (const Matrix<rows, columns>& other) const;
-		Matrix& operator*= (const Matrix<rows, columns>& other);
+		Matrix operator* (const Matrix<rows, columns>& other) const; // dot product
+		Matrix& operator*= (const Matrix<rows, columns>& other); // dot product
 
 		Matrix<columns, rows> transpose() const;
 		Matrix inverse() const;
