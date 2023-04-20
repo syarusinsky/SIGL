@@ -8,18 +8,26 @@
 
 #define _USE_MATH_DEFINES
 
+#ifdef NO_STACK_ALLOCATED_MATRICES
+constexpr bool useStackAllocatedMatrices = false;
+#else
+constexpr bool useStackAllocatedMatrices = true;
+#endif // NO_STACK_ALLOCATED_MATRICES
+
 #include <cmath>
 #include <array>
+#include <vector>
+#include <type_traits>
 
-template <unsigned int rows, unsigned int columns>
+template <unsigned int rows, unsigned int columns, bool stackAllocated = useStackAllocatedMatrices>
 class Matrix
 {
 	public:
 		Matrix (float initVal = 0.0f);
-		Matrix (std::array<std::array<float, columns>, rows> vals);
+		Matrix (std::initializer_list<std::initializer_list<float>> initList);
 		~Matrix() {}
 
-		Matrix& operator= (const Matrix<rows, columns>& other);
+		Matrix& operator= (const Matrix<rows, columns, stackAllocated>& other);
 
 		float& at (unsigned int row, unsigned int column);
 		float at (unsigned int row, unsigned int column) const;
@@ -31,12 +39,12 @@ class Matrix
 		Matrix operator* (float scalar) const;
 		Matrix& operator*= (float scalar);
 
-		Matrix operator+ (const Matrix<rows, columns>& other) const;
-		Matrix& operator+= (const Matrix<rows, columns>& other);
-		Matrix operator- (const Matrix<rows, columns>& other) const;
-		Matrix& operator-= (const Matrix<rows, columns>& other);
-		Matrix operator* (const Matrix<rows, columns>& other) const; // dot product
-		Matrix& operator*= (const Matrix<rows, columns>& other); // dot product
+		Matrix operator+ (const Matrix<rows, columns, stackAllocated>& other) const;
+		Matrix& operator+= (const Matrix<rows, columns, stackAllocated>& other);
+		Matrix operator- (const Matrix<rows, columns, stackAllocated>& other) const;
+		Matrix& operator-= (const Matrix<rows, columns, stackAllocated>& other);
+		Matrix operator* (const Matrix<rows, columns, stackAllocated>& other) const; // dot product
+		Matrix& operator*= (const Matrix<rows, columns, stackAllocated>& other); // dot product
 
 		Matrix<columns, rows> transpose() const;
 		Matrix inverse() const;
@@ -46,51 +54,88 @@ class Matrix
 		unsigned int numRows() const { return rows; }
 		unsigned int numColumns() const { return columns; }
 
-		std::array<std::array<float, columns>, rows> m_Vals;
+		typename std::conditional< stackAllocated, std::array<float, rows * columns>, std::vector<float> >::type m_Vals;
 
 		float determinant (const std::array<std::array<float, columns>, rows>& vals, int dimensions = rows) const;
 		std::array<std::array<float, columns>, rows> getCofactor(const std::array<std::array<float, columns>, rows>& vals) const;
 };
 
-template <unsigned int mat1Rows, unsigned int mat1Cols, unsigned int mat2Rows, unsigned int mat2Cols>
-Matrix<mat1Rows, mat2Cols> matrixDotProduct(const Matrix<mat1Rows, mat1Cols>& mat1, const Matrix<mat2Rows, mat2Cols>& mat2);
+template <unsigned int mat1Rows, unsigned int mat1Cols, unsigned int mat2Rows, unsigned int mat2Cols, bool stackAllocated = true>
+Matrix<mat1Rows, mat2Cols, stackAllocated> matrixDotProduct(
+	const Matrix<mat1Rows, mat1Cols, stackAllocated>& mat1,
+	const Matrix<mat2Rows, mat2Cols, stackAllocated>& mat2);
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>::Matrix (float initVal) :
-	m_Vals{ {{initVal}} }
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>::Matrix (float initVal) :
+	m_Vals()
 {
+	for ( unsigned int row = 0; row < rows; row++ )
+	{
+		for ( unsigned int col = 0; col < columns; col++ )
+		{
+			if constexpr ( stackAllocated )
+			{
+				m_Vals.at( (row * columns) + col ) = initVal;
+			}
+			else
+			{
+				m_Vals.push_back( initVal );
+			}
+		}
+	}
+
 	static_assert( rows > 0 && columns > 0, "Matrices must have at least one row and at least one column" );
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>::Matrix (std::array<std::array<float, columns>, rows> vals) :
-	m_Vals{ vals }
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>::Matrix (std::initializer_list<std::initializer_list<float>> initList) :
+	m_Vals()
 {
+	unsigned int rowNum = 0;
+	for ( auto rowVal : initList )
+	{
+		unsigned int colNum = 0;
+		for ( auto colVal : rowVal )
+		{
+			if constexpr ( stackAllocated )
+			{
+				m_Vals.at( (rowNum * columns) + colNum ) = colVal;
+			}
+			else
+			{
+				m_Vals.push_back( colVal );
+			}
+
+			colNum++;
+		}
+
+		rowNum++;
+	}
 	static_assert( rows > 0 && columns > 0, "Matrices must have at least one row and at least one column" );
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>& Matrix<rows, columns>::operator= (const Matrix<rows, columns>& other)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>& Matrix<rows, columns, stackAllocated>::operator= (const Matrix<rows, columns, stackAllocated>& other)
 {
 	m_Vals = other.m_Vals;
 
 	return *this;
 }
 
-template <unsigned int rows, unsigned int columns>
-float& Matrix<rows, columns>::at (unsigned int row, unsigned int column)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+float& Matrix<rows, columns, stackAllocated>::at (unsigned int row, unsigned int column)
 {
-	return m_Vals[row][column];
+	return m_Vals.at( (row * columns) + column );
 }
 
-template <unsigned int rows, unsigned int columns>
-float Matrix<rows, columns>::at (unsigned int row, unsigned int column) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+float Matrix<rows, columns, stackAllocated>::at (unsigned int row, unsigned int column) const
 {
-	return m_Vals[row][column];
+	return m_Vals.at( (row * columns) + column );
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::operator+ (float scalar) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::operator+ (float scalar) const
 {
 	Matrix copy = *this;
 
@@ -98,29 +143,29 @@ Matrix<rows, columns> Matrix<rows, columns>::operator+ (float scalar) const
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			copy.m_Vals[row][column] += scalar;
+			copy.m_Vals.at( (row * columns) + column ) += scalar;
 		}
 	}
 
 	return copy;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>& Matrix<rows, columns>::operator+= (float scalar)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>& Matrix<rows, columns, stackAllocated>::operator+= (float scalar)
 {
 	for ( unsigned int row = 0; row < rows; row++ )
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			m_Vals[row][column] += scalar;
+			m_Vals.at( (row * columns) + column ) += scalar;
 		}
 	}
 
 	return *this;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::operator- (float scalar) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::operator- (float scalar) const
 {
 	Matrix copy = *this;
 
@@ -128,29 +173,29 @@ Matrix<rows, columns> Matrix<rows, columns>::operator- (float scalar) const
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			copy.m_Vals[row][column] -= scalar;
+			copy.m_Vals.at( (row * columns) + column ) -= scalar;
 		}
 	}
 
 	return copy;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>& Matrix<rows, columns>::operator-= (float scalar)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>& Matrix<rows, columns, stackAllocated>::operator-= (float scalar)
 {
 	for ( unsigned int row = 0; row < rows; row++ )
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			m_Vals[row][column] -= scalar;
+			m_Vals.at( (row * columns) + column ) -= scalar;
 		}
 	}
 
 	return *this;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::operator* (float scalar) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::operator* (float scalar) const
 {
 	Matrix copy = *this;
 
@@ -158,29 +203,29 @@ Matrix<rows, columns> Matrix<rows, columns>::operator* (float scalar) const
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			copy.m_Vals[row][column] *= scalar;
+			copy.m_Vals.at( (row * columns) + column ) *= scalar;
 		}
 	}
 
 	return copy;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>& Matrix<rows, columns>::operator*= (float scalar)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>& Matrix<rows, columns, stackAllocated>::operator*= (float scalar)
 {
 	for ( unsigned int row = 0; row < rows; row++ )
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			m_Vals[row][column] *= scalar;
+			m_Vals.at( (row * columns) + column ) *= scalar;
 		}
 	}
 
 	return *this;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::operator+ (const Matrix<rows,columns>& other) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::operator+ (const Matrix<rows, columns, stackAllocated>& other) const
 {
 	Matrix copy = *this;
 
@@ -188,29 +233,29 @@ Matrix<rows, columns> Matrix<rows, columns>::operator+ (const Matrix<rows,column
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			copy.m_Vals[row][column] += other.m_Vals[row][column];
+			copy.m_Vals.at( (row * columns) + column ) += other.m_Vals.at( (row * columns) + column );
 		}
 	}
 
 	return copy;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>& Matrix<rows, columns>::operator+= (const Matrix<rows, columns>& other)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>& Matrix<rows, columns, stackAllocated>::operator+= (const Matrix<rows, columns, stackAllocated>& other)
 {
 	for ( unsigned int row = 0; row < rows; row++ )
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			m_Vals[row][column] += other.m_Vals[row][column];
+			m_Vals.at( (row * columns) + column ) += other.m_Vals.at( (row * columns) + column );
 		}
 	}
 
 	return *this;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::operator- (const Matrix<rows,columns>& other) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::operator- (const Matrix<rows, columns, stackAllocated>& other) const
 {
 	Matrix copy = *this;
 
@@ -218,31 +263,31 @@ Matrix<rows, columns> Matrix<rows, columns>::operator- (const Matrix<rows,column
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			copy.m_Vals[row][column] -= other.m_Vals[row][column];
+			copy.m_Vals.at( (row * columns) + column ) -= other.m_Vals.at( (row * columns) + column );
 		}
 	}
 
 	return copy;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>& Matrix<rows, columns>::operator-= (const Matrix<rows, columns>& other)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>& Matrix<rows, columns, stackAllocated>::operator-= (const Matrix<rows, columns, stackAllocated>& other)
 {
 	for ( unsigned int row = 0; row < rows; row++ )
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			m_Vals[row][column] -= other.m_Vals[row][column];
+			m_Vals.at( (row * columns) + column ) -= other.at( (row * columns) + column );
 		}
 	}
 
 	return *this;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::operator* (const Matrix<rows, columns>& other) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::operator* (const Matrix<rows, columns, stackAllocated>& other) const
 {
-	Matrix<rows, columns> retMatrix( 0.0f );
+	Matrix<rows, columns, stackAllocated> retMatrix( 0.0f );
 
 	for ( unsigned int row = 0; row < rows; row++ )
 	{
@@ -250,7 +295,7 @@ Matrix<rows, columns> Matrix<rows, columns>::operator* (const Matrix<rows, colum
 		{
 			for ( unsigned int common = 0; common < columns; common++ )
 			{
-				retMatrix.m_Vals[row][column] += m_Vals[row][common] * other.m_Vals[common][column];
+				retMatrix.m_Vals.at( (row * columns) + column ) += m_Vals.at( (row * columns) + common ) * other.m_Vals( (common * columns) + column );
 			}
 		}
 	}
@@ -258,17 +303,17 @@ Matrix<rows, columns> Matrix<rows, columns>::operator* (const Matrix<rows, colum
 	return retMatrix;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns>& Matrix<rows, columns>::operator*= (const Matrix<rows, columns>& other)
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated>& Matrix<rows, columns, stackAllocated>::operator*= (const Matrix<rows, columns, stackAllocated>& other)
 {
-	Matrix<rows, columns> copyMatrix = *this * other;
+	Matrix<rows, columns, stackAllocated> copyMatrix = *this * other;
 	*this = copyMatrix;
 
 	return *this;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<columns, rows> Matrix<rows, columns>::transpose() const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<columns, rows> Matrix<rows, columns, stackAllocated>::transpose() const
 {
 	Matrix<columns, rows> transpose;
 
@@ -276,15 +321,15 @@ Matrix<columns, rows> Matrix<rows, columns>::transpose() const
 	{
 		for ( unsigned int column = 0; column < columns; column++ )
 		{
-			transpose.m_Vals[column][row] = m_Vals[row][column];
+			transpose.m_Vals.at( (column * rows) + row ) = m_Vals.at( (row * columns) + column );
 		}
 	}
 
 	return transpose;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::inverse() const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::inverse() const
 {
 	static_assert( rows == columns, "Rows != columns for finding inverse of a matrix!" );
 
@@ -300,17 +345,17 @@ Matrix<rows, columns> Matrix<rows, columns>::inverse() const
 	{
 		for ( unsigned int column = 0; column < dimensions; column++ )
 		{
-			inverse.m_Vals[row][column] *= oneOverDeterminant;
+			inverse.m_Vals.at( (row * columns) + column ) *= oneOverDeterminant;
 		}
 	}
 
 	return inverse;
 }
 
-template <unsigned int rows, unsigned int columns>
-Matrix<rows, columns> Matrix<rows, columns>::normalize() const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::normalize() const
 {
-	Matrix<rows, columns> copy = *this;
+	Matrix<rows, columns, stackAllocated> copy = *this;
 
 	if constexpr ( rows == columns )
 	{
@@ -371,8 +416,8 @@ Matrix<rows, columns> Matrix<rows, columns>::normalize() const
 	return copy;
 }
 
-template <unsigned int rows, unsigned int columns>
-float Matrix<rows, columns>::determinant (const std::array<std::array<float, columns>, rows>& vals, int dimensions) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+float Matrix<rows, columns, stackAllocated>::determinant (const std::array<std::array<float, columns>, rows>& vals, int dimensions) const
 {
 	static_assert( rows == columns, "Rows != columns for finding determinant of a matrix!" );
 
@@ -420,8 +465,8 @@ float Matrix<rows, columns>::determinant (const std::array<std::array<float, col
 	return determinant;
 }
 
-template <unsigned int rows, unsigned int columns>
-std::array<std::array<float, columns>, rows> Matrix<rows, columns>::getCofactor(const std::array<std::array<float, columns>, rows>& vals) const
+template <unsigned int rows, unsigned int columns, bool stackAllocated>
+std::array<std::array<float, columns>, rows> Matrix<rows, columns, stackAllocated>::getCofactor(const std::array<std::array<float, columns>, rows>& vals) const
 {
 	static_assert( rows == columns, "Rows != columns for finding cofactor of a matrix!" );
 
@@ -461,12 +506,14 @@ std::array<std::array<float, columns>, rows> Matrix<rows, columns>::getCofactor(
 	return solution;
 }
 
-template <unsigned int mat1Rows, unsigned int mat1Cols, unsigned int mat2Rows, unsigned int mat2Cols>
-Matrix<mat1Rows, mat2Cols> matrixDotProduct(const Matrix<mat1Rows, mat1Cols>& mat1, const Matrix<mat2Rows, mat2Cols>& mat2)
+template <unsigned int mat1Rows, unsigned int mat1Cols, unsigned int mat2Rows, unsigned int mat2Cols, bool stackAllocated>
+Matrix<mat1Rows, mat2Cols, stackAllocated> matrixDotProduct(
+	const Matrix<mat1Rows, mat1Cols, stackAllocated>& mat1,
+	const Matrix<mat2Rows, mat2Cols, stackAllocated>& mat2)
 {
 	static_assert( mat1Cols == mat2Rows, "mat1Cols != mat2Rows for finding matrix dot product!" );
 
-	Matrix<mat1Rows, mat2Cols> retMatrix;
+	Matrix<mat1Rows, mat2Cols, stackAllocated> retMatrix;
 
 	for ( unsigned int mat2Col = 0; mat2Col < mat2Cols; mat2Col++ )
 	{

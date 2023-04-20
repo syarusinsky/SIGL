@@ -63,7 +63,7 @@ Vector<dimensions>::Vector (const std::vector<float>& initVals) :
 {
 	for ( unsigned int pos = 0; pos < dimensions; pos++ )
 	{
-		this->m_Vals[0][pos] = initVals[pos];
+		this->m_Vals.at( pos ) = initVals[pos];
 	}
 }
 
@@ -76,13 +76,13 @@ Vector<dimensions>::Vector (const Matrix<1, dimensions>& matrix) :
 template <unsigned int dimensions>
 float& Vector<dimensions>::at (unsigned int pos)
 {
-	return this->m_Vals[0][pos];
+	return this->m_Vals.at( pos );
 }
 
 template <unsigned int dimensions>
 float Vector<dimensions>::at (unsigned int pos) const
 {
-	return this->m_Vals[0][pos];
+	return this->m_Vals.at( pos );
 }
 
 template <unsigned int dimensions>
@@ -90,7 +90,7 @@ float& Vector<dimensions>::x()
 {
 	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use x()." );
 
-	return this->m_Vals[0][0];
+	return this->m_Vals.at( 0 );
 }
 
 template <unsigned int dimensions>
@@ -98,7 +98,7 @@ float Vector<dimensions>::x() const
 {
 	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use x()." );
 
-	return this->m_Vals[0][0];
+	return this->m_Vals.at( 0 );
 }
 
 template <unsigned int dimensions>
@@ -106,7 +106,7 @@ float& Vector<dimensions>::y()
 {
 	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use y()." );
 
-	return this->m_Vals[0][1];
+	return this->m_Vals.at( 1 );
 }
 
 template <unsigned int dimensions>
@@ -114,7 +114,7 @@ float Vector<dimensions>::y() const
 {
 	static_assert( dimensions == 2 || dimensions == 3 || dimensions == 4, "Vector dimensions must be 2D, 3D, or 4D to use y()." );
 
-	return this->m_Vals[0][1];
+	return this->m_Vals.at( 1 );
 }
 
 template <unsigned int dimensions>
@@ -122,7 +122,7 @@ float& Vector<dimensions>::z()
 {
 	static_assert( dimensions == 3 || dimensions == 4, "Vector dimensions must be 3D or 4D to use z()." );
 
-	return this->m_Vals[0][2];
+	return this->m_Vals.at( 2 );
 }
 
 template <unsigned int dimensions>
@@ -130,7 +130,7 @@ float Vector<dimensions>::z() const
 {
 	static_assert( dimensions == 3 || dimensions == 4, "Vector dimensions must be 3D or 4D to use z()." );
 
-	return this->m_Vals[0][2];
+	return this->m_Vals.at( 2 );
 }
 
 template <unsigned int dimensions>
@@ -138,7 +138,7 @@ float& Vector<dimensions>::w()
 {
 	static_assert( dimensions == 4, "Vector dimensions must be 4D to use w()." );
 
-	return this->m_Vals[0][3];
+	return this->m_Vals.at( 3 );
 }
 
 template <unsigned int dimensions>
@@ -146,7 +146,7 @@ float Vector<dimensions>::w() const
 {
 	static_assert( dimensions == 4, "Vector dimensions must be 4D to use w()." );
 
-	return this->m_Vals[0][3];
+	return this->m_Vals.at( 3 );
 }
 
 template <unsigned int dimensions>
@@ -155,7 +155,7 @@ float Vector<dimensions>::length() const
 	float length = 0.0f;
 	for ( unsigned int dimension = 0; dimension < dimensions; dimension++ )
 	{
-		length += this->m_Vals[0][dimension] * this->m_Vals[0][dimension];
+		length += this->m_Vals.at( dimension ) * this->m_Vals.at( dimension );
 	}
 	length = std::sqrt( length );
 
@@ -168,7 +168,7 @@ float Vector<dimensions>::dotProduct (const Vector<dimensions>& other) const
 	float retVal = 0.0f;
 	for ( unsigned int dimension = 0; dimension < dimensions; dimension++ )
 	{
-		retVal += this->m_Vals[0][dimension] * other.m_Vals[0][dimension];
+		retVal += this->m_Vals.at( dimension ) * other.m_Vals.at( dimension );
 	}
 
 	return retVal;
@@ -180,9 +180,9 @@ Vector<dimensions> Vector<dimensions>::crossProduct (const Vector<dimensions>& o
 	static_assert( dimensions == 4, "Vector must be 4D to take cross product, at least in my dumb library" );
 
 	Vector<dimensions> crossProduct;
-	crossProduct.m_Vals[0][0] = ( this->m_Vals[0][1] * other.m_Vals[0][2] ) - ( this->m_Vals[0][2] * other.m_Vals[0][1] );
-	crossProduct.m_Vals[0][1] = ( this->m_Vals[0][2] * other.m_Vals[0][0] ) - ( this->m_Vals[0][0] * other.m_Vals[0][2] );
-	crossProduct.m_Vals[0][2] = ( this->m_Vals[0][0] * other.m_Vals[0][1] ) - ( this->m_Vals[0][1] * other.m_Vals[0][0] );
+	crossProduct.m_Vals[0][0] = ( this->m_Vals.at( 1 ) * other.m_Vals.at( 2 ) ) - ( this->m_Vals.at( 2 ) * other.m_Vals.at( 1 ) );
+	crossProduct.m_Vals[0][1] = ( this->m_Vals.at( 2 ) * other.m_Vals.at( 0 ) ) - ( this->m_Vals.at( 0 ) * other.m_Vals.at( 2 ) );
+	crossProduct.m_Vals[0][2] = ( this->m_Vals.at( 0 ) * other.m_Vals.at( 1 ) ) - ( this->m_Vals.at( 1 ) * other.m_Vals.at( 0 ) );
 	crossProduct.m_Vals[0][3] = 1.0f;
 
 	return crossProduct;
@@ -197,7 +197,7 @@ Vector<dimensions> Vector<dimensions>::normalize() const
 
 	for ( unsigned int dimension = 0; dimension < dimensions; dimension++ )
 	{
-		copy.m_Vals[0][dimension] *= oneOverLength;
+		copy.m_Vals.at( dimension ) *= oneOverLength;
 	}
 
 	return copy;
@@ -206,13 +206,13 @@ Vector<dimensions> Vector<dimensions>::normalize() const
 template <unsigned int dimensions>
 Vector<dimensions> Vector<dimensions>::operator* (const Matrix<dimensions, dimensions>& matrix) const
 {
-	Vector<4> outVec;
+	Vector<dimensions> outVec;
 
 	for ( unsigned int column = 0; column < dimensions; column++ )
 	{
 		for ( unsigned int row = 0; row < dimensions; row++ )
 		{
-			outVec.m_Vals[0][column] += ( this->m_Vals[0][row] * matrix.at(row, column) );
+			outVec.m_Vals.at( column ) += ( this->m_Vals.at( row ) * matrix.at( row, column ) );
 		}
 	}
 
