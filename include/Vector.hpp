@@ -180,10 +180,10 @@ Vector<dimensions> Vector<dimensions>::crossProduct (const Vector<dimensions>& o
 	static_assert( dimensions == 4, "Vector must be 4D to take cross product, at least in my dumb library" );
 
 	Vector<dimensions> crossProduct;
-	crossProduct.m_Vals[0][0] = ( this->m_Vals.at( 1 ) * other.m_Vals.at( 2 ) ) - ( this->m_Vals.at( 2 ) * other.m_Vals.at( 1 ) );
-	crossProduct.m_Vals[0][1] = ( this->m_Vals.at( 2 ) * other.m_Vals.at( 0 ) ) - ( this->m_Vals.at( 0 ) * other.m_Vals.at( 2 ) );
-	crossProduct.m_Vals[0][2] = ( this->m_Vals.at( 0 ) * other.m_Vals.at( 1 ) ) - ( this->m_Vals.at( 1 ) * other.m_Vals.at( 0 ) );
-	crossProduct.m_Vals[0][3] = 1.0f;
+	crossProduct.m_Vals.at( 0 ) = ( this->m_Vals.at( 1 ) * other.m_Vals.at( 2 ) ) - ( this->m_Vals.at( 2 ) * other.m_Vals.at( 1 ) );
+	crossProduct.m_Vals.at( 1 ) = ( this->m_Vals.at( 2 ) * other.m_Vals.at( 0 ) ) - ( this->m_Vals.at( 0 ) * other.m_Vals.at( 2 ) );
+	crossProduct.m_Vals.at( 2 ) = ( this->m_Vals.at( 0 ) * other.m_Vals.at( 1 ) ) - ( this->m_Vals.at( 1 ) * other.m_Vals.at( 0 ) );
+	crossProduct.m_Vals.at( 3 ) = 1.0f;
 
 	return crossProduct;
 }

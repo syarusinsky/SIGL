@@ -295,7 +295,8 @@ Matrix<rows, columns, stackAllocated> Matrix<rows, columns, stackAllocated>::ope
 		{
 			for ( unsigned int common = 0; common < columns; common++ )
 			{
-				retMatrix.m_Vals.at( (row * columns) + column ) += m_Vals.at( (row * columns) + common ) * other.m_Vals( (common * columns) + column );
+				retMatrix.m_Vals.at( (row * columns) + column ) +=
+					m_Vals.at( (row * columns) + common ) * other.m_Vals.at( (common * columns) + column );
 			}
 		}
 	}
