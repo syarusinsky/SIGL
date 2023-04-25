@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <limits>
 
+inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& x4, float& y4);
 inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3);
 inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2);
 inline void openGLOffsetVerts (float& x1, float& y1);
@@ -472,13 +473,137 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 template <typename S>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
 {
-	// TODO draw sprite
+	const Color color = m_ColorProfile.getColor();
+
+	// define vertices
+	float xPoint2 = xStart + ( sprite.getScaledWidth() * (1.0f / width) );
+	float yPoint2 = yStart;
+	float xPoint3 = xStart;
+	float yPoint3 = yStart + ( sprite.getScaledHeight() * (1.0f / height) );
+	float xEnd = xPoint2;
+	float yEnd = yPoint3;
+
+	// convert to pixel vals
+	constexpr float widthF = static_cast<float>( width );
+	constexpr float heightF = static_cast<float>( height );
+	xStart *= widthF;
+	xPoint2 *= widthF;
+	xPoint3 *= widthF;
+	xEnd *= widthF;
+	yStart *= heightF;
+	yPoint2 *= heightF;
+	yPoint3 *= heightF;
+	yEnd *= heightF;
+
+	// offset to rotation point
+	const float rotX = sprite.getRotationPointX() * sprite.getScaleFactor();
+	const float rotY = sprite.getRotationPointY() * sprite.getScaleFactor();
+	const float xOffsetToRotPoint = xStart + rotX;
+	const float yOffsetToRotPoint = yStart + rotY;
+	xStart -= xOffsetToRotPoint;
+	yStart -= yOffsetToRotPoint;
+	xPoint2 -= xOffsetToRotPoint;
+	yPoint2 -= yOffsetToRotPoint;
+	xPoint3 -= xOffsetToRotPoint;
+	yPoint3 -= yOffsetToRotPoint;
+	xEnd -= xOffsetToRotPoint;
+	yEnd -= yOffsetToRotPoint;
+
+	// variables needed for rotation
+	const float radians = ( static_cast<float>(sprite.getRotationAngle()) * M_PI ) * ( 1.0f / 180.0f );
+	const float sinVal = sin( radians );
+	const float cosVal = cos( radians );
+
+	// rotate vertices
+	float xStartRot = ( cosVal * xStart ) - ( sinVal * yStart );
+	float yStartRot = ( sinVal * xStart ) + ( cosVal * yStart );
+	float xPoint2Rot = ( cosVal * xPoint2 ) - ( sinVal * yPoint2 );
+	float yPoint2Rot = ( sinVal * xPoint2 ) + ( cosVal * yPoint2 );
+	float xPoint3Rot = ( cosVal * xPoint3 ) - ( sinVal * yPoint3 );
+	float yPoint3Rot = ( sinVal * xPoint3 ) + ( cosVal * yPoint3 );
+	float xEndRot = ( cosVal * xEnd ) - ( sinVal * yEnd );
+	float yEndRot = ( sinVal * xEnd ) + ( cosVal * yEnd );
+
+	// offset back from rotation point
+	xStart = xStartRot + xOffsetToRotPoint;
+	yStart = yStartRot + yOffsetToRotPoint;
+	xPoint2 = xPoint2Rot + xOffsetToRotPoint;
+	yPoint2 = yPoint2Rot + yOffsetToRotPoint;
+	xPoint3 = xPoint3Rot + xOffsetToRotPoint;
+	yPoint3 = yPoint3Rot + yOffsetToRotPoint;
+	xEnd = xEndRot + xOffsetToRotPoint;
+	yEnd = yEndRot + yOffsetToRotPoint;
+
+	// convert back to relative
+	constexpr float oneOverWidthF = 1.0f / widthF;
+	constexpr float oneOverHeightF = 1.0f / heightF;
+	xStart *= oneOverWidthF;
+	xPoint2 *= oneOverWidthF;
+	xPoint3 *= oneOverWidthF;
+	xEnd *= oneOverWidthF;
+	yStart *= oneOverHeightF;
+	yPoint2 *= oneOverHeightF;
+	yPoint3 *= oneOverHeightF;
+	yEnd *= oneOverHeightF;
+
+	openGLOffsetVerts( xStart, yStart, xPoint2, yPoint2, xPoint3, yPoint3, xEnd, yEnd );
+
+	const float vertices[] = {
+		xStart, yStart, 0.0f,
+		xPoint2, yPoint2, 0.0f,
+		xPoint3, yPoint3, 0.0f,
+		xPoint2, yPoint2, 0.0f,
+		xPoint3, yPoint3, 0.0f,
+		xEnd, yEnd, 0.0f
+	};
+
+	GLuint VAO;
+	glGenVertexArrays( 1, &VAO );
+	glBindVertexArray( VAO );
+
+	GLuint VBO;
+	glGenBuffers( 1, &VBO );
+	glBindBuffer( GL_ARRAY_BUFFER, VBO );
+	glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW );
+
+	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 );
+	glEnableVertexAttribArray( 0 );
+
+	glUseProgram( m_BasicColorProgram );
+
+	const float boxColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
+	glUniform4fv( glGetUniformLocation(m_BasicColorProgram, "color"), 1, &boxColor[0] );
+
+	glDrawArrays( GL_TRIANGLES, 0, sizeof(vertices) / sizeof(float) / 3 );
+
+	glDeleteVertexArrays( 1, &VAO );
+	glDeleteBuffers( 1, &VBO );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
 {
 	// TODO render depth buffer
+}
+
+inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& x4, float& y4)
+{
+	x1 *= 2.0f;
+	x2 *= 2.0f;
+	x3 *= 2.0f;
+	x4 *= 2.0f;
+	y1 *= -2.0f;
+	y2 *= -2.0f;
+	y3 *= -2.0f;
+	y4 *= -2.0f;
+	x1 -= 1.0f;
+	x2 -= 1.0f;
+	x3 -= 1.0f;
+	x4 -= 1.0f;
+	y1 += 1.0f;
+	y2 += 1.0f;
+	y3 += 1.0f;
+	y4 += 1.0f;
 }
 
 inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3)
