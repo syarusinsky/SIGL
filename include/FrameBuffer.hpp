@@ -66,6 +66,8 @@ class FrameBufferDynamic
 		unsigned int getWidth() const;
 		unsigned int getHeight() const;
 
+		uint8_t* getData() { return m_Pixels; }
+
 	protected:
 		ColorProfile<format> m_ColorProfile;
 		uint8_t*             m_Pixels;

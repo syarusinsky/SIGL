@@ -80,6 +80,7 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 
 	protected:
 		GLuint 	m_BasicColorProgram;
+		GLuint 	m_BasicSpriteProgram;
 
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
@@ -97,7 +98,8 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenGlGraphics() :
-	m_BasicColorProgram( 0 )
+	m_BasicColorProgram( 0 ),
+	m_BasicSpriteProgram( 0 )
 {
 	const char *basicColorVertexShaderSource = 	"#version 330 core\n"
 							"\n"
@@ -148,12 +150,66 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenG
 	}
 	glDeleteShader( basicColorVertexShader );
 	glDeleteShader( basicColorFragmentShader );
+
+	const char *basicSpriteVertexShaderSource = 	"#version 330 core\n"
+							"\n"
+							"layout (location = 0) in vec3 aPos;\n"
+							"layout (location = 1) in vec2 aTexCoord;\n"
+							"out vec2 TexCoord; \n"
+							"void main()\n"
+							"{\n"
+							"   gl_Position = vec4( aPos.x, aPos.y, aPos.z, 1.0 );\n"
+							"   TexCoord = aTexCoord; \n"
+							"}";
+	const char *basicSpriteFragmentShaderSource = 	"#version 330 core\n"
+							"out vec4 FragColor;\n"
+							"in vec2 TexCoord;\n"
+							"uniform sampler2D SpriteTex; \n"
+							"void main()\n"
+							"{\n"
+							"   FragColor = texture( SpriteTex, TexCoord );\n"
+							"}\n\0";
+
+	GLuint basicSpriteVertexShader = glCreateShader( GL_VERTEX_SHADER );
+	GLuint basicSpriteFragmentShader = glCreateShader( GL_FRAGMENT_SHADER );
+	glShaderSource( basicSpriteVertexShader, 1, &basicSpriteVertexShaderSource, NULL );
+	glShaderSource( basicSpriteFragmentShader, 1, &basicSpriteFragmentShaderSource, NULL );
+	glCompileShader( basicSpriteVertexShader );
+	glGetShaderiv( basicSpriteVertexShader, GL_COMPILE_STATUS, &success );
+	if ( ! success )
+	{
+		char infoLog[512];
+		glGetShaderInfoLog( basicSpriteVertexShader, 512, NULL, infoLog );
+		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+	glCompileShader( basicSpriteFragmentShader );
+	glGetShaderiv( basicSpriteFragmentShader, GL_COMPILE_STATUS, &success );
+	if ( ! success )
+	{
+		char infoLog[512];
+		glGetShaderInfoLog( basicSpriteFragmentShader, 512, NULL, infoLog );
+		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+	}
+	m_BasicSpriteProgram = glCreateProgram();
+	glAttachShader( m_BasicSpriteProgram, basicSpriteVertexShader );
+	glAttachShader( m_BasicSpriteProgram, basicSpriteFragmentShader );
+	glLinkProgram( m_BasicSpriteProgram );
+	glGetProgramiv( m_BasicSpriteProgram, GL_LINK_STATUS, &success );
+	if( ! success )
+	{
+		char infoLog[512];
+		glGetProgramInfoLog( m_BasicSpriteProgram, 512, NULL, infoLog );
+		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+	}
+	glDeleteShader( basicSpriteVertexShader );
+	glDeleteShader( basicSpriteFragmentShader );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::~OpenGlGraphics()
 {
 	glDeleteProgram( m_BasicColorProgram );
+	glDeleteProgram( m_BasicSpriteProgram );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -473,8 +529,6 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 template <typename S>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
 {
-	const Color color = m_ColorProfile.getColor();
-
 	// define vertices
 	float xPoint2 = xStart + ( sprite.getScaledWidth() * (1.0f / width) );
 	float yPoint2 = yStart;
@@ -549,14 +603,31 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	openGLOffsetVerts( xStart, yStart, xPoint2, yPoint2, xPoint3, yPoint3, xEnd, yEnd );
 
 	const float vertices[] = {
-		xStart, yStart, 0.0f,
-		xPoint2, yPoint2, 0.0f,
-		xPoint3, yPoint3, 0.0f,
-		xPoint2, yPoint2, 0.0f,
-		xPoint3, yPoint3, 0.0f,
-		xEnd, yEnd, 0.0f
+		xPoint2, yPoint2, 0.0f, 1.0f, 1.0f, 	// top right
+		xEnd, yEnd, 0.0f, 1.0f, 0.0f, 		// bottom right
+		xPoint3, yPoint3, 0.0f, 0.0f, 0.0f, 	// bottom left
+		xStart, yStart, 0.0f, 0.0f, 1.0f 	// top left
 	};
 
+	const unsigned int indices[] = {
+		0, 1, 3,
+		1, 2, 3
+	};
+
+	// generate texture TODO should really be doing this in the sprite class itself
+	GLuint texture;
+	glGenTextures( 1, &texture );
+	glActiveTexture( GL_TEXTURE0 );
+	glBindTexture( GL_TEXTURE_2D, texture );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+	glTexParameteri( GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+	// TODO need to compensate for color format
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, sprite.getWidth(), sprite.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, sprite.getData() );
+
+	// draw the sprite TODO should this also be done in the sprite class?
 	GLuint VAO;
 	glGenVertexArrays( 1, &VAO );
 	glBindVertexArray( VAO );
@@ -566,18 +637,32 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	glBindBuffer( GL_ARRAY_BUFFER, VBO );
 	glBufferData( GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW );
 
-	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0 );
+	GLuint EBO;
+	glGenBuffers( 1, &EBO );
+	glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, EBO );
+	glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW );
+
+	glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0 );
 	glEnableVertexAttribArray( 0 );
+	glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)) );
+	glEnableVertexAttribArray( 1 );
 
-	glUseProgram( m_BasicColorProgram );
+	glUseProgram( m_BasicSpriteProgram );
 
-	const float boxColor[] = { color.m_R, color.m_G, color.m_B, color.m_A };
-	glUniform4fv( glGetUniformLocation(m_BasicColorProgram, "color"), 1, &boxColor[0] );
+	GLuint textureLocation = glGetUniformLocation( m_BasicSpriteProgram, "SpriteTex" );
+	glUniform1i( textureLocation, 0 );
 
-	glDrawArrays( GL_TRIANGLES, 0, sizeof(vertices) / sizeof(float) / 3 );
+	glActiveTexture( GL_TEXTURE0 );
+	glBindTexture( GL_TEXTURE_2D, texture );
+
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+	glDrawElements( GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0 );
 
 	glDeleteVertexArrays( 1, &VAO );
 	glDeleteBuffers( 1, &VBO );
+	glDeleteBuffers( 1, &EBO );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
