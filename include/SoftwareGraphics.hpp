@@ -160,118 +160,113 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	// clip line and return if line is off screen
 	if ( !IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine( &xStart, &yStart, &xEnd, &yEnd ) ) return;
 
-	unsigned int xStartUInt = xStart * (width  - 1);
-	unsigned int yStartUInt = yStart * (height - 1);
-	unsigned int xEndUInt   = xEnd   * (width  - 1);
-	unsigned int yEndUInt   = yEnd   * (height - 1);
+	const unsigned int xStartUInt = std::ceil( xStart * (width  - 1) );
+	const unsigned int yStartUInt = std::ceil( yStart * (height - 1) );
+	const unsigned int xEndUInt   = std::ceil( xEnd   * (width  - 1) );
+	const unsigned int yEndUInt   = std::ceil( yEnd   * (height - 1) );
 
-	float slope = ((float) yEndUInt - yStartUInt) / ((float)xEndUInt - xStartUInt);
+	const float slope = ((float) yEndUInt - yStartUInt) / ((float)xEndUInt - xStartUInt);
 
 	unsigned int pixelStart = ( (width * yStartUInt) + xStartUInt );
 	unsigned int pixelEnd   = ( (width * yEndUInt  ) + xEndUInt   );
 
-	if (pixelStart > pixelEnd)
+	if ( pixelStart > pixelEnd )
 	{
 		// swap
-		unsigned int temp = pixelStart;
+		const unsigned int temp = pixelStart;
 		pixelStart = pixelEnd;
 		pixelEnd   = temp;
 	}
 
 	unsigned int pixel = pixelStart;
-	float xAccumulator = slope;
-	float yAccumulator = slope;
+	float yAccumulator = 0.0f;
 
-	if (slope >= 0.0f)
+	if ( xStartUInt == xEndUInt ) // vertical line
 	{
-		while (pixel <= pixelEnd)
+		while ( pixel <= pixelEnd )
 		{
-			// x stride
-			if (std::isinf(slope)) // don't stride along the x-axis at all
-			{
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-			}
-			else if (slope < 1.0f) // stride along x-axis across multiple pixels
-			{
-				while (xAccumulator < 1.0f && pixel <= pixelEnd)
-				{
-					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-
-					xAccumulator += slope;
-					pixel += 1;
-				}
-				xAccumulator = xAccumulator - 1.0f;
-			}
-			else // stride along x-axis by one pixel
-			{
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-
-				pixel += 1;
-			}
-
-			// y stride
-			if (slope >= 1.0f) // stride along the y-axis across multiple pixels
-			{
-				while (yAccumulator >= 1.0f && pixel <= pixelEnd)
-				{
-					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-
-					yAccumulator -= 1.0f;
-					pixel += width;
-				}
-				yAccumulator += slope;
-			}
-			else // stride along the y-axis by one pixel
-			{
-				pixel += width;
-			}
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
+			pixel += width;
 		}
 	}
-	else // slope is less than 0.0f
+	else if ( yStartUInt == yEndUInt ) // horizontal line
 	{
-		while (pixel < pixelEnd)
+		while ( pixel <= pixelEnd )
 		{
-			// x stride
-			if (std::isinf(slope)) // don't stride along the x-axis at all
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
+			pixel += 1;
+		}
+	}
+	else if ( slope > 0.0f && slope <= 1.0f )
+	{
+		while ( pixel <= pixelEnd )
+		{
+			// stride x axis
+			while ( yAccumulator < 1.0f && pixel <= pixelEnd )
 			{
 				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-			}
-			else if (slope > -1.0f) // stride along x-axis across multiple pixels
-			{
-				while (xAccumulator > -1.0f && pixel <= pixelEnd)
-				{
-					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
+				pixel += 1;
 
-					xAccumulator += slope;
-					pixel -= 1;
-				}
-				xAccumulator = xAccumulator + 1.0f;
-			}
-			else // stride along x-axis by one pixel
-			{
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-
-				pixel -= 1;
-			}
-
-			// y stride
-			if (slope <= -1.0f) // stride along the y-axis across multiple pixels
-			{
-				while (yAccumulator <= 1.0f && pixel <= pixelEnd)
-				{
-					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-
-					yAccumulator += 1.0f;
-					pixel += width;
-				}
 				yAccumulator += slope;
 			}
-			else // stride along the y-axis by one pixel
+
+			pixel += width;
+			yAccumulator = std::fmod( yAccumulator, 1.0f );
+		}
+	}
+	else if ( slope < 0.0f && slope >= -1.0f )
+	{
+		while ( pixel <= pixelEnd )
+		{
+			// stride x axis
+			while ( yAccumulator < 1.0f && pixel <= pixelEnd )
 			{
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
+				pixel -= 1;
+
+				yAccumulator -= slope;
+			}
+
+			pixel += width;
+			yAccumulator = std::fmod( yAccumulator, 1.0f );
+		}
+	}
+	else if ( slope > 1.0f )
+	{
+		yAccumulator = slope;
+
+		// stride y axis
+		while ( pixel <= pixelEnd )
+		{
+			while ( yAccumulator >= 1.0f && pixel <= pixelEnd )
+			{
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 				pixel += width;
 
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
+				yAccumulator -= 1.0f;
 			}
+
+			pixel += 1;
+			yAccumulator += slope;
+		}
+	}
+	else if ( slope < -1.0f )
+	{
+		yAccumulator = slope;
+
+		// stride y axis
+		while ( pixel <= pixelEnd )
+		{
+			while ( yAccumulator <= -1.0f && pixel <= pixelEnd )
+			{
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
+				pixel += width;
+
+				yAccumulator += 1.0f;
+			}
+
+			pixel -= 1;
+			yAccumulator += slope;
 		}
 	}
 }

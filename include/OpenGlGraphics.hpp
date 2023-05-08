@@ -266,6 +266,25 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	const Color color = m_ColorProfile.getColor();
 
 	openGLOffsetVerts( xStart, yStart, xEnd, yEnd );
+
+	// offset so that 0.0f on the x axis and 1.0f on the y axis are still drawn
+	if ( xStart == -1.0f )
+	{
+		xStart += 0.00001f;
+	}
+	if ( xEnd == -1.0f )
+	{
+		xEnd += 0.00001f;
+	}
+	if ( yStart == -1.0f )
+	{
+		yStart += 0.00001f;
+	}
+	if ( yEnd == -1.0f )
+	{
+		yEnd += 0.00001f;
+	}
+
 	const float vertices[] = { xStart, yStart, 0.0f, xEnd, yEnd, 0.0f };
 
 	GLuint VAO;
