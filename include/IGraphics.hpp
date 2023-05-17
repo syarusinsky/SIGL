@@ -122,6 +122,9 @@ class IGraphics : public std::conditional<include3D, IGraphics3D<width, height, 
 		Font* 						m_CurrentFont;
 
 		// helpers
+		static inline float clip (float x, float min, float max); // hard clips x to min and max
+		static inline float lerp (float t, float a, float b); // linearly interpolates between a and b based on t
+		static inline float percentageBetween (float x, float a, float b); // the percentage of x between a and b clipped at 0 and 1
 		static inline bool clipLine (float* xStart, float* yStart, float* xEnd, float* yEnd); // returns false if line is rejected
 
 		IGraphics() :
@@ -138,6 +141,27 @@ template <unsigned int width, unsigned int height, unsigned int shaderPassDataSi
 void IGraphics3D<width, height, shaderPassDataSize>::clearDepthBuffer()
 {
 	std::fill( std::begin(m_DepthBuffer), std::end(m_DepthBuffer), std::numeric_limits<float>::max() );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+inline float IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip (float x, float min, float max)
+{
+	// TODO revisit whether it's worth it to have this clipping branchless
+	return std::clamp( x, min, max );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+inline float IGraphics<width, height, format, api, include3D, shaderPassDataSize>::lerp (float t, float a, float b)
+{
+	return  a + ( t * (b - a) );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+inline float IGraphics<width, height, format, api, include3D, shaderPassDataSize>::percentageBetween (float x, float a, float b)
+{
+	const float percentage = ( x - a ) / ( b - a );
+
+	return percentage;
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>

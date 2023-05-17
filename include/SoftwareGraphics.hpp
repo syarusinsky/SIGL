@@ -48,6 +48,10 @@ class SoftwareGraphics3D : public IGraphics<width, height, format, api, include3
 			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
 
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::lerp;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::percentageBetween;
+
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
 		using IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer;
 		using IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData;
@@ -86,6 +90,11 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
 
 	protected:
+		// assumes this line is clipped by the clipEdge
+		inline void computeIntersection (const float clipEdge, bool horizontal, const float tempX1, const float tempY1,
+						const float tempX2, const float tempY2, float& intersectionX, float& intersectionY);
+
+		void drawTriangleFilledHelper (float x1, float y1, float x2, float y2, float x3, float y3);
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
 		template <typename S>
 		void drawSpriteHelper (float xStart, float yStart, S& sprite);
@@ -95,6 +104,10 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 
 		void startFrame() override;
 		void endFrame() override;
+
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::lerp;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::percentageBetween;
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont;
@@ -329,17 +342,18 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	drawLine( x3, y3, x1, y1 );
 }
 
+
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3,
-			float y3)
+void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilledHelper (float x1, float y1, float x2, float y2,
+													float x3, float y3)
 {
 	// getting the pixel values of the vertices
-	int x1UInt = x1 * (width  - 1);
-	int y1UInt = y1 * (height - 1);
-	int x2UInt = x2 * (width  - 1);
-	int y2UInt = y2 * (height - 1);
-	int x3UInt = x3 * (width  - 1);
-	int y3UInt = y3 * (height - 1);
+	const int x1UInt = x1 * ( width  - 1 );
+	const int y1UInt = y1 * ( height - 1 );
+	const int x2UInt = x2 * ( width  - 1 );
+	const int y2UInt = y2 * ( height - 1 );
+	const int x3UInt = x3 * ( width  - 1 );
+	const int y3UInt = y3 * ( height - 1 );
 
 	int x1Sorted = x1UInt;
 	int y1Sorted = y1UInt;
@@ -347,12 +361,12 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	int y2Sorted = y2UInt;
 	int x3Sorted = x3UInt;
 	int y3Sorted = y3UInt;
-	float x1FSorted = x1;
-	float y1FSorted = y1;
-	float x2FSorted = x2;
-	float y2FSorted = y2;
-	float x3FSorted = x3;
-	float y3FSorted = y3;
+	float x1FSorted = static_cast<float>( x1UInt );
+	float y1FSorted = static_cast<float>( y1UInt );
+	float x2FSorted = static_cast<float>( x2UInt );
+	float y2FSorted = static_cast<float>( y2UInt );
+	float x3FSorted = static_cast<float>( x3UInt );
+	float y3FSorted = static_cast<float>( y3UInt );
 
 	// sorting vertices
 	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted,
@@ -360,13 +374,13 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 				x3Sorted, y3Sorted, x3FSorted, y3FSorted );
 
 	// getting the slope of each line
-	float line1Slope = ((float) y2Sorted - y1Sorted) / ((float) x2Sorted - x1Sorted);
-	float line2Slope = ((float) y3Sorted - y1Sorted) / ((float) x3Sorted - x1Sorted);
-	float line3Slope = ((float) y3Sorted - y2Sorted) / ((float) x3Sorted - x2Sorted);
+	const float line1Slope = ( y2FSorted - y1FSorted ) / ( x2FSorted - x1FSorted );
+	const float line2Slope = ( y3FSorted - y1FSorted ) / ( x3FSorted - x1FSorted );
+	const float line3Slope = ( y3FSorted - y2FSorted ) / ( x3FSorted - x2FSorted );
 
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
-	float xLeftAccumulator  = (float) x1Sorted;
-	float xRightAccumulator = (float) x1Sorted;
+	float xLeftAccumulator  = x1FSorted;
+	float xRightAccumulator = x1FSorted;
 
 	// floats for incrementing xLeftAccumulator and xRightAccumulator
 	float xLeftIncrTop     = 1.0f / line1Slope;
@@ -375,7 +389,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	float xRightIncrBottom = 1.0f / line2Slope;
 
 	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
-	bool needsSwapping = (xLeftIncrBottom < xRightIncrBottom);
+	const bool needsSwapping = ( xLeftIncrBottom < xRightIncrBottom );
 
 	// depending on the position of the vertices, we need to swap increments
 	if ( (needsSwapping && x1Sorted < x2Sorted) || (needsSwapping && x1Sorted >= x2Sorted && x2Sorted > x3Sorted) )
@@ -390,9 +404,9 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	}
 
 	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
-	if ( line1Slope == 0.0f || isnan(line1Slope) )
+	if ( line1Slope == 0.0f )
 	{
-		xRightAccumulator = (float) x2Sorted;
+		xRightAccumulator = x2FSorted;
 
 		// fill row to x2, y2
 		float tempX1 = x1FSorted;
@@ -405,91 +419,58 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		{
 			tempX2 = x3FSorted;
 			tempY2 = y3FSorted;
-			xRightAccumulator = (float) x3Sorted;
+			xRightAccumulator = x3FSorted;
 		}
 
-		// if after clipping this line exists within the screen, render the line
-		if ( IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clipLine(&tempX1, &tempY1, &tempX2, &tempY2) )
+		const unsigned int tempX1Int = tempX1;
+		const unsigned int tempY1Int = tempY1;
+		const unsigned int tempX2Int = tempX2;
+		const unsigned int tempY2Int = tempY2;
+
+		const unsigned int tempXY1 = ( (tempY1Int * width) + tempX1Int );
+		const unsigned int tempXY2 = ( (tempY2Int * width) + tempX2Int );
+
+		for ( unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1 )
 		{
-			int tempX1Int = tempX1 * (width  - 1);
-			int tempY1Int = tempY1 * (height - 1);
-			int tempX2Int = tempX2 * (width  - 1);
-			int tempY2Int = tempY2 * (height - 1);
-
-			const int tempXY1 = ( (tempY1Int * width) + tempX1Int );
-			const int tempXY2 = ( (tempY2Int * width) + tempX2Int );
-
-			for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
-			{
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-			}
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 		}
 	}
 	else
 	{
 		// render up until the second vertice
-		for (int row = y1Sorted; row <= y2Sorted; row++)
+		for ( int row = y1Sorted; row <= y2Sorted; row++ )
 		{
-			// clip vertically if row is off screen
-			if (row >= (int)height)
+			// rounding the points and clipping horizontally
+			const unsigned int leftX  = xLeftAccumulator;
+			const unsigned int rightX = xRightAccumulator;
+
+			const unsigned int tempXY1 = ( (row * width) + leftX  );
+			const unsigned int tempXY2 = ( (row * width) + rightX );
+
+			for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 			{
-				break;
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 			}
-			else if (row >= 0)
-			{
-				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)width - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)width - 1), 0 );
 
-				unsigned int tempXY1 = ( (row * width) + leftX  );
-				unsigned int tempXY2 = ( (row * width) + rightX );
-
-				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
-				{
-					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-				}
-
-				// increment accumulators
-				xLeftAccumulator  += xLeftIncrTop;
-				xRightAccumulator += xRightIncrTop;
-
-				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
-				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
-				{
-					xLeftAccumulator = x2Sorted;
-
-					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
-					{
-						xRightAccumulator = x3Sorted;
-					}
-				}
-				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
-				{
-					xRightAccumulator = x2Sorted;
-				}
-			}
-			else // even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
-			{
-				// increment accumulators
-				xLeftAccumulator  += xLeftIncrTop;
-				xRightAccumulator += xRightIncrTop;
-
-				// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
-				if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
-				{
-					xLeftAccumulator = x2Sorted;
-
-					if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
-					{
-						xRightAccumulator = x3Sorted;
-					}
-				}
-				else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
-				{
-					xRightAccumulator = x2Sorted;
-				}
-			}
+			// increment accumulators
+			xLeftAccumulator  += xLeftIncrTop;
+			xRightAccumulator += xRightIncrTop;
 		}
+	}
+
+	// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
+	if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
+	{
+		xLeftAccumulator = x2Sorted;
+
+		if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
+		{
+			xRightAccumulator = x3Sorted;
+		}
+	}
+	else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
+	{
+		xRightAccumulator = x2Sorted;
 	}
 
 	// rasterize up until the last vertice
@@ -497,29 +478,152 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	{
 		for (int row = y2Sorted + 1; row <= y3Sorted; row++)
 		{
-			// clip vertically if row is off screen
-			if (row >= (int)height)
+			// rounding the points and clipping horizontally
+			const unsigned int leftX  = xLeftAccumulator;
+			const unsigned int rightX = xRightAccumulator;
+
+			const unsigned int tempXY1 = ( (row * width) + leftX  );
+			const unsigned int tempXY2 = ( (row * width) + rightX );
+
+			for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 			{
-				break;
+				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 			}
-			else if ( row >= 0 )
+
+			// increment accumulators
+			xLeftAccumulator  += xLeftIncrBottom;
+			xRightAccumulator += xRightIncrBottom;
+		}
+	}
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+inline void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::computeIntersection(
+		const float clipEdge, bool horizontal, const float tempX1, const float tempY1,
+		const float tempX2, const float tempY2, float& intersectionX, float& intersectionY )
+{
+	if ( horizontal )
+	{
+		const float perc = percentageBetween( clipEdge, tempX1, tempX2 );
+		const float lerpedY = lerp( perc, tempY1, tempY2 );
+
+		intersectionX = clipEdge;
+		intersectionY = lerpedY;
+	}
+	else // vertical
+	{
+		const float perc = percentageBetween( clipEdge, tempY1, tempY2 );
+		const float lerpedX = lerp( perc, tempX1, tempX2 );
+
+		intersectionX = lerpedX;
+		intersectionY = clipEdge;
+	}
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2,
+													float x3, float y3)
+{
+	float vertXArr[3] = { x1, x2, x3 };
+	float vertYArr[3] = { y1, y2, y3 };
+	// TODO replace these vectors with stack based lists
+	std::vector<std::pair<float, float>> outVertices;
+	for ( unsigned int vertNum = 0; vertNum < 3; vertNum++ )
+	{
+		outVertices.emplace_back( vertXArr[vertNum], vertYArr[vertNum] );
+	}
+
+	// clip triangle into sub-triangles
+	const float clipEdges[2] = { 0.0f, 1.0f };
+	for ( unsigned int edgeNum = 0; edgeNum < 2; edgeNum++ )
+	{
+		// clip x
+		std::vector<std::pair<float, float>> newVertices = outVertices;
+		outVertices.clear();
+
+		for ( unsigned int vertNum = 0; vertNum < newVertices.size(); vertNum++ )
+		{
+			const float tempX1 = newVertices[vertNum].first;
+			const float tempY1 = newVertices[vertNum].second;
+			const float tempX2 = newVertices[(vertNum + 1) % newVertices.size()].first;
+			const float tempY2 = newVertices[(vertNum + 1) % newVertices.size()].second;
+
+			const bool tempX1Inside = ( edgeNum == 0 ) ? tempX1 >= 0.0f : tempX1 <= 1.0f;
+			const bool tempX2Inside = ( edgeNum == 0 ) ? tempX2 >= 0.0f : tempX2 <= 1.0f;
+			if ( tempX2Inside )
 			{
-				// rounding the points and clipping horizontally
-				unsigned int leftX  = std::min( std::max((int)std::round(xLeftAccumulator), 0), (int)width - 1 );
-				unsigned int rightX = std::max( std::min((int)std::round(xRightAccumulator), (int)width - 1), 0 );
-
-				unsigned int tempXY1 = ( (row * width) + leftX  );
-				unsigned int tempXY2 = ( (row * width) + rightX );
-
-				for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
+				if ( ! tempX1Inside )
 				{
-					m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
+					// add intersection
+					float intersectionX;
+					float intersectionY;
+					computeIntersection( clipEdges[edgeNum], true, tempX1, tempY1, tempX2, tempY2,
+								intersectionX, intersectionY );
+					outVertices.emplace_back( intersectionX, intersectionY );
 				}
 
-				// increment accumulators
-				xLeftAccumulator  += xLeftIncrBottom;
-				xRightAccumulator += xRightIncrBottom;
+				outVertices.emplace_back( tempX2, tempY2 );
 			}
+			else if ( tempX1Inside )
+			{
+				// add intersection
+				float intersectionX;
+				float intersectionY;
+				computeIntersection( clipEdges[edgeNum], true, tempX1, tempY1, tempX2, tempY2, intersectionX, intersectionY );
+				outVertices.emplace_back( intersectionX, intersectionY );
+			}
+		}
+
+		// clip y
+		newVertices = outVertices;
+		outVertices.clear();
+
+		for ( unsigned int vertNum = 0; vertNum < newVertices.size(); vertNum++ )
+		{
+			const float tempX1 = newVertices[vertNum].first;
+			const float tempY1 = newVertices[vertNum].second;
+			const float tempX2 = newVertices[(vertNum + 1) % newVertices.size()].first;
+			const float tempY2 = newVertices[(vertNum + 1) % newVertices.size()].second;
+
+			const bool tempY1Inside = ( edgeNum == 0 ) ? tempY1 >= 0.0f : tempY1 <= 1.0f;
+			const bool tempY2Inside = ( edgeNum == 0 ) ? tempY2 >= 0.0f : tempY2 <= 1.0f;
+			if ( tempY2Inside )
+			{
+				if ( ! tempY1Inside )
+				{
+					// add intersection
+					float intersectionX;
+					float intersectionY;
+					computeIntersection( clipEdges[edgeNum], false, tempX1, tempY1, tempX2, tempY2,
+								intersectionX, intersectionY );
+					outVertices.emplace_back( intersectionX, intersectionY );
+				}
+
+				outVertices.emplace_back( tempX2, tempY2 );
+			}
+			else if ( tempY1Inside )
+			{
+				// add intersection
+				float intersectionX;
+				float intersectionY;
+				computeIntersection( clipEdges[edgeNum], false, tempX1, tempY1, tempX2, tempY2, intersectionX, intersectionY );
+				outVertices.emplace_back( intersectionX, intersectionY );
+			}
+		}
+	}
+
+	if ( outVertices.size() > 2 )
+	{
+		for ( unsigned int vertNum = 1; vertNum < outVertices.size() - 1; vertNum++ )
+		{
+			const float newX1 = outVertices[0].first;
+			const float newY1 = outVertices[0].second;
+			const float newX2 = outVertices[vertNum].first;
+			const float newY2 = outVertices[vertNum].second;
+			const float newX3 = outVertices[vertNum + 1].first;
+			const float newY3 = outVertices[vertNum + 1].second;
+
+			drawTriangleFilledHelper( newX1, newY1, newX2, newY2,newX3, newY3 );
 		}
 	}
 }
