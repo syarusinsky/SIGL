@@ -48,6 +48,7 @@ class SoftwareGraphics3D : public IGraphics<width, height, format, api, include3
 			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
 
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::approxEqual;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::lerp;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::percentageBetween;
@@ -105,6 +106,7 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		void startFrame() override;
 		void endFrame() override;
 
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::approxEqual;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::lerp;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::percentageBetween;
@@ -348,12 +350,12 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 													float x3, float y3)
 {
 	// getting the pixel values of the vertices
-	const int x1UInt = x1 * ( width  - 1 );
-	const int y1UInt = y1 * ( height - 1 );
-	const int x2UInt = x2 * ( width  - 1 );
-	const int y2UInt = y2 * ( height - 1 );
-	const int x3UInt = x3 * ( width  - 1 );
-	const int y3UInt = y3 * ( height - 1 );
+	const int x1UInt = std::ceil( x1 * (width  - 1) );
+	const int y1UInt = std::ceil( y1 * (height - 1) );
+	const int x2UInt = std::ceil( x2 * (width  - 1) );
+	const int y2UInt = std::ceil( y2 * (height - 1) );
+	const int x3UInt = std::ceil( x3 * (width  - 1) );
+	const int y3UInt = std::ceil( y3 * (height - 1) );
 
 	int x1Sorted = x1UInt;
 	int y1Sorted = y1UInt;
@@ -373,20 +375,15 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 				x2Sorted, y2Sorted, x2FSorted, y2FSorted,
 				x3Sorted, y3Sorted, x3FSorted, y3FSorted );
 
-	// getting the slope of each line
-	const float line1Slope = ( y2FSorted - y1FSorted ) / ( x2FSorted - x1FSorted );
-	const float line2Slope = ( y3FSorted - y1FSorted ) / ( x3FSorted - x1FSorted );
-	const float line3Slope = ( y3FSorted - y2FSorted ) / ( x3FSorted - x2FSorted );
-
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
 	float xLeftAccumulator  = x1FSorted;
 	float xRightAccumulator = x1FSorted;
 
 	// floats for incrementing xLeftAccumulator and xRightAccumulator
-	float xLeftIncrTop     = 1.0f / line1Slope;
-	float xRightIncrTop    = 1.0f / line2Slope;
-	float xLeftIncrBottom  = 1.0f / line3Slope;
-	float xRightIncrBottom = 1.0f / line2Slope;
+	float xLeftIncrTop     = ( x2FSorted - x1FSorted ) / ( y2FSorted - y1FSorted );
+	float xRightIncrTop    = ( x3FSorted - x1FSorted ) / ( y3FSorted - y1FSorted );
+	float xLeftIncrBottom  = ( x3FSorted - x2FSorted ) / ( y3FSorted - y2FSorted );
+	float xRightIncrBottom = ( x3FSorted - x1FSorted ) / ( y3FSorted - y1FSorted );
 
 	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
 	const bool needsSwapping = ( xLeftIncrBottom < xRightIncrBottom );
@@ -403,97 +400,71 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		xRightIncrBottom = tempIncr;
 	}
 
-	// if slope is zero, the top of the triangle is a horizontal line so fill the row to x2, y2 and skip for loop
-	if ( line1Slope == 0.0f )
+	if ( y1Sorted == y2Sorted == y3Sorted ) // if this 'triangle' is just a straight line
+	{
+		xRightAccumulator = x3FSorted;
+	}
+	else if ( y1Sorted == y2Sorted ) // if this triangle has a flat top
 	{
 		xRightAccumulator = x2FSorted;
+	}
 
-		// fill row to x2, y2
-		float tempX1 = x1FSorted;
-		float tempY1 = y1FSorted;
-		float tempX2 = x2FSorted;
-		float tempY2 = y2FSorted;
+	// render top half triangle scanlines
+	for ( unsigned int row = y1Sorted; row < y2Sorted; row++ )
+	{
+		const unsigned int leftX  = xLeftAccumulator;
+		const unsigned int rightX = xRightAccumulator;
 
-		// if this 'triangle' is essentially just a straight line
-		if ( y2FSorted == y3FSorted )
-		{
-			tempX2 = x3FSorted;
-			tempY2 = y3FSorted;
-			xRightAccumulator = x3FSorted;
-		}
+		const unsigned int tempXY1 = ( (row * width) + leftX  );
+		const unsigned int tempXY2 = ( (row * width) + rightX );
 
-		const unsigned int tempX1Int = tempX1;
-		const unsigned int tempY1Int = tempY1;
-		const unsigned int tempX2Int = tempX2;
-		const unsigned int tempY2Int = tempY2;
-
-		const unsigned int tempXY1 = ( (tempY1Int * width) + tempX1Int );
-		const unsigned int tempXY2 = ( (tempY2Int * width) + tempX2Int );
-
-		for ( unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1 )
+		for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 		{
 			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 		}
-	}
-	else
-	{
-		// render up until the second vertice
-		for ( int row = y1Sorted; row <= y2Sorted; row++ )
-		{
-			// rounding the points and clipping horizontally
-			const unsigned int leftX  = xLeftAccumulator;
-			const unsigned int rightX = xRightAccumulator;
 
-			const unsigned int tempXY1 = ( (row * width) + leftX  );
-			const unsigned int tempXY2 = ( (row * width) + rightX );
-
-			for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
-			{
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-			}
-
-			// increment accumulators
-			xLeftAccumulator  += xLeftIncrTop;
-			xRightAccumulator += xRightIncrTop;
-		}
+		// increment accumulators
+		xLeftAccumulator  += xLeftIncrTop;
+		xRightAccumulator += xRightIncrTop;
 	}
 
+	// TODO see in the near future if this is going to mess things up for shaded triangle gradients
 	// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
 	if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
 	{
-		xLeftAccumulator = x2Sorted;
+		xLeftAccumulator = x2FSorted;
 
 		if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
 		{
-			xRightAccumulator = x3Sorted;
+			xRightAccumulator = x3FSorted;
 		}
 	}
 	else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
 	{
-		xRightAccumulator = x2Sorted;
+		xRightAccumulator = x2FSorted;
+	}
+	else
+	{
+		xRightAccumulator = std::ceil( xRightAccumulator );
 	}
 
-	// rasterize up until the last vertice
-	if (y2Sorted != y3Sorted) // if the bottom of the triangle isn't a horizontal line
+	// render bottom half triangle scanlines
+	for (int row = y2Sorted; row <= y3Sorted; row++)
 	{
-		for (int row = y2Sorted + 1; row <= y3Sorted; row++)
+		const unsigned int leftX  = xLeftAccumulator;
+		const unsigned int rightX = xRightAccumulator;
+
+		const unsigned int tempXY1 = ( (row * width) + leftX  );
+		const unsigned int tempXY2 = ( (row * width) + rightX );
+
+		for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
 		{
-			// rounding the points and clipping horizontally
-			const unsigned int leftX  = xLeftAccumulator;
-			const unsigned int rightX = xRightAccumulator;
-
-			const unsigned int tempXY1 = ( (row * width) + leftX  );
-			const unsigned int tempXY2 = ( (row * width) + rightX );
-
-			for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
-			{
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-			}
-
-			// increment accumulators
-			xLeftAccumulator  += xLeftIncrBottom;
-			xRightAccumulator += xRightIncrBottom;
+			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 		}
+
+		// increment accumulators
+		xLeftAccumulator  += xLeftIncrBottom;
+		xRightAccumulator += xRightIncrBottom;
 	}
 }
 
@@ -524,29 +495,26 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2,
 													float x3, float y3)
 {
-	float vertXArr[3] = { x1, x2, x3 };
-	float vertYArr[3] = { y1, y2, y3 };
-	// TODO replace these vectors with stack based lists
-	std::vector<std::pair<float, float>> outVertices;
-	for ( unsigned int vertNum = 0; vertNum < 3; vertNum++ )
-	{
-		outVertices.emplace_back( vertXArr[vertNum], vertYArr[vertNum] );
-	}
+	constexpr unsigned int maxPossibleVerts = 6;
+	std::pair<float, float> outVertices[maxPossibleVerts] = { {x1, y1}, {x2, y2}, {x3, y3}, {0.0f, 0.0f}, {0.0f, 0.0f}, {0.0f, 0.0f} };
+	unsigned int outVerticesSize = 3;
 
 	// clip triangle into sub-triangles
 	const float clipEdges[2] = { 0.0f, 1.0f };
 	for ( unsigned int edgeNum = 0; edgeNum < 2; edgeNum++ )
 	{
 		// clip x
-		std::vector<std::pair<float, float>> newVertices = outVertices;
-		outVertices.clear();
+		std::pair<float, float> newVertices[maxPossibleVerts];
+		unsigned int newVerticesSize = outVerticesSize;
+		std::copy( std::begin(outVertices), std::end(outVertices), std::begin(newVertices) );
+		outVerticesSize = 0;
 
-		for ( unsigned int vertNum = 0; vertNum < newVertices.size(); vertNum++ )
+		for ( unsigned int vertNum = 0; vertNum < newVerticesSize; vertNum++ )
 		{
 			const float tempX1 = newVertices[vertNum].first;
 			const float tempY1 = newVertices[vertNum].second;
-			const float tempX2 = newVertices[(vertNum + 1) % newVertices.size()].first;
-			const float tempY2 = newVertices[(vertNum + 1) % newVertices.size()].second;
+			const float tempX2 = newVertices[(vertNum + 1) % newVerticesSize].first;
+			const float tempY2 = newVertices[(vertNum + 1) % newVerticesSize].second;
 
 			const bool tempX1Inside = ( edgeNum == 0 ) ? tempX1 >= 0.0f : tempX1 <= 1.0f;
 			const bool tempX2Inside = ( edgeNum == 0 ) ? tempX2 >= 0.0f : tempX2 <= 1.0f;
@@ -559,10 +527,14 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 					float intersectionY;
 					computeIntersection( clipEdges[edgeNum], true, tempX1, tempY1, tempX2, tempY2,
 								intersectionX, intersectionY );
-					outVertices.emplace_back( intersectionX, intersectionY );
+					outVertices[outVerticesSize].first = intersectionX;
+					outVertices[outVerticesSize].second = intersectionY;
+					outVerticesSize++;
 				}
 
-				outVertices.emplace_back( tempX2, tempY2 );
+				outVertices[outVerticesSize].first = tempX2;
+				outVertices[outVerticesSize].second = tempY2;
+				outVerticesSize++;
 			}
 			else if ( tempX1Inside )
 			{
@@ -570,20 +542,23 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 				float intersectionX;
 				float intersectionY;
 				computeIntersection( clipEdges[edgeNum], true, tempX1, tempY1, tempX2, tempY2, intersectionX, intersectionY );
-				outVertices.emplace_back( intersectionX, intersectionY );
+				outVertices[outVerticesSize].first = intersectionX;
+				outVertices[outVerticesSize].second = intersectionY;
+				outVerticesSize++;
 			}
 		}
 
 		// clip y
-		newVertices = outVertices;
-		outVertices.clear();
+		newVerticesSize = outVerticesSize;
+		std::copy( std::begin(outVertices), std::end(outVertices), std::begin(newVertices) );
+		outVerticesSize = 0;
 
-		for ( unsigned int vertNum = 0; vertNum < newVertices.size(); vertNum++ )
+		for ( unsigned int vertNum = 0; vertNum < newVerticesSize; vertNum++ )
 		{
 			const float tempX1 = newVertices[vertNum].first;
 			const float tempY1 = newVertices[vertNum].second;
-			const float tempX2 = newVertices[(vertNum + 1) % newVertices.size()].first;
-			const float tempY2 = newVertices[(vertNum + 1) % newVertices.size()].second;
+			const float tempX2 = newVertices[(vertNum + 1) % newVerticesSize].first;
+			const float tempY2 = newVertices[(vertNum + 1) % newVerticesSize].second;
 
 			const bool tempY1Inside = ( edgeNum == 0 ) ? tempY1 >= 0.0f : tempY1 <= 1.0f;
 			const bool tempY2Inside = ( edgeNum == 0 ) ? tempY2 >= 0.0f : tempY2 <= 1.0f;
@@ -596,10 +571,14 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 					float intersectionY;
 					computeIntersection( clipEdges[edgeNum], false, tempX1, tempY1, tempX2, tempY2,
 								intersectionX, intersectionY );
-					outVertices.emplace_back( intersectionX, intersectionY );
+					outVertices[outVerticesSize].first = intersectionX;
+					outVertices[outVerticesSize].second = intersectionY;
+					outVerticesSize++;
 				}
 
-				outVertices.emplace_back( tempX2, tempY2 );
+				outVertices[outVerticesSize].first = tempX2;
+				outVertices[outVerticesSize].second = tempY2;
+				outVerticesSize++;
 			}
 			else if ( tempY1Inside )
 			{
@@ -607,14 +586,16 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 				float intersectionX;
 				float intersectionY;
 				computeIntersection( clipEdges[edgeNum], false, tempX1, tempY1, tempX2, tempY2, intersectionX, intersectionY );
-				outVertices.emplace_back( intersectionX, intersectionY );
+				outVertices[outVerticesSize].first = intersectionX;
+				outVertices[outVerticesSize].second = intersectionY;
+				outVerticesSize++;
 			}
 		}
 	}
 
-	if ( outVertices.size() > 2 )
+	if ( outVerticesSize > 2 )
 	{
-		for ( unsigned int vertNum = 1; vertNum < outVertices.size() - 1; vertNum++ )
+		for ( unsigned int vertNum = 1; vertNum < outVerticesSize - 1; vertNum++ )
 		{
 			const float newX1 = outVertices[0].first;
 			const float newY1 = outVertices[0].second;
