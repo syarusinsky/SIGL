@@ -18,6 +18,9 @@ struct Vertex
 	Vector<4> vec;
 	Vector<4> normal;
 	Vector<2> texCoords;
+
+	Vertex lerp (const Vertex& other, float lerpAmount);
+	bool isInsideView();
 };
 
 struct Face
@@ -50,7 +53,8 @@ class Camera3D
 	public:
 		Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio);
 
-		void projectFace (Face& face) const;
+		void multiplyByPerspectiveMatrix (Face& face);
+		void perspectiveDivide (Face& face);
 
 		// scales the x and y vertices to 0.0f -> 1.0f instead of projected -1.0f to 1.0f
 		void scaleXYToZeroToOne (Face& face) const;
@@ -68,11 +72,13 @@ class Camera3D
 		float			m_FieldOfView;
 		float			m_AspectRatio;
 
-		Matrix<4, 4>	m_ProjectionMatrix;
+		Matrix<4, 4>		m_ProjectionMatrix;
 
 		Vector<4> 		m_Position;
 
 		void generateProjectionMatrix();
+		Vector<4> multiplyByPerspectiveMatrix (const Vector<4>& vector);
+		Vector<4> perspectiveDivide (const Vector<4>& vector);
 };
 
 #endif // ENGINE3D_HPP

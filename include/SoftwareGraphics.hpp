@@ -47,6 +47,8 @@ class SoftwareGraphics3D : public IGraphics<width, height, format, api, include3
 			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
 			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
+		template <CP_FORMAT texFormat> void renderInBoundsTriangle (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData,
+				Camera3D& camera);
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::approxEqual;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip;
@@ -711,35 +713,13 @@ inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPass
 	}
 }
 
+
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
-void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
+void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::renderInBoundsTriangle (Face& face,
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Camera3D& camera)
 {
-	// setup shader data
-	shaderData.shaderPassData = m_ShaderPassData;
-	Camera3D& camera = shaderData.camera;
-
-	// TODO this is not how clipping should be done, need to do homogenous clipping in the future
-	const float nearClipDepth = camera.getNearClip();
-	const float farClipDepth = camera.getFarClip();
-
-	// clip based near plane or far plane
-	if ( face.vertices[0].vec.z() < nearClipDepth || face.vertices[0].vec.z() > farClipDepth
-			|| face.vertices[1].vec.z() < nearClipDepth || face.vertices[1].vec.z() > farClipDepth
-			|| face.vertices[2].vec.z() < nearClipDepth || face.vertices[2].vec.z() > farClipDepth ) return;
-
-	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_ColorProfile.getColor();
-
-	// a color to store for fragment shading
-	Color currentColor = m_ColorProfile.getColor();
-
-	// put through the vertex shader first
-	( *shaderData.vShader )( shaderData );
-
-	// TODO camera projection should be done in the vertex shader?
-	camera.projectFace( face );
+	camera.perspectiveDivide( face );
 	camera.scaleXYToZeroToOne( face );
 
 	// backface culling
@@ -747,7 +727,7 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	const Vector<4>& normal = face.calcFaceNormals();
 	if ( ! (normal.x() * (vertexVec.x() - camera.x())
 			+ normal.y() * (vertexVec.y() - camera.y())
-			+ normal.z() * (vertexVec.z() - camera.z()) > 0.0f) )
+			+ normal.z() * (vertexVec.z() - camera.z()) <= 0.0f) )
 	{
 		return;
 	}
@@ -845,10 +825,12 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 		topHalfRow++;
 	}
 
+	Color currentColor;
+
 	// render up until the second vertice
 	renderScanlines<texFormat>( topHalfRow, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrTop,
-			xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
-			perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
+		xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
+		perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
 
 	// in case the top of the triangle is straight, set the accumulators appropriately
 	if ( y1Ceil == y2Ceil == y3Ceil )
@@ -873,9 +855,118 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	}
 
 	// rasterize up until the last vertice
-	renderScanlines<texFormat>( bottomHalfRow, y3Ceil + 1, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrBottom,
-			xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
-			perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
+	renderScanlines<texFormat>( bottomHalfRow, y3Ceil + 1, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth,
+		xLeftIncrBottom, xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr,
+		texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+template <CP_FORMAT texFormat>
+void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
+{
+	// setup shader data
+	shaderData.shaderPassData = m_ShaderPassData;
+	Camera3D& camera = shaderData.camera;
+
+	// get previous color, since we'll want to set it back when we're done with the shading colors
+	const Color previousColor = m_ColorProfile.getColor();
+
+	// put through the vertex shader first
+	( *shaderData.vShader )( shaderData );
+
+	// TODO camera projection should be done in the vertex shader?
+	camera.multiplyByPerspectiveMatrix( face );
+
+	const bool v1Inside = face.vertices[0].isInsideView();
+	const bool v2Inside = face.vertices[1].isInsideView();
+	const bool v3Inside = face.vertices[2].isInsideView();
+
+	if ( ! v1Inside && ! v2Inside && ! v3Inside )
+	{
+		// triangle is outside of the clip space, so do nothing
+		return;
+	}
+	else if ( v1Inside && v2Inside && v3Inside )
+	{
+		// triangle is entirely inside of the clip space, so draw and return
+		renderInBoundsTriangle<texFormat>( face, shaderData, camera );
+
+		// set the previously used color back since we're done with the gradients
+		m_ColorProfile.setColor( previousColor );
+
+		return;
+	}
+
+	// otherwise, clip into subtriangles
+	constexpr unsigned int maxPossibleVerts = 36; // TODO this is probably excessive
+	Vertex outVertices[maxPossibleVerts];
+	outVertices[0] = face.vertices[0];
+	outVertices[1] = face.vertices[1];
+	outVertices[2] = face.vertices[2];
+	unsigned int outVerticesSize = 3;
+
+	const float factors[2] = { 1.0f, -1.0f };
+	for ( unsigned int factorIndex = 0; factorIndex < 2; factorIndex++ )
+	{
+		for ( unsigned int axis = 0; axis < 3; axis++ ) // clip x, y, z axis
+		{
+			Vertex newVertices[maxPossibleVerts];
+			unsigned int newVerticesSize = outVerticesSize;
+			std::copy( std::begin(outVertices), std::end(outVertices), std::begin(newVertices) );
+			outVerticesSize = 0;
+
+			for ( unsigned int vertNum = 0; vertNum < newVerticesSize; vertNum++ )
+			{
+				Vertex currentVert = newVertices[vertNum];
+				Vertex nextVert = newVertices[(vertNum + 1) % newVerticesSize];
+
+				const float currentVertValue = currentVert.vec.at( axis ) * factors[factorIndex];
+				const float nextVertValue = nextVert.vec.at( axis ) * factors[factorIndex];
+
+				const bool currentInside = currentVertValue <= currentVert.vec.w();
+				const bool nextInside = nextVertValue <= nextVert.vec.w();
+
+				if ( nextInside )
+				{
+					if ( ! currentInside )
+					{
+						// add intersection
+						const float lerpAmnt = ( currentVert.vec.w() - currentVertValue )
+							/ ( (currentVert.vec.w() - currentVertValue) - (nextVert.vec.w() - nextVertValue) );
+						if ( lerpAmnt > 1.0f || lerpAmnt < 0.0f ) std::cout << "FAIL" << std::endl;
+						Vertex intersect = currentVert.lerp( nextVert, lerpAmnt );
+						outVertices[outVerticesSize] = intersect;
+						outVerticesSize++;
+					}
+
+					outVertices[outVerticesSize] = nextVert;
+					outVerticesSize++;
+				}
+				else if ( currentInside )
+				{
+					// add intersection
+					const float lerpAmnt = ( currentVert.vec.w() - currentVertValue )
+						/ ( (currentVert.vec.w() - currentVertValue) - (nextVert.vec.w() - nextVertValue) );
+					if ( lerpAmnt > 1.0f || lerpAmnt < 0.0f ) std::cout << "FAIL" << std::endl;
+					Vertex intersect = currentVert.lerp( nextVert, lerpAmnt );
+					outVertices[outVerticesSize] = intersect;
+					outVerticesSize++;
+				}
+			}
+		}
+	}
+
+	if ( outVerticesSize > 2 )
+	{
+		for ( unsigned int vertNum = 1; vertNum < outVerticesSize - 1; vertNum++ )
+		{
+			Face clippedFace{ outVertices[0], outVertices[vertNum], outVertices[vertNum + 1] };
+
+			// triangle is entirely inside of the clip space, so draw
+			renderInBoundsTriangle<texFormat>( clippedFace, shaderData, camera );
+		}
+	}
 
 	// set the previously used color back since we're done with the gradients
 	m_ColorProfile.setColor( previousColor );

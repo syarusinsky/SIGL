@@ -3,6 +3,38 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+static inline float lerp (float t, float a, float b)
+{
+	return  a + ( t * (b - a) );
+}
+
+Vertex Vertex::lerp (const Vertex& other, float lerpAmount)
+{
+	Vertex newVertex;
+
+	// lerp position and normals
+	for ( unsigned int vecIndex = 0; vecIndex < 4; vecIndex++ )
+	{
+		newVertex.vec.at( vecIndex ) = ::lerp( lerpAmount, vec.at(vecIndex), other.vec.at(vecIndex) );
+		newVertex.normal.at( vecIndex ) = ::lerp( lerpAmount, normal.at(vecIndex), other.normal.at(vecIndex) );
+	}
+
+	// lerp tex coords
+	for ( unsigned int vecIndex = 0; vecIndex < 2; vecIndex++ )
+	{
+		newVertex.texCoords.at( vecIndex ) = ::lerp( lerpAmount, texCoords.at(vecIndex), other.texCoords.at(vecIndex) );
+	}
+
+	return newVertex;
+}
+
+bool Vertex::isInsideView()
+{
+	return std::abs( vec.x() ) <= std::abs( vec.w() )
+		&& std::abs( vec.y() ) <= std::abs( vec.w() )
+		&& std::abs( vec.z() ) <= std::abs( vec.w() );
+}
+
 void Mesh::scale (float scaleFactor)
 {
 	transformMat.at( 0, 0 ) *= scaleFactor;
@@ -104,20 +136,25 @@ float Camera3D::z() const
 
 void Camera3D::generateProjectionMatrix()
 {
-	const float piOver180 = M_PI / 180.0f;
-	const float tanHalfFov = tanf(m_FieldOfView * piOver180 * 0.5f);
+	constexpr float halfPiOver180 = ( M_PI / 180.0f ) * 0.5f;
+	const float tanHalfFov = tanf(m_FieldOfView * halfPiOver180);
 
 	m_ProjectionMatrix = Matrix<4, 4>( 0.0f ); // reset the projection matrix
 	m_ProjectionMatrix.at(0, 0) = 1.0f / ( tanHalfFov * m_AspectRatio );
 	m_ProjectionMatrix.at(1, 1) = 1.0f / tanHalfFov;
-	m_ProjectionMatrix.at(2, 2) = -( m_FarClip + m_NearClip ) / ( m_FarClip - m_NearClip );
-	m_ProjectionMatrix.at(3, 2) = ( -2.0f * m_FarClip * m_NearClip ) / ( m_FarClip - m_NearClip );
+	m_ProjectionMatrix.at(2, 2) = m_FarClip / ( m_FarClip - m_NearClip );
+	m_ProjectionMatrix.at(3, 2) = ( -m_FarClip * m_NearClip ) / ( m_FarClip - m_NearClip );
 	m_ProjectionMatrix.at(2, 3) = 1.0f;
 }
 
-static Vector<4> perspectiveMultiply (const Vector<4>& vector, const Matrix<4, 4>& matrix)
+Vector<4> Camera3D::multiplyByPerspectiveMatrix (const Vector<4>& vector)
 {
-	Vector<4> outVec = vector * matrix;
+	return vector * m_ProjectionMatrix;
+}
+
+Vector<4> Camera3D::perspectiveDivide (const Vector<4>& vector)
+{
+	Vector<4> outVec = vector;
 
 	if ( outVec.w() != 0.0f )
 	{
@@ -129,11 +166,18 @@ static Vector<4> perspectiveMultiply (const Vector<4>& vector, const Matrix<4, 4
 	return outVec;
 }
 
-void Camera3D::projectFace (Face& face) const
+void Camera3D::multiplyByPerspectiveMatrix (Face& face)
 {
-	face.vertices[0].vec = perspectiveMultiply( face.vertices[0].vec, m_ProjectionMatrix );
-	face.vertices[1].vec = perspectiveMultiply( face.vertices[1].vec, m_ProjectionMatrix );
-	face.vertices[2].vec = perspectiveMultiply( face.vertices[2].vec, m_ProjectionMatrix );
+	face.vertices[0].vec = multiplyByPerspectiveMatrix( face.vertices[0].vec );
+	face.vertices[1].vec = multiplyByPerspectiveMatrix( face.vertices[1].vec );
+	face.vertices[2].vec = multiplyByPerspectiveMatrix( face.vertices[2].vec );
+}
+
+void Camera3D::perspectiveDivide (Face& face)
+{
+	face.vertices[0].vec = perspectiveDivide( face.vertices[0].vec );
+	face.vertices[1].vec = perspectiveDivide( face.vertices[1].vec );
+	face.vertices[2].vec = perspectiveDivide( face.vertices[2].vec );
 }
 
 void Camera3D::scaleXYToZeroToOne (Face& face) const
