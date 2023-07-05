@@ -306,10 +306,10 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	int yEndUInt   = yEnd   * (height - 1);
 
 	// clipping
-	xStartUInt = std::min( std::max(xStartUInt, 0), (int)width );
-	yStartUInt = std::min( std::max(yStartUInt, 0), (int)height );
-	xEndUInt   = std::min( std::max(xEndUInt,   0), (int)width );
-	yEndUInt   = std::min( std::max(yEndUInt,   0), (int)height );
+	xStartUInt = std::min( std::max(xStartUInt, 0), (int)(width - 1 ) );
+	yStartUInt = std::min( std::max(yStartUInt, 0), (int)(height - 1) );
+	xEndUInt   = std::min( std::max(xEndUInt,   0), (int)(width - 1 ) );
+	yEndUInt   = std::min( std::max(yEndUInt,   0), (int)(height - 1) );
 
 	const unsigned int pixelRowStride = abs( (int)xEndUInt - (int)xStartUInt );
 
@@ -644,27 +644,25 @@ inline float saturate (float val)
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
-inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive, float x1,
-			float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
-			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
-			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
+inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive,
+		float x1, float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr,
+		float xRightIncr, TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
+		float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
+		float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
 {
-	// TODO this can be optimized by quite a bit, and likely will need to be
+	// TODO this should be further optimized?
 	for (int row = startRow; row < endRowExclusive && row < height; row++)
 	{
 		// rounding the points and clipping horizontally
-		const int unclippedLeftX = std::floor( xLeftAccumulator );
-		const int unclippedRightX = std::floor( xRightAccumulator );
-		const unsigned int leftX  = std::min( std::max((int)unclippedLeftX, 0), (int)width - 1 );
-		const unsigned int rightX = std::max( std::min((int)unclippedRightX, (int)width - 1), 0 );
+		const unsigned int leftX  = xLeftAccumulator;
+		const unsigned int rightX = xRightAccumulator;
 
 		const unsigned int tempXY1 = ( (row * width) + leftX  );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
 		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX + 1) - static_cast<float>( leftX ) );
 		const float rowF = static_cast<float>( row );
-		const float leftXF  = std::min( std::max(xLeftAccumulator, 0.0f), width - 1.0f );
-		const float rightXF = std::max( std::min(xRightAccumulator, width - 1.0f), 0.0f );
+		const float leftXF  = xLeftAccumulator;
+		const float rightXF = xRightAccumulator;
 		const float depthStart = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (leftXF - x1) );
 		const float depthEnd   = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (rightXF - x1) );
 		const float texXStart  = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF - y1) ) + ( texCoordXXIncr * (leftXF - x1) );
@@ -719,9 +717,6 @@ template <CP_FORMAT texFormat>
 void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::renderInBoundsTriangle (Face& face,
 			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Camera3D& camera)
 {
-	camera.perspectiveDivide( face );
-	camera.scaleXYToZeroToOne( face );
-
 	// backface culling
 	const Vector<4>& vertexVec = face.vertices[0].vec;
 	const Vector<4>& normal = face.calcFaceNormals();
@@ -767,9 +762,9 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	float v2Depth = face.vertices[1].vec.z();
 	float v3Depth = face.vertices[2].vec.z();
 	Vector<4> lightDir({-0.5f, -0.5f, 0.0f, 0.0f}); // TODO remove this after testing
-	float v1LightAmnt = saturate( face.vertices[0].normal.dotProduct(lightDir) ) * 0.8f + 0.2f;
-	float v2LightAmnt = saturate( face.vertices[1].normal.dotProduct(lightDir) ) * 0.8f + 0.2f;
-	float v3LightAmnt = saturate( face.vertices[2].normal.dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v1LightAmnt = saturate( face.vertices[0].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v2LightAmnt = saturate( face.vertices[1].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v3LightAmnt = saturate( face.vertices[2].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
 
 	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
 	float xLeftAccumulator  = x1FCeil;
@@ -814,21 +809,12 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
 	const float lightAmntXIncr = calcIncr( lightAmnts, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
 	const float lightAmntYIncr = calcIncr( lightAmnts, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-
-	int topHalfRow = y1Ceil;
-	while ( topHalfRow < y2Ceil && topHalfRow < 0 )
-	{
-		// even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
-		xLeftAccumulator  += xLeftIncrTop;
-		xRightAccumulator += xRightIncrTop;
-
-		topHalfRow++;
-	}
+	// TODO we actually just want to interpolate the normals, for vertex-shaded lighting we can calculate in the vertex shader and pass down
 
 	Color currentColor;
 
 	// render up until the second vertice
-	renderScanlines<texFormat>( topHalfRow, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrTop,
+	renderScanlines<texFormat>( y1Ceil, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrTop,
 		xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
 		perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
 
@@ -844,18 +830,8 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 		xRightAccumulator = x2FCeil;
 	}
 
-	int bottomHalfRow = y2Ceil;
-	while ( bottomHalfRow < y3Ceil && bottomHalfRow < 0 )
-	{
-		// even if off screen, we still need to increment xLeftAccumulator and xRightAccumulator
-		xLeftAccumulator  += xLeftIncrBottom;
-		xRightAccumulator += xRightIncrBottom;
-
-		bottomHalfRow++;
-	}
-
 	// rasterize up until the last vertice
-	renderScanlines<texFormat>( bottomHalfRow, y3Ceil + 1, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth,
+	renderScanlines<texFormat>( y2Ceil, y3Ceil + 1, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth,
 		xLeftIncrBottom, xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr,
 		texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
 }
@@ -889,6 +865,10 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	}
 	else if ( v1Inside && v2Inside && v3Inside )
 	{
+
+		camera.perspectiveDivide( face );
+		camera.scaleXYToZeroToOne( face );
+
 		// triangle is entirely inside of the clip space, so draw and return
 		renderInBoundsTriangle<texFormat>( face, shaderData, camera );
 
@@ -962,6 +942,9 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 		for ( unsigned int vertNum = 1; vertNum < outVerticesSize - 1; vertNum++ )
 		{
 			Face clippedFace{ outVertices[0], outVertices[vertNum], outVertices[vertNum + 1] };
+
+			camera.perspectiveDivide( clippedFace );
+			camera.scaleXYToZeroToOne( clippedFace );
 
 			// triangle is entirely inside of the clip space, so draw
 			renderInBoundsTriangle<texFormat>( clippedFace, shaderData, camera );
