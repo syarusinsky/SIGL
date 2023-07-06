@@ -846,7 +846,7 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	Camera3D& camera = shaderData.camera;
 
 	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_ColorProfile.getColor();
+	const Color previousColor = m_ColorProfile.template getColor<format>();
 
 	// put through the vertex shader first
 	( *shaderData.vShader )( shaderData );
@@ -1365,13 +1365,14 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 					if ( pixelToWrite >= 0 &&  // top clipping
 							pixelToWrite < fbSize && // bottom clipping
 							xTranslatedBack >= 0 && // left clipping
-							xTranslatedBack < width && // right clipping
-							! (color.m_IsMonochrome && color.m_M == 0.0f) && // monochrome transparency
-							! (color.m_A == 0.0f) // color transparency
+							xTranslatedBack < width // right clipping
 							)
 					{
 							m_ColorProfile.setColor( color );
-							m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixelToWrite );
+							// TODO as an optimization, maybe we should only call alpha blending with sprites
+							// we know to have transparency?
+							m_ColorProfile.template putPixelWithAlphaBlending<width, height>(
+									m_FB.getPixels(), pixelToWrite );
 					}
 
 					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
@@ -1421,7 +1422,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
 {
 	// get previous color, since we'll want to set it back when we're done with the shading colors
-	const Color previousColor = m_ColorProfile.getColor();
+	const Color previousColor = m_ColorProfile.template getColor<format>();
 
 	Color color;
 	const float mul = 1.0f / ( camera.getFarClip() - camera.getNearClip() );

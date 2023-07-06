@@ -29,7 +29,9 @@ struct Color
 	bool  m_IsMonochrome = false;
 	bool  m_HasAlpha = false;
 
-	Color operator* (float scalar) const { return Color({ m_R * scalar, m_G * scalar, m_B * scalar }); }
+	Color operator* (float scalar) const { return Color({ m_R * scalar, m_G * scalar, m_B * scalar, m_A * scalar, false, false, true }); }
+	Color operator+ (const Color& other) { return Color({ m_R + other.m_R, m_G + other.m_G, m_B + other.m_B, m_A + other.m_A, false, false, true }); }
+	Color alphaBlend (const Color& other) { return ( other * (1.0f - m_A) ) + ( *this * m_A ); }
 };
 
 enum class CP_FORMAT
@@ -48,6 +50,9 @@ class ColorProfileCommon
 			m_BValue( 0 ),
 			m_AValue( 255 ),
 			m_MValue( false ) {}
+
+		template <CP_FORMAT format>
+		Color getColor() const;
 
 	protected:
 		uint8_t m_RValue;
@@ -162,10 +167,22 @@ class ColorProfileRGB : public ColorProfileCommon
 			pixelNum = fbNumPixels - 1 - pixelNum;
 #endif
 
-			// TODO this needs to actually incorporate alpha blending
 			pixelArray[(pixelNum * 3) + 0] = m_RValue; // Red
 			pixelArray[(pixelNum * 3) + 1] = m_GValue; // Green
 			pixelArray[(pixelNum * 3) + 2] = m_BValue; // Blue
+		}
+
+		template <unsigned int width, unsigned int height>
+		void putPixelWithAlphaBlending (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+			Color newColor = getColor<format>().alphaBlend( getPixel<width, height>(pixelArray, pixelNum) );
+
+			pixelArray[(pixelNum * 3) + 0] = 255 * newColor.m_R; // Red
+			pixelArray[(pixelNum * 3) + 1] = 255 * newColor.m_G; // Green
+			pixelArray[(pixelNum * 3) + 2] = 255 * newColor.m_B; // Blue
 		}
 
 		template <unsigned int width, unsigned int height>
@@ -215,11 +232,24 @@ class ColorProfileRGBA : public ColorProfileCommon
 			pixelNum = fbNumPixels - 1 - pixelNum;
 #endif
 
-			// TODO this needs to actually incorporate alpha blending
 			pixelArray[(pixelNum * 4) + 0] = m_RValue; // Red
 			pixelArray[(pixelNum * 4) + 1] = m_GValue; // Green
 			pixelArray[(pixelNum * 4) + 2] = m_BValue; // Blue
 			pixelArray[(pixelNum * 4) + 3] = m_AValue; // Alpha
+		}
+
+		template <unsigned int width, unsigned int height>
+		void putPixelWithAlphaBlending (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+			Color newColor = getColor<format>().alphaBlend( getPixel<width, height>(pixelArray, pixelNum) );
+
+			pixelArray[(pixelNum * 4) + 0] = 255 * newColor.m_R; // Red
+			pixelArray[(pixelNum * 4) + 1] = 255 * newColor.m_G; // Green
+			pixelArray[(pixelNum * 4) + 2] = 255 * newColor.m_B; // Blue
+			pixelArray[(pixelNum * 4) + 3] = 255 * newColor.m_B; // Blue
 		}
 
 		template <unsigned int width, unsigned int height>
@@ -274,7 +304,6 @@ class ColorProfile : public std::conditional<format == CP_FORMAT::RGB_24BIT, Col
 		void setColor (float rValue, float gValue, float bValue, float aValue);
 		void setColor (bool mValue, bool useAlpha = false);
 		void setColor (const Color& color);
-		Color getColor() const;
 
 		const CP_FORMAT getFormat() const { return format; }
 };
@@ -379,7 +408,7 @@ void ColorProfile<format>::setColor (const Color& color)
 }
 
 template <CP_FORMAT format>
-Color ColorProfile<format>::getColor() const
+Color ColorProfileCommon::getColor() const
 {
 	Color currentColor;
 	currentColor.m_R = ((float)ColorProfileCommon::m_RValue * (1.0f / 255.0f));
