@@ -228,7 +228,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			}
 
 			pixel += width;
-			yAccumulator = std::fmod( yAccumulator, 1.0f );
+			yAccumulator -= 1.0f;
 		}
 	}
 	else if ( slope < 0.0f && slope >= -1.0f )
@@ -236,7 +236,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		while ( pixel <= pixelEnd )
 		{
 			// stride x axis
-			while ( yAccumulator < 1.0f && pixel <= pixelEnd )
+			while ( yAccumulator < 1.0f && pixel <= pixelEnd - static_cast<unsigned int>(1.0f / -slope) )
 			{
 				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 				pixel -= 1;
@@ -245,7 +245,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 			}
 
 			pixel += width;
-			yAccumulator = std::fmod( yAccumulator, 1.0f );
+			yAccumulator -= 1.0f;
 		}
 	}
 	else if ( slope > 1.0f )
@@ -255,7 +255,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		// stride y axis
 		while ( pixel <= pixelEnd )
 		{
-			while ( yAccumulator >= 1.0f && pixel <= pixelEnd )
+			while ( yAccumulator > 1.0f && pixel <= pixelEnd )
 			{
 				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 				pixel += width;
@@ -274,7 +274,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		// stride y axis
 		while ( pixel <= pixelEnd )
 		{
-			while ( yAccumulator <= -1.0f && pixel <= pixelEnd )
+			while ( yAccumulator < -1.0f && pixel <= pixelEnd )
 			{
 				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 				pixel += width;
@@ -914,7 +914,6 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 						// add intersection
 						const float lerpAmnt = ( currentVert.vec.w() - currentVertValue )
 							/ ( (currentVert.vec.w() - currentVertValue) - (nextVert.vec.w() - nextVertValue) );
-						if ( lerpAmnt > 1.0f || lerpAmnt < 0.0f ) std::cout << "FAIL" << std::endl;
 						Vertex intersect = currentVert.lerp( nextVert, lerpAmnt );
 						outVertices[outVerticesSize] = intersect;
 						outVerticesSize++;
@@ -928,7 +927,6 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 					// add intersection
 					const float lerpAmnt = ( currentVert.vec.w() - currentVertValue )
 						/ ( (currentVert.vec.w() - currentVertValue) - (nextVert.vec.w() - nextVertValue) );
-					if ( lerpAmnt > 1.0f || lerpAmnt < 0.0f ) std::cout << "FAIL" << std::endl;
 					Vertex intersect = currentVert.lerp( nextVert, lerpAmnt );
 					outVertices[outVerticesSize] = intersect;
 					outVerticesSize++;
