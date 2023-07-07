@@ -86,6 +86,25 @@ class ColorProfileMonochrome : public ColorProfileCommon
 		}
 
 		template <unsigned int width, unsigned int height>
+		void putPixelWithAlphaBlending (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+			unsigned int byteNum = std::floor( pixelNum / 8 );
+			unsigned int pixelIndex = 7 - (pixelNum % 8);
+			uint8_t bitmask = ( 1 << pixelIndex );
+			if ( m_MValue == true && m_AValue > 0 )
+			{
+				pixelArray[byteNum] = pixelArray[byteNum] | bitmask;
+			}
+			else if ( m_AValue > 0 )
+			{
+				pixelArray[byteNum] = pixelArray[byteNum] & ~(bitmask);
+			}
+		}
+
+		template <unsigned int width, unsigned int height>
 		Color getPixel (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelNum)
 		{
 			Color color;

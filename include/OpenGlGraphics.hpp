@@ -254,7 +254,7 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::fill()
 {
-	const Color color = m_ColorProfile.getColor();
+	const Color color = m_ColorProfile.template getColor<format>();
 
 	glClearColor( color.m_R, color.m_G, color.m_B, color.m_A );
 	glClear( GL_COLOR_BUFFER_BIT );
@@ -263,7 +263,7 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawLine (float xStart, float yStart, float xEnd, float yEnd)
 {
-	const Color color = m_ColorProfile.getColor();
+	const Color color = m_ColorProfile.template getColor<format>();
 
 	openGLOffsetVerts( xStart, yStart, xEnd, yEnd );
 
@@ -322,7 +322,7 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawBoxFilled (float xStart, float yStart, float xEnd, float yEnd)
 {
-	const Color color = m_ColorProfile.getColor();
+	const Color color = m_ColorProfile.template getColor<format>();
 
 	openGLOffsetVerts( xStart, yStart, xEnd, yEnd );
 
@@ -373,7 +373,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilled (float x1, float y1, float x2, float y2, float x3,
 		float y3)
 {
-	const Color color = m_ColorProfile.getColor();
+	const Color color = m_ColorProfile.template getColor<format>();
 
 	openGLOffsetVerts( x1, y1, x2, y2, x3, y3 );
 
@@ -504,7 +504,7 @@ inline void drawCircleHelper (const GLuint program, const Color& color, float or
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawCircle (float originX, float originY, float radius)
 {
-	const Color color = m_ColorProfile.getColor();
+	const Color color = m_ColorProfile.template getColor<format>();
 
 	drawCircleHelper<width, height>( m_BasicColorProgram, color, originX, originY, radius, false );
 }
@@ -512,7 +512,7 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawCircleFilled (float originX, float originY, float radius)
 {
-	const Color color = m_ColorProfile.getColor();
+	const Color color = m_ColorProfile.template getColor<format>();
 
 	drawCircleHelper<width, height>( m_BasicColorProgram, color, originX, originY, radius, true );
 }
