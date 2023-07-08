@@ -17,6 +17,7 @@
 #include "Texture.hpp"
 #include "Engine3D.hpp"
 
+#include <functional>
 #include <algorithm>
 #include <limits>
 
@@ -26,6 +27,19 @@ class SoftwareGraphicsNo3D : public IGraphics<width, height, format, api, includ
 {
 	public:
 		virtual ~SoftwareGraphicsNo3D() {}
+
+	protected:
+		template <CP_FORMAT texFormat, bool withTransparency = false>
+		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
+			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
+			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
+			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
+		template <CP_FORMAT texFormat>
+		inline void renderInBoundsTriangle (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
+
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
+		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -40,15 +54,16 @@ class SoftwareGraphics3D : public IGraphics<width, height, format, api, include3
 		void drawDepthBuffer (Camera3D& camera) override;
 
 	protected:
-		template <CP_FORMAT texFormat>
+		template <CP_FORMAT texFormat, bool withTransparency = false>
 		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
 			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
 			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
 			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
 			float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr);
-		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
-		template <CP_FORMAT texFormat> void renderInBoundsTriangle (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData,
-				Camera3D& camera);
+		template <CP_FORMAT texFormat>
+		inline void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
+		template <CP_FORMAT texFormat>
+		inline void renderInBoundsTriangle (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::approxEqual;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip;
@@ -642,13 +657,15 @@ inline float saturate (float val)
 	if ( val > 1.0f ) return 1.0f; else if ( val < 0.0f ) return 0.0f; else return val;
 }
 
-template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-template <CP_FORMAT texFormat>
-inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive,
-		float x1, float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr,
-		float xRightIncr, TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
-		float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
-		float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize,
+	CP_FORMAT texFormat, bool withTransparency>
+inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, float y1, float& xLeftAccumulator, float& xRightAccumulator,
+					float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
+					TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1,
+					float texCoordY1, float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr,
+					float perspXIncr, float perspYIncr, float depthXIncr, float depthYIncr, float v1LightAmnt,
+					float lightAmntXIncr, float lightAmntYIncr, float* depthBuffer,
+					ColorProfile<format>& colorProfile, FrameBufferFixed<width, height, format, api>& fb)
 {
 	// TODO this should be further optimized?
 	for (int row = startRow; row < endRowExclusive && row < height; row++)
@@ -686,16 +703,41 @@ inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPass
 
 		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
 		{
-			if ( m_DepthBuffer[pixel] > depth )
+			if constexpr ( include3D )
+			{
+				if ( depthBuffer[pixel] > depth )
+				{
+					const float perspOffset = 1.0f / pers;
+					const float texCoordX = texX * perspOffset;
+					const float texCoordY = texY * perspOffset;
+					( *shaderData.fShader )( currentColor, shaderData, 0.0f, 0.0f, 0.0f, texCoordX, texCoordY, light );
+					colorProfile.setColor( currentColor );
+					if constexpr ( withTransparency )
+					{
+						colorProfile.template putPixelWithAlphaBlending<width, height>( fb.getPixels(), pixel );
+					}
+					else
+					{
+						colorProfile.template putPixel<width, height>( fb.getPixels(), pixel );
+						depthBuffer[pixel] = depth;
+					}
+				}
+			}
+			else
 			{
 				const float perspOffset = 1.0f / pers;
 				const float texCoordX = texX * perspOffset;
 				const float texCoordY = texY * perspOffset;
 				( *shaderData.fShader )( currentColor, shaderData, 0.0f, 0.0f, 0.0f, texCoordX, texCoordY, light );
-				m_ColorProfile.setColor( currentColor );
-				m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
-
-				m_DepthBuffer[pixel] = depth;
+				colorProfile.setColor( currentColor );
+				if constexpr ( withTransparency )
+				{
+					colorProfile.template putPixelWithAlphaBlending<width, height>( fb.getPixels(), pixel );
+				}
+				else
+				{
+					colorProfile.template putPixel<width, height>( fb.getPixels(), pixel );
+				}
 			}
 
 			depth += depthIncr;
@@ -711,22 +753,157 @@ inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPass
 	}
 }
 
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+template <CP_FORMAT texFormat, bool withTransparency>
+inline void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive,
+		float x1, float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr,
+		float xRightIncr, TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
+		float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
+		float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
+{
+	renderScanlinesHelper<width, height, format, api, include3D, shaderPassDataSize, texFormat, withTransparency>(
+			startRow, endRowExclusive, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncr,
+			xRightIncr, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr,
+			texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
+			&m_DepthBuffer[0], m_ColorProfile, m_FB );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+template <CP_FORMAT texFormat, bool withTransparency>
+inline void SoftwareGraphicsNo3D<width, height, format, api, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive,
+		float x1, float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr,
+		float xRightIncr, TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
+		float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr, float perspYIncr,
+		float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr)
+{
+	renderScanlinesHelper<width, height, format, api, include3D, shaderPassDataSize, texFormat, withTransparency>(
+			startRow, endRowExclusive, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncr,
+			xRightIncr, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr,
+			texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
+			nullptr, m_ColorProfile, m_FB );
+}
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
 void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::renderInBoundsTriangle (Face& face,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Camera3D& camera)
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
 {
-	// backface culling
-	const Vector<4>& vertexVec = face.vertices[0].vec;
-	const Vector<4>& normal = face.calcFaceNormals();
-	if ( ! (normal.x() * (vertexVec.x() - camera.x())
-			+ normal.y() * (vertexVec.y() - camera.y())
-			+ normal.z() * (vertexVec.z() - camera.z()) <= 0.0f) )
+	// sorting vertices
+	triSortVertices( face.vertices[0], face.vertices[1], face.vertices[2], width, height );
+
+	float x1 = face.vertices[0].vec.x();
+	float y1 = face.vertices[0].vec.y();
+	float x2 = face.vertices[1].vec.x();
+	float y2 = face.vertices[1].vec.y();
+	float x3 = face.vertices[2].vec.x();
+	float y3 = face.vertices[2].vec.y();
+
+	int x1Ceil = std::ceil( x1 );
+	int y1Ceil = std::ceil( y1 );
+	int x2Ceil = std::ceil( x2 );
+	int y2Ceil = std::ceil( y2 );
+	int x3Ceil = std::ceil( x3 );
+	int y3Ceil = std::ceil( y3 );
+	float x1FCeil = static_cast<float>( x1Ceil );
+	float y1FCeil = static_cast<float>( y1Ceil );
+	float x2FCeil = static_cast<float>( x2Ceil );
+	float y2FCeil = static_cast<float>( y2Ceil );
+	float x3FCeil = static_cast<float>( x3Ceil );
+	float y3FCeil = static_cast<float>( y3Ceil );
+	float texCoordX1 = face.vertices[0].texCoords.x();
+	float texCoordY1 = face.vertices[0].texCoords.y();
+	float texCoordX2 = face.vertices[1].texCoords.x();
+	float texCoordY2 = face.vertices[1].texCoords.y();
+	float texCoordX3 = face.vertices[2].texCoords.x();
+	float texCoordY3 = face.vertices[2].texCoords.y();
+	float v1PerspMul = 1.0f / face.vertices[0].vec.w();
+	float v2PerspMul = 1.0f / face.vertices[1].vec.w();
+	float v3PerspMul = 1.0f / face.vertices[2].vec.w();
+	float v1Depth = face.vertices[0].vec.z();
+	float v2Depth = face.vertices[1].vec.z();
+	float v3Depth = face.vertices[2].vec.z();
+	Vector<4> lightDir({-0.5f, -0.5f, 0.0f, 0.0f}); // TODO remove this after testing
+	float v1LightAmnt = saturate( face.vertices[0].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v2LightAmnt = saturate( face.vertices[1].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v3LightAmnt = saturate( face.vertices[2].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+
+	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
+	float xLeftAccumulator  = x1FCeil;
+	float xRightAccumulator = x1FCeil;
+
+	// floats for incrementing xLeftAccumulator and xRightAccumulator
+	float xLeftIncrTop     = ( x2FCeil - x1FCeil ) / ( y2FCeil - y1FCeil );
+	float xRightIncrTop    = ( x3FCeil - x1FCeil ) / ( y3FCeil - y1FCeil );
+	float xLeftIncrBottom  = ( x3FCeil - x2FCeil ) / ( y3FCeil - y2FCeil );
+	float xRightIncrBottom = ( x3FCeil - x1FCeil ) / ( y3FCeil - y1FCeil );
+
+	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
+	bool needsSwapping = ( xLeftIncrBottom < xRightIncrBottom );
+
+	// depending on the position of the vertices, we need to swap increments
+	if ( (needsSwapping && x1Ceil < x2Ceil) || (needsSwapping && x1Ceil >= x2Ceil && x2Ceil > x3Ceil) )
 	{
-		return;
+		float tempIncr = xLeftIncrTop;
+		xLeftIncrTop = xRightIncrTop;
+		xRightIncrTop = tempIncr;
+
+		tempIncr = xLeftIncrBottom;
+		xLeftIncrBottom = xRightIncrBottom;
+		xRightIncrBottom = tempIncr;
 	}
 
+	// gradient calculation vars
+	const float oneOverdX = 1.0f / ( ((x2FCeil - x3FCeil) * (y1FCeil - y3FCeil)) - ((x1FCeil - x3FCeil) * (y2FCeil - y3FCeil)) );
+	const float oneOverdY = -oneOverdX;
+	Vector<3> texCoordsX({ texCoordX1 * v1PerspMul, texCoordX2 * v2PerspMul, texCoordX3 * v3PerspMul });
+	Vector<3> texCoordsY({ texCoordY1 * v1PerspMul, texCoordY2 * v2PerspMul, texCoordY3 * v3PerspMul });
+	const float texCoordXXIncr = calcIncr( texCoordsX, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float texCoordXYIncr = calcIncr( texCoordsX, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	const float texCoordYXIncr = calcIncr( texCoordsY, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float texCoordYYIncr = calcIncr( texCoordsY, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	Vector<3> persps({ v1PerspMul, v2PerspMul, v3PerspMul });
+	const float perspXIncr = calcIncr( persps, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float perspYIncr = calcIncr( persps, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	Vector<3> depths({ v1Depth, v2Depth, v3Depth });
+	const float depthXIncr = calcIncr( depths, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float depthYIncr = calcIncr( depths, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
+	const float lightAmntXIncr = calcIncr( lightAmnts, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
+	const float lightAmntYIncr = calcIncr( lightAmnts, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
+	// TODO we actually just want to interpolate the normals, for vertex-shaded lighting we can calculate in the vertex shader and pass down
+
+	Color currentColor;
+
+	// render up until the second vertice
+	renderScanlines<texFormat>( y1Ceil, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncrTop,
+		xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr, texCoordYYIncr,
+		perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
+
+	// in case the top of the triangle is straight, set the accumulators appropriately
+	if ( y1Ceil == y2Ceil == y3Ceil )
+	{
+		xLeftAccumulator  = x1FCeil;
+		xRightAccumulator = x3FCeil;
+	}
+	else if ( y1Ceil == y2Ceil )
+	{
+		xLeftAccumulator  = x1FCeil;
+		xRightAccumulator = x2FCeil;
+	}
+
+	// rasterize up until the last vertice
+	renderScanlines<texFormat>( y2Ceil, y3Ceil + 1, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth,
+		xLeftIncrBottom, xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr,
+		texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr );
+}
+
+// TODO this is a duplicate of the previous function since I can't find a clean way to reuse with all the template bullshit,
+// in the future find a way to reuse instead of duplicating
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+template <CP_FORMAT texFormat>
+void SoftwareGraphicsNo3D<width, height, format, api, include3D, shaderPassDataSize>::renderInBoundsTriangle (Face& face,
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
+{
 	// sorting vertices
 	triSortVertices( face.vertices[0], face.vertices[1], face.vertices[2], width, height );
 
@@ -854,6 +1031,16 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	// TODO camera projection should be done in the vertex shader?
 	camera.multiplyByPerspectiveMatrix( face );
 
+	// backface culling
+	const Vector<4>& vertexVec = face.vertices[0].vec;
+	const Vector<4>& normal = face.calcFaceNormals();
+	if ( ! (normal.x() * (vertexVec.x() - camera.x())
+			+ normal.y() * (vertexVec.y() - camera.y())
+			+ normal.z() * (vertexVec.z() - camera.z()) <= 0.0f) )
+	{
+		return;
+	}
+
 	const bool v1Inside = face.vertices[0].isInsideView();
 	const bool v2Inside = face.vertices[1].isInsideView();
 	const bool v3Inside = face.vertices[2].isInsideView();
@@ -870,7 +1057,7 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 		camera.scaleXYToZeroToOne( face );
 
 		// triangle is entirely inside of the clip space, so draw and return
-		renderInBoundsTriangle<texFormat>( face, shaderData, camera );
+		renderInBoundsTriangle<texFormat>( face, shaderData );
 
 		// set the previously used color back since we're done with the gradients
 		m_ColorProfile.setColor( previousColor );
@@ -945,7 +1132,7 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 			camera.scaleXYToZeroToOne( clippedFace );
 
 			// triangle is entirely inside of the clip space, so draw
-			renderInBoundsTriangle<texFormat>( clippedFace, shaderData, camera );
+			renderInBoundsTriangle<texFormat>( clippedFace, shaderData );
 		}
 	}
 
