@@ -49,7 +49,6 @@ struct TriShaderData
 	std::vector<PointLight>* lights;
 	VSHADER;
 	FSHADER;
-	std::array<uint8_t, shaderPassDataSize> shaderPassData;
 };
 
 // just to avoid compilation error
@@ -63,23 +62,12 @@ template <unsigned int width, unsigned int height, unsigned int shaderPassDataSi
 class IGraphics3D
 {
 	public:
-		IGraphics3D() :
-			m_DepthBuffer{},
-			m_ShaderPassData{}
-		{
-		}
 		virtual ~IGraphics3D() {}
 
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) = 0;
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) = 0;
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) = 0;
 		virtual void drawDepthBuffer (Camera3D& camera) = 0;
-		void clearDepthBuffer();
-
-	protected:
-		// TODO move depth buffer to framebuffer classes (this style for software rendering, gl style for opengl)
-		std::array<float, width * height> 		m_DepthBuffer;
-		std::array<uint8_t, shaderPassDataSize> 	m_ShaderPassData;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -121,6 +109,12 @@ class IGraphics : public std::conditional<include3D, IGraphics3D<width, height, 
 		ColorProfile<format> 				m_ColorProfile;
 		Font* 						m_CurrentFont;
 
+		// TODO move depth buffer to framebuffer classes (this style for software rendering, gl style for opengl)
+		std::array<float, width * height> 		m_DepthBuffer;
+		std::array<uint8_t, shaderPassDataSize> 	m_ShaderPassData;
+
+		inline void clearDepthBuffer();
+
 		// helpers
 		static inline bool approxEqual (float a, float b, float epsilon = std::numeric_limits<float>::epsilon());
 		static inline float clip (float x, float min, float max); // hard clips x to min and max
@@ -138,8 +132,8 @@ class IGraphics : public std::conditional<include3D, IGraphics3D<width, height, 
 		virtual void endFrame() = 0;
 };
 
-template <unsigned int width, unsigned int height, unsigned int shaderPassDataSize>
-void IGraphics3D<width, height, shaderPassDataSize>::clearDepthBuffer()
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clearDepthBuffer()
 {
 	std::fill( std::begin(m_DepthBuffer), std::end(m_DepthBuffer), std::numeric_limits<float>::max() );
 }

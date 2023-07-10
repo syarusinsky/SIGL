@@ -8,7 +8,7 @@
  * current scaling and rotation values.
 **************************************************************************/
 
-#include "FrameBuffer.hpp"
+#include "Texture.hpp"
 
 #include <math.h>
 
@@ -32,16 +32,20 @@ class Sprite : public FrameBufferDynamic<format>
 		void setRotationPointY (float y); // should be between 0.0f and 1.0f
 		int getRotationPointY() const;
 
+		Texture<format>& getTexture() { return m_Texture; }
+
 	protected:
-		float m_ScaleFactor;
-		int   m_RotationDegrees;
-		int   m_RotPointX;
-		int   m_RotPointY;
+		Texture<format> 	m_Texture;
+		float 			m_ScaleFactor;
+		int   			m_RotationDegrees;
+		int   			m_RotPointX;
+		int   			m_RotPointY;
 };
 
 template <CP_FORMAT format>
 Sprite<format>::Sprite (const unsigned int width, const unsigned int height) :
 	FrameBufferDynamic<format>( width, height ),
+	m_Texture( width, height ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
 	m_RotPointX( width / 2 ),
@@ -53,6 +57,7 @@ template <CP_FORMAT format>
 Sprite<format>::Sprite (uint8_t* data) :
 	FrameBufferDynamic<format>( (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4],
 					(data[5] << 24) | (data[6] << 16) | (data[7] << 8) | data[8], &data[9] ),
+	m_Texture( data ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
 	m_RotPointX( this->getWidth() / 2 ),

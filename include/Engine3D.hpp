@@ -52,8 +52,9 @@ class Camera3D
 {
 	public:
 		Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio);
+		Camera3D(); // generates identity matrix
 
-		void multiplyByPerspectiveMatrix (Face& face);
+		void multiplyByCameraMatrix (Face& face);
 		void perspectiveDivide (Face& face);
 
 		// scales the x and y vertices to 0.0f -> 1.0f instead of projected -1.0f to 1.0f

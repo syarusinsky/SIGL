@@ -119,6 +119,16 @@ Camera3D::Camera3D (float nearClip, float farClip, float fieldOfView, float aspe
 	this->generateProjectionMatrix();
 }
 
+Camera3D::Camera3D() :
+	m_NearClip( 0.0f ),
+	m_FarClip( 1.0f ),
+	m_FieldOfView( 0.0f ),
+	m_AspectRatio( 0.0 ),
+	m_ProjectionMatrix( generateIdentityMatrix() ),
+	m_Position( 0.0f )
+{
+}
+
 float Camera3D::x() const
 {
 	return m_Position.x();
@@ -166,7 +176,7 @@ Vector<4> Camera3D::perspectiveDivide (const Vector<4>& vector)
 	return outVec;
 }
 
-void Camera3D::multiplyByPerspectiveMatrix (Face& face)
+void Camera3D::multiplyByCameraMatrix (Face& face)
 {
 	face.vertices[0].vec = multiplyByPerspectiveMatrix( face.vertices[0].vec );
 	face.vertices[1].vec = multiplyByPerspectiveMatrix( face.vertices[1].vec );
