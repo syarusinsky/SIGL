@@ -39,6 +39,10 @@ struct Mesh
 	void scale (float scaleFactor);
 	void translate (float x, float y, float z);
 	void rotate (float x, float y, float z);
+
+	void applyTransformations(); // multiplies vertexes by transformation matrix
+
+	Face transformedFace (unsigned int index);
 };
 
 struct PointLight
@@ -51,8 +55,8 @@ struct PointLight
 class Camera3D
 {
 	public:
-		Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio);
-		Camera3D(); // generates identity matrix
+		Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio); // perspective camera
+		Camera3D (float left, float right, float bottom, float top, float near, float far); // orthographic camera
 
 		void multiplyByCameraMatrix (Face& face);
 		void perspectiveDivide (Face& face);
@@ -64,10 +68,20 @@ class Camera3D
 		float y() const;
 		float z() const;
 
-		float getNearClip() { return m_NearClip; }
-		float getFarClip() { return m_FarClip; }
+		float getNearClip() const { return m_NearClip; }
+		float getFarClip() const { return m_FarClip; }
 
 	private:
+		// TODO in the future possibly break these out into separate classes that derive from Camera3D
+		// orthographic vars
+		float 			m_Left;
+		float 			m_Right;
+		float 			m_Bottom;
+		float 			m_Top;
+		float 			m_Near;
+		float 			m_Far;
+
+		// perspective vars
 		float			m_NearClip;
 		float			m_FarClip;
 		float			m_FieldOfView;
@@ -77,8 +91,9 @@ class Camera3D
 
 		Vector<4> 		m_Position;
 
-		void generateProjectionMatrix();
-		Vector<4> multiplyByPerspectiveMatrix (const Vector<4>& vector);
+		void generatePerspectiveProjectionMatrix();
+		void generateOrthographicProjectionMatrix();
+		Vector<4> multiplyByCameraMatrix (const Vector<4>& vector);
 		Vector<4> perspectiveDivide (const Vector<4>& vector);
 };
 

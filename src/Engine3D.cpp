@@ -55,6 +55,29 @@ void Mesh::rotate (float x, float y, float z)
 	transformMat *= rotMatrix;
 }
 
+void Mesh::applyTransformations()
+{
+	for ( unsigned int index = 0; index < faces.size(); index++ )
+	{
+		faces[index] = transformedFace( index );
+	}
+
+	transformMat = generateIdentityMatrix();
+}
+
+Face Mesh::transformedFace (unsigned int index)
+{
+	Face transformedFace = faces[index];
+	transformedFace.vertices[0].vec = transformedFace.vertices[0].vec * transformMat;
+	transformedFace.vertices[1].vec = transformedFace.vertices[1].vec * transformMat;
+	transformedFace.vertices[2].vec = transformedFace.vertices[2].vec * transformMat;
+	transformedFace.vertices[0].normal = transformedFace.vertices[0].normal * transformMat;
+	transformedFace.vertices[1].normal = transformedFace.vertices[1].normal * transformMat;
+	transformedFace.vertices[2].normal = transformedFace.vertices[2].normal * transformMat;
+
+	return transformedFace;
+}
+
 Vector<4> Face::calcFaceNormals()
 {
 	Vertex& vert1 = vertices[0];
@@ -109,6 +132,12 @@ Matrix<4, 4> generateRotationMatrix (float xDegrees, float yDegrees, float zDegr
 }
 
 Camera3D::Camera3D (float nearClip, float farClip, float fieldOfView, float aspectRatio) :
+	m_Left( 0.0f ),
+	m_Right( 0.0f ),
+	m_Bottom( 0.0f ),
+	m_Top( 0.0f ),
+	m_Near( 0.0f ),
+	m_Far( 0.0f ),
 	m_NearClip( nearClip ),
 	m_FarClip( farClip ),
 	m_FieldOfView( fieldOfView ),
@@ -116,10 +145,16 @@ Camera3D::Camera3D (float nearClip, float farClip, float fieldOfView, float aspe
 	m_ProjectionMatrix( 0.0f ),
 	m_Position( 0.0f )
 {
-	this->generateProjectionMatrix();
+	this->generatePerspectiveProjectionMatrix();
 }
 
-Camera3D::Camera3D() :
+Camera3D::Camera3D (float left, float right, float bottom, float top, float near, float far) :
+	m_Left( left ),
+	m_Right( right ),
+	m_Bottom( bottom ),
+	m_Top( top ),
+	m_Near( near ),
+	m_Far( far ),
 	m_NearClip( 0.0f ),
 	m_FarClip( 1.0f ),
 	m_FieldOfView( 0.0f ),
@@ -127,6 +162,7 @@ Camera3D::Camera3D() :
 	m_ProjectionMatrix( generateIdentityMatrix() ),
 	m_Position( 0.0f )
 {
+	this->generateOrthographicProjectionMatrix();
 }
 
 float Camera3D::x() const
@@ -144,20 +180,37 @@ float Camera3D::z() const
 	return m_Position.z();
 }
 
-void Camera3D::generateProjectionMatrix()
+void Camera3D::generatePerspectiveProjectionMatrix()
 {
 	constexpr float halfPiOver180 = ( M_PI / 180.0f ) * 0.5f;
 	const float tanHalfFov = tanf(m_FieldOfView * halfPiOver180);
 
 	m_ProjectionMatrix = Matrix<4, 4>( 0.0f ); // reset the projection matrix
-	m_ProjectionMatrix.at(0, 0) = 1.0f / ( tanHalfFov * m_AspectRatio );
-	m_ProjectionMatrix.at(1, 1) = 1.0f / tanHalfFov;
-	m_ProjectionMatrix.at(2, 2) = m_FarClip / ( m_FarClip - m_NearClip );
-	m_ProjectionMatrix.at(3, 2) = ( -m_FarClip * m_NearClip ) / ( m_FarClip - m_NearClip );
-	m_ProjectionMatrix.at(2, 3) = 1.0f;
+	m_ProjectionMatrix.at( 0, 0 ) = 1.0f / ( tanHalfFov * m_AspectRatio );
+	m_ProjectionMatrix.at( 1, 1 ) = 1.0f / tanHalfFov;
+	m_ProjectionMatrix.at( 2, 2 ) = m_FarClip / ( m_FarClip - m_NearClip );
+	m_ProjectionMatrix.at( 3, 2 ) = ( -m_FarClip * m_NearClip ) / ( m_FarClip - m_NearClip );
+	m_ProjectionMatrix.at( 2, 3 ) = 1.0f;
 }
 
-Vector<4> Camera3D::multiplyByPerspectiveMatrix (const Vector<4>& vector)
+void Camera3D::generateOrthographicProjectionMatrix()
+{
+	const float width = m_Right - m_Left;
+	const float height = m_Top - m_Bottom;
+	const float depth = m_Far - m_Near;
+
+	// inverted
+	m_ProjectionMatrix = Matrix<4, 4>( 0.0f ); // reset the projection matrix
+	m_ProjectionMatrix.at( 0, 0 ) = 2.0f / width;
+	m_ProjectionMatrix.at( 3, 0 ) = -( m_Right + m_Left ) / width;
+	m_ProjectionMatrix.at( 1, 1 ) = 2.0f / height;
+	m_ProjectionMatrix.at( 3, 1 ) = -( m_Top + m_Bottom ) / height;
+	m_ProjectionMatrix.at( 2, 2 ) = -2.0f / depth;
+	m_ProjectionMatrix.at( 3, 2 ) = -( m_Far + m_Near ) / depth;
+	m_ProjectionMatrix.at( 3, 3 ) = 1.0f;
+}
+
+Vector<4> Camera3D::multiplyByCameraMatrix (const Vector<4>& vector)
 {
 	return vector * m_ProjectionMatrix;
 }
@@ -178,9 +231,9 @@ Vector<4> Camera3D::perspectiveDivide (const Vector<4>& vector)
 
 void Camera3D::multiplyByCameraMatrix (Face& face)
 {
-	face.vertices[0].vec = multiplyByPerspectiveMatrix( face.vertices[0].vec );
-	face.vertices[1].vec = multiplyByPerspectiveMatrix( face.vertices[1].vec );
-	face.vertices[2].vec = multiplyByPerspectiveMatrix( face.vertices[2].vec );
+	face.vertices[0].vec = multiplyByCameraMatrix( face.vertices[0].vec );
+	face.vertices[1].vec = multiplyByCameraMatrix( face.vertices[1].vec );
+	face.vertices[2].vec = multiplyByCameraMatrix( face.vertices[2].vec );
 }
 
 void Camera3D::perspectiveDivide (Face& face)

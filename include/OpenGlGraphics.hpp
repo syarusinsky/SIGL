@@ -42,8 +42,6 @@ class OpenGlGraphics3D : public IGraphics<width, height, format, api, include3D,
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
-		using IGraphics3D<width, height, shaderPassDataSize>::m_DepthBuffer;
-		using IGraphics3D<width, height, shaderPassDataSize>::m_ShaderPassData;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
 };
 
@@ -571,6 +569,8 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	// offset to rotation point
 	const float rotX = sprite.getRotationPointX() * sprite.getScaleFactor();
 	const float rotY = sprite.getRotationPointY() * sprite.getScaleFactor();
+	const float originalXStart = xStart;
+	const float originalYStart = yStart;
 	const float xOffsetToRotPoint = xStart + rotX;
 	const float yOffsetToRotPoint = yStart + rotY;
 	xStart -= xOffsetToRotPoint;
@@ -598,14 +598,14 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 	float yEndRot = ( sinVal * xEnd ) + ( cosVal * yEnd );
 
 	// offset back from rotation point
-	xStart = xStartRot + xOffsetToRotPoint;
-	yStart = yStartRot + yOffsetToRotPoint;
-	xPoint2 = xPoint2Rot + xOffsetToRotPoint;
-	yPoint2 = yPoint2Rot + yOffsetToRotPoint;
-	xPoint3 = xPoint3Rot + xOffsetToRotPoint;
-	yPoint3 = yPoint3Rot + yOffsetToRotPoint;
-	xEnd = xEndRot + xOffsetToRotPoint;
-	yEnd = yEndRot + yOffsetToRotPoint;
+	xStart = xStartRot + originalXStart + sprite.getRotationPointX();
+	yStart = yStartRot + originalYStart + sprite.getRotationPointY();
+	xPoint2 = xPoint2Rot + originalXStart + sprite.getRotationPointX();
+	yPoint2 = yPoint2Rot + originalYStart + sprite.getRotationPointY();
+	xPoint3 = xPoint3Rot + originalXStart + sprite.getRotationPointX();
+	yPoint3 = yPoint3Rot + originalYStart + sprite.getRotationPointY();
+	xEnd = xEndRot + originalXStart + sprite.getRotationPointX();
+	yEnd = yEndRot + originalYStart + sprite.getRotationPointY();
 
 	// convert back to relative
 	constexpr float oneOverWidthF = 1.0f / widthF;

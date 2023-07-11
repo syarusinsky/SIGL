@@ -931,12 +931,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	const bool v2Inside = face.vertices[1].isInsideView();
 	const bool v3Inside = face.vertices[2].isInsideView();
 
-	if ( ! v1Inside && ! v2Inside && ! v3Inside )
-	{
-		// triangle is outside of the clip space, so do nothing
-		return;
-	}
-	else if ( v1Inside && v2Inside && v3Inside )
+	if ( v1Inside && v2Inside && v3Inside )
 	{
 		camera.perspectiveDivide( face );
 		camera.scaleXYToZeroToOne( face );
@@ -1380,10 +1375,12 @@ template <CP_FORMAT texFormat>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart,
 		Sprite<texFormat>& sprite)
 {
-	const float spriteWidthF  = 2.0f * ( static_cast<float>(sprite.getScaledWidth()) / static_cast<float>(width)  );
-	const float spriteHeightF = 2.0f * ( static_cast<float>(sprite.getScaledHeight()) / static_cast<float>(height) );
-	xStart = ( xStart * 2.0f ) - 1.0f;
-	yStart = ( yStart * 2.0f ) - 1.0f;
+	const float spriteWidthF  = static_cast<float>( sprite.getWidth() );
+	const float spriteHeightF = static_cast<float>( sprite.getHeight() );
+	const float spriteRotPointXF = static_cast<float>( sprite.getRotationPointX() );
+	const float spriteRotPointYF = static_cast<float>( sprite.getRotationPointY() );
+	xStart = xStart * static_cast<float>( width );
+	yStart = yStart * static_cast<float>( height );
 
 	// create faces
 	Face topFace = {{
@@ -1399,10 +1396,15 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 
 	// create mesh
 	Mesh mesh{ {{topFace, bottomFace}} };
+	mesh.translate( -xStart - spriteRotPointXF, -yStart - spriteRotPointYF, 0.0f ); // return to rotation point
+	mesh.rotate( 0.0f, 0.0f, sprite.getRotationAngle() );
+	mesh.applyTransformations();
+	mesh.scale( sprite.getScaleFactor() );
+	mesh.translate( xStart + spriteRotPointXF, yStart + spriteRotPointYF, 0.0f );
 
 	// TODO allow the ability to use custom shaders in the near future
 	std::array<Texture<texFormat>*, 5> textures = { {&sprite.getTexture(), nullptr, nullptr, nullptr, nullptr} };
-	Camera3D camera;
+	Camera3D camera( 0.0f, width, 0.0f, height, 0.0f, 1.0f );
 	std::vector<PointLight> lights;
 	TriShaderData<texFormat, shaderPassDataSize> shaderData{
 		textures,
@@ -1413,137 +1415,14 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		basicSpriteFShader
 	};
 
-	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-		drawTriangleShadedHelper<texFormat, true>( mesh.faces[0], shaderData );
+	topFace = mesh.transformedFace( 0 );
+	bottomFace = mesh.transformedFace( 1 );
 
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-		drawTriangleShadedHelper<texFormat, true>( mesh.faces[1], shaderData );
+		drawTriangleShadedHelper<texFormat, true>( topFace, shaderData );
 
-	/*
-	// getting the pixel values of the vertices
-	int startXInt = xStart * (width - 1);
-	int startYInt = yStart * (width - 1);
-	int currentXInt = startXInt;
-	int currentYInt = startYInt;
-
-	const int spriteWidth = sprite.getWidth();
-	const int spriteHeight = sprite.getHeight();
-
-	float scaleFactor = sprite.getScaleFactor();
-
-	float spriteRowTravel = 1.0f;
-	float spritePixelTravel = 1.0f;
-	if ( scaleFactor < 1.0f ) // we need to skip rows and columns if downscaling
-	{
-		spriteRowTravel = spriteRowTravel / scaleFactor;
-		spritePixelTravel = spritePixelTravel / scaleFactor;
-	}
-	const unsigned int scaledHeight = sprite.getScaledHeight();
-	const unsigned int scaledWidth  = sprite.getScaledWidth();
-	const float nNXTravel = static_cast<float>( scaledWidth ) / static_cast<float>( spriteWidth ); // nearest neighbor scaling vars
-	const float nNYTravel = static_cast<float>( scaledHeight ) / static_cast<float>( spriteHeight );
-	float nNCurrentX = 0.0f; // these vars keep a 'running total' for upscaling
-	float nNCurrentY = 0.0f;
-	float nNYLeftOver = 0.0f;
-
-	// for rotation
-	int spriteRotDegrees = sprite.getRotationAngle();
-	int spriteRotPointX = std::round( sprite.getRotationPointX() * scaleFactor );;
-	int spriteRotPointY = std::round( sprite.getRotationPointY() * scaleFactor );
-
-	// for bottom clipping
-	const int fbSize = width * height;
-
-	for ( float row = 0; row < spriteHeight; row += spriteRowTravel )
-	{
-		unsigned int pixelsMovedRight = 0;
-		unsigned int pixelsMovedDown = 0;
-		unsigned int xPixelsSkipped = 0;
-
-		for ( float pixel = 0; pixel < spriteWidth; pixel += spritePixelTravel )
-		{
-			Color color = sprite.getColor( static_cast<unsigned int>(std::floor(pixel)), static_cast<unsigned int>(std::floor(row)) );
-
-			while ( nNCurrentX < nNXTravel )
-			{
-				pixelsMovedDown = 0;
-				nNCurrentY = nNYLeftOver;
-
-				// do rotation
-				float radians = (spriteRotDegrees * M_PI) / 180.0f;
-				float sinVal = sin( radians );
-				float cosVal = cos( radians );
-
-				int newY = currentYInt;
-
-				while ( nNCurrentY < nNYTravel )
-				{
-					int translationPointX = startXInt + spriteRotPointX;
-					int translationPointY = startYInt + spriteRotPointY;
-					int xTranslated = currentXInt - translationPointX;
-					int yTranslated = newY - translationPointY;
-					int xRotated = static_cast<int>( (+xTranslated * cosVal) - (yTranslated * sinVal) );
-					int yRotated = static_cast<int>( (+xTranslated * sinVal) + (yTranslated * cosVal) );
-					int xTranslatedBack = xRotated + translationPointX;
-					int yTranslatedBack = yRotated + translationPointY;
-
-					int pixelToWrite = (yTranslatedBack * width) + xTranslatedBack;
-
-					if ( pixelToWrite >= 0 &&  // top clipping
-							pixelToWrite < fbSize && // bottom clipping
-							xTranslatedBack >= 0 && // left clipping
-							xTranslatedBack < width // right clipping
-							)
-					{
-							m_ColorProfile.setColor( color );
-							// TODO as an optimization, maybe we should only call alpha blending with sprites
-							// we know to have transparency?
-							m_ColorProfile.template putPixelWithAlphaBlending<width, height>(
-									m_FB.getPixels(), pixelToWrite );
-					}
-
-					// TODO this is a smoothbrain way to remove the 'aliasing' that occurs when rotating
-					// but it works,.. maybe fix later?
-					// TODO update: commenting out for now because of how outrageously smoothbrain it is
-					// int sbPixelRight = pixelToWrite + 1;
-					// if ( sbPixelRight >= 0 &&  // top clipping
-					// 		sbPixelRight < fbSize && // bottom clipping
-					// 		xTranslatedBack + 1 >= 0 && // left clipping
-					// 		xTranslatedBack + 1 < m_FBWidth && // right clipping
-					// 		! (color.m_IsMonochrome && color.m_M == 0.0f) )
-					// {
-					// 		m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelRight );
-					// }
-					// int sbPixelDown = pixelToWrite + m_FBWidth;
-					// if ( sbPixelDown >= 0 &&  // top clipping
-					// 		sbPixelDown < fbSize && // bottom clipping
-					// 		xTranslatedBack >= 0 && // left clipping
-					// 		xTranslatedBack < m_FBWidth && // right clipping
-					// 		! (color.m_IsMonochrome && color.m_M == 0.0f) )
-					// {
-					// 		m_ColorProfile->putPixel( m_FBPixels, m_FBNumPixels, sbPixelDown );
-					// }
-
-					nNCurrentY += 1.0f;
-					pixelsMovedDown++;
-					newY++;
-				}
-
-				nNCurrentX += 1.0f;
-				xPixelsSkipped++;
-				pixelsMovedRight++;
-				currentXInt++;
-			}
-
-			nNCurrentX = std::fmod( nNCurrentX, nNXTravel );
-		}
-
-		nNYLeftOver = std::fmod( nNCurrentY, nNYTravel );
-		nNCurrentX = 0.0f;
-		currentXInt -= pixelsMovedRight;
-		currentYInt += pixelsMovedDown;
-	}
-	*/
+	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
+		drawTriangleShadedHelper<texFormat, true>( bottomFace, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
