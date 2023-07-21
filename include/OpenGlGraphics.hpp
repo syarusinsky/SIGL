@@ -37,6 +37,7 @@ class OpenGlGraphics3D : public IGraphics<width, height, format, api, include3D,
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) override;
 		void drawDepthBuffer (Camera3D& camera) override;
+		void clearDepthBuffer() override;
 
 	protected:
 		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
@@ -688,6 +689,12 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawDepthBuffer (Camera3D& camera)
 {
 	// TODO render depth buffer
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::clearDepthBuffer()
+{
+	// TODO clear depth buffer
 }
 
 inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& x4, float& y4)

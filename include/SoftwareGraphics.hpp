@@ -29,7 +29,8 @@ class SoftwareGraphicsBase : public IGraphics<width, height, format, api, includ
 
 	protected:
 		template <CP_FORMAT texFormat, bool withTransparency = false>
-		inline void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
+		inline void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData,
+				std::array<float, width * height>& depthBuffer );
 		template <CP_FORMAT texFormat, bool withTransparency = false>
 		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
 			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
@@ -43,8 +44,6 @@ class SoftwareGraphicsBase : public IGraphics<width, height, format, api, includ
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
-		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ShaderPassData;
-		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_DepthBuffer;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -64,16 +63,17 @@ class SoftwareGraphics3D : public SoftwareGraphicsBase<width, height, format, ap
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) override;
 		void drawDepthBuffer (Camera3D& camera) override;
+		void clearDepthBuffer() override;
 
 	protected:
+		std::array<float, width * height> 		m_DepthBuffer;
+
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::approxEqual;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::clip;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::lerp;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::percentageBetween;
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
-		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ShaderPassData;
-		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_DepthBuffer;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
 };
 
@@ -132,7 +132,6 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_CurrentFont;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
-		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ShaderPassData;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -633,7 +632,7 @@ void SoftwareGraphics3D<width, height, format, api,  include3D, shaderPassDataSi
 		TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData)
 {
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-		drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData );
+		drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData, m_DepthBuffer );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -641,14 +640,14 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 		TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData)
 {
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-		drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData );
+		drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData, m_DepthBuffer );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData)
 {
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-		drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
+		drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData, m_DepthBuffer );
 }
 
 inline float calcIncr(Vector<3>& values, float xy1, float xy2, float xy3, float oneOverdXY)
@@ -903,7 +902,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat, bool withTransparency>
 void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
+			TriShaderData<texFormat, shaderPassDataSize>& shaderData, std::array<float, width * height>& depthBuffer)
 {
 	// setup shader data
 	Camera3D& camera = shaderData.camera;
@@ -938,7 +937,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 
 		// triangle is entirely inside of the clip space, so draw and return
 		SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-			renderInBoundsTriangle<texFormat, withTransparency>( face, shaderData, m_DepthBuffer );
+			renderInBoundsTriangle<texFormat, withTransparency>( face, shaderData, depthBuffer );
 
 		// set the previously used color back since we're done with the gradients
 		m_ColorProfile.setColor( previousColor );
@@ -1014,7 +1013,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 
 			// triangle is entirely inside of the clip space, so draw
 			SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-				renderInBoundsTriangle<texFormat, withTransparency>( clippedFace, shaderData, m_DepthBuffer );
+				renderInBoundsTriangle<texFormat, withTransparency>( clippedFace, shaderData, depthBuffer );
 		}
 	}
 
@@ -1418,11 +1417,24 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	topFace = mesh.transformedFace( 0 );
 	bottomFace = mesh.transformedFace( 1 );
 
-	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-		drawTriangleShadedHelper<texFormat, true>( topFace, shaderData );
+	if constexpr ( include3D )
+	{
+		SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
+			drawTriangleShadedHelper<texFormat, true>( topFace, shaderData,
+					SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::m_DepthBuffer );
 
-	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
-		drawTriangleShadedHelper<texFormat, true>( bottomFace, shaderData );
+		SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
+			drawTriangleShadedHelper<texFormat, true>( bottomFace, shaderData,
+					SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::m_DepthBuffer );
+	}
+	else
+	{
+		SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
+			drawTriangleShadedHelper<texFormat, true>( topFace, shaderData, *(std::array<float, width * height>*)(nullptr) );
+
+		SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
+			drawTriangleShadedHelper<texFormat, true>( bottomFace, shaderData, *(std::array<float, width * height>*)(nullptr) );
+	}
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -1446,5 +1458,12 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 	// set the previously used color back since we're done with the gradients
 	m_ColorProfile.setColor( previousColor );
 }
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::clearDepthBuffer()
+{
+	std::fill( std::begin(m_DepthBuffer), std::end(m_DepthBuffer), std::numeric_limits<float>::max() );
+}
+
 
 #endif // SOFTWAREGRAPHICS_HPP
