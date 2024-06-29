@@ -3,6 +3,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <iostream>
+
 static inline float lerp (float t, float a, float b)
 {
 	return  a + ( t * (b - a) );
@@ -33,6 +35,13 @@ bool Vertex::isInsideView()
 	return std::abs( vec.x() ) <= std::abs( vec.w() )
 		&& std::abs( vec.y() ) <= std::abs( vec.w() )
 		&& std::abs( vec.z() ) <= std::abs( vec.w() );
+}
+
+void Face::printFace()
+{
+	std::cout << vertices[0].vec.x() << ", " << vertices[0].vec.y() << std::endl; 
+	std::cout << vertices[1].vec.x() << ", " << vertices[1].vec.y() << std::endl; 
+	std::cout << vertices[2].vec.x() << ", " << vertices[2].vec.y() << std::endl; 
 }
 
 void Mesh::scale (float scaleFactor)

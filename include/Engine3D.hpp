@@ -28,6 +28,8 @@ struct Face
 	Vertex vertices[3];
 
 	Vector<4> calcFaceNormals();
+
+	void printFace();
 };
 
 struct Mesh

@@ -37,7 +37,7 @@ class SoftwareGraphicsBase : public IGraphics<width, height, format, api, includ
 			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
 			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr,
 			float perspYIncr, float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr,
-			std::array<float, width * height>& depthBuffer);
+			std::array<float, width * height>& depthBuffer, int leftHanded);
 		template <CP_FORMAT texFormat, bool withTransparency = false>
 		inline void renderInBoundsTriangle (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData,
 							std::array<float, width * height>& depthBuffer);
@@ -669,31 +669,19 @@ inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, 
 					float texCoordY1, float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr,
 					float perspXIncr, float perspYIncr, float depthXIncr, float depthYIncr, float v1LightAmnt,
 					float lightAmntXIncr, float lightAmntYIncr, std::array<float, width * height>& depthBuffer,
-					ColorProfile<format>& colorProfile, FrameBufferFixed<width, height, format, api>& fb)
+					ColorProfile<format>& colorProfile, FrameBufferFixed<width, height, format, api>& fb, int leftHanded)
 {
-	// TODO this should be further optimized?
-	for (int row = startRow; row < endRowExclusive && row < height; row++)
+	for ( int row = startRow; row < endRowExclusive && row < height; row++ )
 	{
-		// rounding the points and clipping horizontally
-		unsigned int leftX;
-		unsigned int rightX;
-		if constexpr ( withTransparency )
-		{
-			leftX  = xLeftAccumulator + 0.5f; // ceil
-			rightX = xRightAccumulator - 0.5f; // floor
-		}
-		else
-		{
-			leftX  = xLeftAccumulator;
-			rightX = xRightAccumulator;
-		}
+		unsigned int leftX = xLeftAccumulator;
+		unsigned int rightX = xRightAccumulator;
 
-		const unsigned int tempXY1 = ( (row * width) + leftX  );
+		const unsigned int tempXY1 = ( (row * width) + leftX );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
-		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX + 1) - static_cast<float>( leftX ) );
+		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX + 1 ) - static_cast<float>( leftX ) );
 		const float rowF = static_cast<float>( row );
 		const float leftXF  = xLeftAccumulator;
-		const float rightXF = xRightAccumulator;
+		const float rightXF = xRightAccumulator + ( xRightIncr * leftHanded );
 		const float depthStart = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (leftXF - x1) );
 		const float depthEnd   = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (rightXF - x1) );
 		const float texXStart  = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF - y1) ) + ( texCoordXXIncr * (leftXF - x1) );
@@ -715,7 +703,7 @@ inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, 
 		float pers  = persStart;
 		float light = lightStart;
 
-		for (unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1)
+		for ( unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1 )
 		{
 			if constexpr ( include3D )
 			{
@@ -774,13 +762,13 @@ inline void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPa
 		float xRightIncr, TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1,
 		float texCoordY1, float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr,
 		float perspYIncr, float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr,
-		std::array<float, width * height>& depthBuffer)
+		std::array<float, width * height>& depthBuffer, int leftHanded)
 {
 	renderScanlinesHelper<width, height, format, api, include3D, shaderPassDataSize, texFormat, withTransparency>(
 			startRow, endRowExclusive, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul, v1Depth, xLeftIncr,
 			xRightIncr, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr, texCoordYXIncr,
 			texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
-			depthBuffer, m_ColorProfile, m_FB );
+			depthBuffer, m_ColorProfile, m_FB, leftHanded );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
@@ -837,11 +825,17 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	float xLeftIncrBottom  = ( x3FCeil - x2FCeil ) / ( y3FCeil - y2FCeil );
 	float xRightIncrBottom = ( x3FCeil - x1FCeil ) / ( y3FCeil - y1FCeil );
 
-	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
-	bool needsSwapping = ( xLeftIncrBottom < xRightIncrBottom );
+	// get handedness by calculating area by getting cross product of vectors of lines 1 and 2
+	const float vec1X = x3FCeil - x1FCeil;
+	const float vec1Y = y3FCeil - y1FCeil;
+	const float vec2X = x2FCeil - x1FCeil;
+	const float vec2Y = y2FCeil - y1FCeil;
+
+	const float area = ( vec1X * vec2Y ) - ( vec2X * vec1Y );
+	const int leftHanded = ( area >= 0 ) ? 1 : 0;
 
 	// depending on the position of the vertices, we need to swap increments
-	if ( (needsSwapping && x1Ceil < x2Ceil) || (needsSwapping && x1Ceil >= x2Ceil && x2Ceil > x3Ceil) )
+	if ( leftHanded == 0 )
 	{
 		float tempIncr = xLeftIncrTop;
 		xLeftIncrTop = xRightIncrTop;
@@ -878,7 +872,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	renderScanlines<texFormat, withTransparency>( y1Ceil, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul,
 		v1Depth, xLeftIncrTop, xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr,
 		texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
-		depthBuffer );
+		depthBuffer, leftHanded );
 
 	// in case the top of the triangle is straight, set the accumulators appropriately
 	if ( y1Ceil == y2Ceil == y3Ceil )
@@ -893,10 +887,10 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	}
 
 	// rasterize up until the last vertice
-	renderScanlines<texFormat, withTransparency>( y2Ceil, y3Ceil + 1, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul,
+	renderScanlines<texFormat, withTransparency>( y2Ceil, y3Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul,
 		v1Depth, xLeftIncrBottom, xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr,
 		texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
-		depthBuffer );
+		depthBuffer, leftHanded );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
