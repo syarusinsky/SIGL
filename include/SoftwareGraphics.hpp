@@ -776,6 +776,119 @@ template <CP_FORMAT texFormat, bool withTransparency>
 void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::renderInBoundsTriangle (Face& face,
 			TriShaderData<texFormat, shaderPassDataSize>& shaderData, std::array<float, width * height>& depthBuffer)
 {
+	triSortVertices( face.vertices[0], face.vertices[1], face.vertices[2], width, height );
+
+	const float x1 = face.vertices[0].vec.x();
+	const float y1 = face.vertices[0].vec.y();
+	const float x2 = face.vertices[1].vec.x();
+	const float y2 = face.vertices[1].vec.y();
+	const float x3 = face.vertices[2].vec.x();
+	const float y3 = face.vertices[2].vec.y();
+
+	const int y1Ceil = std::ceil( y1 );
+	const int y2Ceil = std::ceil( y2 );
+	const int y3Ceil = std::ceil( y3 );
+
+	// floats for incrementing xLeftAccumulator and xRightAccumulator
+	float xLeftIncrTop     = ( x2 - x1 ) / ( y2 - y1 );
+	float xRightIncrTop    = ( x3 - x1 ) / ( y3 - y1 );
+	float xLeftIncrBottom  = ( x3 - x2 ) / ( y3 - y2 );
+	float xRightIncrBottom = ( x3 - x1 ) / ( y3 - y1 );
+
+	// get handedness by calculating area by getting cross product of vectors of lines 1 and 2
+	const float vec1X = x3 - x1;
+	const float vec1Y = y3 - y1;
+	const float vec2X = x2 - x1;
+	const float vec2Y = y2 - y1;
+
+	const float area = ( vec1X * vec2Y ) - ( vec2X * vec1Y );
+	const int leftHanded = ( area >= 0 ) ? 1 : 0;
+
+	// depending on the position of the vertices, we need to swap increments
+	if ( leftHanded == 0 )
+	{
+		float tempIncr = xLeftIncrTop;
+		xLeftIncrTop = xRightIncrTop;
+		xRightIncrTop = tempIncr;
+
+		tempIncr = xLeftIncrBottom;
+		xLeftIncrBottom = xRightIncrBottom;
+		xRightIncrBottom = tempIncr;
+	}
+
+	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
+	float xLeftAccumulator  = x1 + ( (static_cast<float>(y1Ceil) - y1) * xLeftIncrTop );
+	float xRightAccumulator = x1 + ( (static_cast<float>(y1Ceil) - y1) * xRightIncrTop );
+
+	// render up until the second vertice
+	for ( unsigned int row = y1Ceil; row < y2Ceil && row < height; row++ )
+	{
+		unsigned int leftX =  std::ceil( xLeftAccumulator );
+		unsigned int rightX = std::ceil( xRightAccumulator );
+
+		const unsigned int tempXY1 = ( (row * width) + leftX );
+		const unsigned int tempXY2 = ( (row * width) + rightX );
+
+		for ( unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1 )
+		{
+			if constexpr ( include3D )
+			{
+					m_ColorProfile.setColor( 0.5f, 0.5f, 1.0f, 0.3f );
+					if constexpr ( withTransparency )
+					{
+						m_ColorProfile.template putPixelWithAlphaBlending<width, height>( m_FB.getPixels(), pixel );
+					}
+			}
+		}
+
+		// increment accumulators
+		xLeftAccumulator  += xLeftIncrTop;
+		xRightAccumulator += xRightIncrTop;
+	}
+
+	if ( y1Ceil != y2Ceil ) // need to account for vert 2 being in the middle of both left and right increments
+	{
+		xLeftAccumulator  += ( (static_cast<float>(y2) - y2Ceil) * xLeftIncrTop )  + ( (static_cast<float>(y2Ceil) - y2) * xLeftIncrBottom );
+		xRightAccumulator += ( (static_cast<float>(y2) - y2Ceil) * xRightIncrTop ) + ( (static_cast<float>(y2Ceil) - y2) * xRightIncrBottom );
+	}
+	else if ( ! floatsAreEqual(y1, y2) ) // still need to account for vert 2 being in the middle of both left and right increments
+	{
+		xLeftAccumulator  = x1 + ( (y2 - y1) * xLeftIncrTop )  + ( (static_cast<float>(y2Ceil) - y2) * xLeftIncrBottom );
+		xRightAccumulator = x1 + ( (y2 - y1) * xRightIncrTop ) + ( (static_cast<float>(y2Ceil) - y2) * xRightIncrBottom );
+	}
+	else
+	{
+		xLeftAccumulator = x1 + ( (static_cast<float>(y2Ceil) - y2) * xLeftIncrBottom );
+		xRightAccumulator = x2 + ( (static_cast<float>(y2Ceil) - y2) * xRightIncrBottom );
+	}
+
+	// rasterize up until the last vertice
+	for ( unsigned int row = y2Ceil; row < y3Ceil && row < height; row++ )
+	{
+		unsigned int leftX =  std::ceil( xLeftAccumulator );
+		unsigned int rightX = std::ceil( xRightAccumulator );
+
+		const unsigned int tempXY1 = ( (row * width) + leftX );
+		const unsigned int tempXY2 = ( (row * width) + rightX );
+
+		for ( unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1 )
+		{
+			if constexpr ( include3D )
+			{
+					m_ColorProfile.setColor( 0.5f, 0.5f, 1.0f, 0.3f );
+					if constexpr ( withTransparency )
+					{
+						m_ColorProfile.template putPixelWithAlphaBlending<width, height>( m_FB.getPixels(), pixel );
+					}
+			}
+		}
+
+		// increment accumulators
+		xLeftAccumulator  += xLeftIncrBottom;
+		xRightAccumulator += xRightIncrBottom;
+	}
+
+	/*
 	// sorting vertices
 	triSortVertices( face.vertices[0], face.vertices[1], face.vertices[2], width, height );
 
@@ -866,7 +979,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	const float lightAmntYIncr = calcIncr( lightAmnts, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
 	// TODO we actually just want to interpolate the normals, for vertex-shaded lighting we can calculate in the vertex shader and pass down
 
-	Color currentColor;
+	ColorProfile currentColor;
 
 	// render up until the second vertice
 	renderScanlines<texFormat, withTransparency>( y1Ceil, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul,
@@ -891,6 +1004,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 		v1Depth, xLeftIncrBottom, xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr,
 		texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
 		depthBuffer, leftHanded );
+	*/
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
