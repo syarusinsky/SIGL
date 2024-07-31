@@ -367,47 +367,37 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleFilledHelper (float x1, float y1, float x2, float y2,
 													float x3, float y3)
 {
-	// getting the pixel values of the vertices
-	const int x1UInt = std::ceil( x1 * (width  - 1) );
-	const int y1UInt = std::ceil( y1 * (height - 1) );
-	const int x2UInt = std::ceil( x2 * (width  - 1) );
-	const int y2UInt = std::ceil( y2 * (height - 1) );
-	const int x3UInt = std::ceil( x3 * (width  - 1) );
-	const int y3UInt = std::ceil( y3 * (height - 1) );
+	// offset to screen space
+	x1 *= (width  - 1);
+	y1 *= (height - 1);
+	x2 *= (width  - 1);
+	y2 *= (height - 1);
+	x3 *= (width  - 1);
+	y3 *= (height - 1);
 
-	int x1Sorted = x1UInt;
-	int y1Sorted = y1UInt;
-	int x2Sorted = x2UInt;
-	int y2Sorted = y2UInt;
-	int x3Sorted = x3UInt;
-	int y3Sorted = y3UInt;
-	float x1FSorted = static_cast<float>( x1UInt );
-	float y1FSorted = static_cast<float>( y1UInt );
-	float x2FSorted = static_cast<float>( x2UInt );
-	float y2FSorted = static_cast<float>( y2UInt );
-	float x3FSorted = static_cast<float>( x3UInt );
-	float y3FSorted = static_cast<float>( y3UInt );
+	triSortVertices( x1, y1, x2, y2, x3, y3 );
 
-	// sorting vertices
-	triSortVertices( x1Sorted, y1Sorted, x1FSorted, y1FSorted,
-				x2Sorted, y2Sorted, x2FSorted, y2FSorted,
-				x3Sorted, y3Sorted, x3FSorted, y3FSorted );
-
-	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
-	float xLeftAccumulator  = x1FSorted;
-	float xRightAccumulator = x1FSorted;
+	const int y1Ceil = std::ceil( y1 );
+	const int y2Ceil = std::ceil( y2 );
+	const int y3Ceil = std::ceil( y3 );
 
 	// floats for incrementing xLeftAccumulator and xRightAccumulator
-	float xLeftIncrTop     = ( x2FSorted - x1FSorted ) / ( y2FSorted - y1FSorted );
-	float xRightIncrTop    = ( x3FSorted - x1FSorted ) / ( y3FSorted - y1FSorted );
-	float xLeftIncrBottom  = ( x3FSorted - x2FSorted ) / ( y3FSorted - y2FSorted );
-	float xRightIncrBottom = ( x3FSorted - x1FSorted ) / ( y3FSorted - y1FSorted );
+	float xLeftIncrTop     = ( x2 - x1 ) / ( y2 - y1 );
+	float xRightIncrTop    = ( x3 - x1 ) / ( y3 - y1 );
+	float xLeftIncrBottom  = ( x3 - x2 ) / ( y3 - y2 );
+	float xRightIncrBottom = ( x3 - x1 ) / ( y3 - y1 );
 
-	// xLeftIncrBottom < xRightIncrBottom is a substitute for line2Slope being on the top or bottom
-	const bool needsSwapping = ( xLeftIncrBottom < xRightIncrBottom );
+	// get handedness by calculating area by getting cross product of vectors of lines 1 and 2
+	const float vec1X = x3 - x1;
+	const float vec1Y = y3 - y1;
+	const float vec2X = x2 - x1;
+	const float vec2Y = y2 - y1;
+
+	const float area = ( vec1X * vec2Y ) - ( vec2X * vec1Y );
+	const int leftHanded = ( area >= 0 ) ? 1 : 0;
 
 	// depending on the position of the vertices, we need to swap increments
-	if ( (needsSwapping && x1Sorted < x2Sorted) || (needsSwapping && x1Sorted >= x2Sorted && x2Sorted > x3Sorted) )
+	if ( leftHanded == 0 )
 	{
 		float tempIncr = xLeftIncrTop;
 		xLeftIncrTop = xRightIncrTop;
@@ -418,25 +408,20 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		xRightIncrBottom = tempIncr;
 	}
 
-	if ( y1Sorted == y2Sorted == y3Sorted ) // if this 'triangle' is just a straight line
-	{
-		xRightAccumulator = x3FSorted;
-	}
-	else if ( y1Sorted == y2Sorted ) // if this triangle has a flat top
-	{
-		xRightAccumulator = x2FSorted;
-	}
+	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
+	float xLeftAccumulator  = x1 + ( (static_cast<float>(y1Ceil) - y1) * xLeftIncrTop );
+	float xRightAccumulator = x1 + ( (static_cast<float>(y1Ceil) - y1) * xRightIncrTop );
 
-	// render top half triangle scanlines
-	for ( unsigned int row = y1Sorted; row < y2Sorted; row++ )
+	// render up until the second vertice
+	for ( unsigned int row = y1Ceil; row < y2Ceil && row < height; row++ )
 	{
-		const unsigned int leftX  = xLeftAccumulator;
-		const unsigned int rightX = xRightAccumulator;
+		unsigned int leftX =  std::ceil( xLeftAccumulator );
+		unsigned int rightX = std::ceil( xRightAccumulator );
 
-		const unsigned int tempXY1 = ( (row * width) + leftX  );
+		const unsigned int tempXY1 = ( (row * width) + leftX );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
 
-		for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
+		for ( unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1 )
 		{
 			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 		}
@@ -446,36 +431,32 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 		xRightAccumulator += xRightIncrTop;
 	}
 
-	// TODO see in the near future if this is going to mess things up for shaded triangle gradients
-	// to prevent xRightAccumulator from surpassing x2 and xLeftAccumulator from surpassing x2
-	if ( !needsSwapping && x1Sorted > x2Sorted && y1Sorted < y2Sorted && xLeftAccumulator < x2Sorted )
+	if ( y1Ceil != y2Ceil ) // need to account for vert 2 being in the middle of both left and right increments
 	{
-		xLeftAccumulator = x2FSorted;
-
-		if ( y2Sorted == y3Sorted && xRightAccumulator > x3Sorted )
-		{
-			xRightAccumulator = x3FSorted;
-		}
+		xLeftAccumulator  += ( (static_cast<float>(y2) - y2Ceil) * xLeftIncrTop )  + ( (static_cast<float>(y2Ceil) - y2) * xLeftIncrBottom );
+		xRightAccumulator += ( (static_cast<float>(y2) - y2Ceil) * xRightIncrTop ) + ( (static_cast<float>(y2Ceil) - y2) * xRightIncrBottom );
 	}
-	else if ( needsSwapping && x1Sorted < x2Sorted && y1Sorted < y2Sorted && xRightAccumulator > x2Sorted )
+	else if ( ! floatsAreEqual(y1, y2) ) // still need to account for vert 2 being in the middle of both left and right increments
 	{
-		xRightAccumulator = x2FSorted;
+		xLeftAccumulator  = x1 + ( (y2 - y1) * xLeftIncrTop )  + ( (static_cast<float>(y2Ceil) - y2) * xLeftIncrBottom );
+		xRightAccumulator = x1 + ( (y2 - y1) * xRightIncrTop ) + ( (static_cast<float>(y2Ceil) - y2) * xRightIncrBottom );
 	}
 	else
 	{
-		xRightAccumulator = std::ceil( xRightAccumulator );
+		xLeftAccumulator = x1 + ( (static_cast<float>(y2Ceil) - y2) * xLeftIncrBottom );
+		xRightAccumulator = x2 + ( (static_cast<float>(y2Ceil) - y2) * xRightIncrBottom );
 	}
 
-	// render bottom half triangle scanlines
-	for (int row = y2Sorted; row <= y3Sorted; row++)
+	// rasterize up until the last vertice
+	for ( unsigned int row = y2Ceil; row < y3Ceil && row < height; row++ )
 	{
-		const unsigned int leftX  = xLeftAccumulator;
-		const unsigned int rightX = xRightAccumulator;
+		unsigned int leftX =  std::ceil( xLeftAccumulator );
+		unsigned int rightX = std::ceil( xRightAccumulator );
 
-		const unsigned int tempXY1 = ( (row * width) + leftX  );
+		const unsigned int tempXY1 = ( (row * width) + leftX );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
 
-		for (unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1)
+		for ( unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1 )
 		{
 			m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixel );
 		}
@@ -671,17 +652,19 @@ inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, 
 					float lightAmntXIncr, float lightAmntYIncr, std::array<float, width * height>& depthBuffer,
 					ColorProfile<format>& colorProfile, FrameBufferFixed<width, height, format, api>& fb, int leftHanded)
 {
-	for ( int row = startRow; row < endRowExclusive && row < height; row++ )
+	for ( unsigned int row = startRow; row < endRowExclusive && row < height; row++ )
 	{
-		unsigned int leftX = xLeftAccumulator;
-		unsigned int rightX = xRightAccumulator;
+		const unsigned int leftX  = std::ceil( xLeftAccumulator );
+		const unsigned int rightX = std::ceil( xRightAccumulator );
 
 		const unsigned int tempXY1 = ( (row * width) + leftX );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
-		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX + 1 ) - static_cast<float>( leftX ) );
+
+		// TODO maybe plus 1 to rightX???
+		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX ) - static_cast<float>( leftX ) );
 		const float rowF = static_cast<float>( row );
 		const float leftXF  = xLeftAccumulator;
-		const float rightXF = xRightAccumulator + ( xRightIncr * leftHanded );
+		const float rightXF = xRightAccumulator;
 		const float depthStart = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (leftXF - x1) );
 		const float depthEnd   = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (rightXF - x1) );
 		const float texXStart  = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF - y1) ) + ( texCoordXXIncr * (leftXF - x1) );
@@ -703,7 +686,7 @@ inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, 
 		float pers  = persStart;
 		float light = lightStart;
 
-		for ( unsigned int pixel = tempXY1; pixel <= tempXY2; pixel += 1 )
+		for ( unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1 )
 		{
 			if constexpr ( include3D )
 			{
@@ -776,6 +759,14 @@ template <CP_FORMAT texFormat, bool withTransparency>
 void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::renderInBoundsTriangle (Face& face,
 			TriShaderData<texFormat, shaderPassDataSize>& shaderData, std::array<float, width * height>& depthBuffer)
 {
+	// offset to screen space
+	face.vertices[0].vec.x() *= (width  - 1);
+	face.vertices[0].vec.y() *= (height - 1);
+	face.vertices[1].vec.x() *= (width  - 1);
+	face.vertices[1].vec.y() *= (height - 1);
+	face.vertices[2].vec.x() *= (width  - 1);
+	face.vertices[2].vec.y() *= (height - 1);
+
 	triSortVertices( face.vertices[0], face.vertices[1], face.vertices[2], width, height );
 
 	const float x1 = face.vertices[0].vec.x();
@@ -820,31 +811,51 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	float xLeftAccumulator  = x1 + ( (static_cast<float>(y1Ceil) - y1) * xLeftIncrTop );
 	float xRightAccumulator = x1 + ( (static_cast<float>(y1Ceil) - y1) * xRightIncrTop );
 
+	// get vertex values for gradient calculations
+	float texCoordX1 = face.vertices[0].texCoords.x();
+	float texCoordY1 = face.vertices[0].texCoords.y();
+	float texCoordX2 = face.vertices[1].texCoords.x();
+	float texCoordY2 = face.vertices[1].texCoords.y();
+	float texCoordX3 = face.vertices[2].texCoords.x();
+	float texCoordY3 = face.vertices[2].texCoords.y();
+	float v1PerspMul = 1.0f / face.vertices[0].vec.w();
+	float v2PerspMul = 1.0f / face.vertices[1].vec.w();
+	float v3PerspMul = 1.0f / face.vertices[2].vec.w();
+	float v1Depth = face.vertices[0].vec.z();
+	float v2Depth = face.vertices[1].vec.z();
+	float v3Depth = face.vertices[2].vec.z();
+	Vector<4> lightDir({-0.5f, -0.5f, 0.0f, 0.0f}); // TODO remove this after testing
+	float v1LightAmnt = saturate( face.vertices[0].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v2LightAmnt = saturate( face.vertices[1].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	float v3LightAmnt = saturate( face.vertices[2].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+
+	// gradient calculation vars
+	const float oneOverdX = 1.0f / ( ((x2 - x3) * (y1 - y3)) - ((x1 - x3) * (y2 - y3)) );
+	const float oneOverdY = -oneOverdX;
+	Vector<3> texCoordsX({ texCoordX1 * v1PerspMul, texCoordX2 * v2PerspMul, texCoordX3 * v3PerspMul });
+	Vector<3> texCoordsY({ texCoordY1 * v1PerspMul, texCoordY2 * v2PerspMul, texCoordY3 * v3PerspMul });
+	const float texCoordXXIncr = calcIncr( texCoordsX, y1, y2, y3, oneOverdX );
+	const float texCoordXYIncr = calcIncr( texCoordsX, x1, x2, x3, oneOverdY );
+	const float texCoordYXIncr = calcIncr( texCoordsY, y1, y2, y3, oneOverdX );
+	const float texCoordYYIncr = calcIncr( texCoordsY, x1, x2, x3, oneOverdY );
+	Vector<3> persps({ v1PerspMul, v2PerspMul, v3PerspMul });
+	const float perspXIncr = calcIncr( persps, y1, y2, y3, oneOverdX );
+	const float perspYIncr = calcIncr( persps, x1, x2, x3, oneOverdY );
+	Vector<3> depths({ v1Depth, v2Depth, v3Depth });
+	const float depthXIncr = calcIncr( depths, y1, y2, y3, oneOverdX );
+	const float depthYIncr = calcIncr( depths, x1, x2, x3, oneOverdY );
+	Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
+	const float lightAmntXIncr = calcIncr( lightAmnts, y1, y2, y3, oneOverdX );
+	const float lightAmntYIncr = calcIncr( lightAmnts, x1, x2, x3, oneOverdY );
+	// TODO we actually just want to interpolate the normals, for vertex-shaded lighting we can calculate in the vertex shader and pass down
+
+	Color currentColor;
+
 	// render up until the second vertice
-	for ( unsigned int row = y1Ceil; row < y2Ceil && row < height; row++ )
-	{
-		unsigned int leftX =  std::ceil( xLeftAccumulator );
-		unsigned int rightX = std::ceil( xRightAccumulator );
-
-		const unsigned int tempXY1 = ( (row * width) + leftX );
-		const unsigned int tempXY2 = ( (row * width) + rightX );
-
-		for ( unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1 )
-		{
-			if constexpr ( include3D )
-			{
-					m_ColorProfile.setColor( 0.5f, 0.5f, 1.0f, 0.3f );
-					if constexpr ( withTransparency )
-					{
-						m_ColorProfile.template putPixelWithAlphaBlending<width, height>( m_FB.getPixels(), pixel );
-					}
-			}
-		}
-
-		// increment accumulators
-		xLeftAccumulator  += xLeftIncrTop;
-		xRightAccumulator += xRightIncrTop;
-	}
+	renderScanlines<texFormat, withTransparency>( y1Ceil, y2Ceil, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul,
+		v1Depth, xLeftIncrTop, xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr,
+		texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
+		depthBuffer, leftHanded );
 
 	if ( y1Ceil != y2Ceil ) // need to account for vert 2 being in the middle of both left and right increments
 	{
@@ -863,148 +874,10 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	}
 
 	// rasterize up until the last vertice
-	for ( unsigned int row = y2Ceil; row < y3Ceil && row < height; row++ )
-	{
-		unsigned int leftX =  std::ceil( xLeftAccumulator );
-		unsigned int rightX = std::ceil( xRightAccumulator );
-
-		const unsigned int tempXY1 = ( (row * width) + leftX );
-		const unsigned int tempXY2 = ( (row * width) + rightX );
-
-		for ( unsigned int pixel = tempXY1; pixel < tempXY2; pixel += 1 )
-		{
-			if constexpr ( include3D )
-			{
-					m_ColorProfile.setColor( 0.5f, 0.5f, 1.0f, 0.3f );
-					if constexpr ( withTransparency )
-					{
-						m_ColorProfile.template putPixelWithAlphaBlending<width, height>( m_FB.getPixels(), pixel );
-					}
-			}
-		}
-
-		// increment accumulators
-		xLeftAccumulator  += xLeftIncrBottom;
-		xRightAccumulator += xRightIncrBottom;
-	}
-
-	/*
-	// sorting vertices
-	triSortVertices( face.vertices[0], face.vertices[1], face.vertices[2], width, height );
-
-	float x1 = face.vertices[0].vec.x();
-	float y1 = face.vertices[0].vec.y();
-	float x2 = face.vertices[1].vec.x();
-	float y2 = face.vertices[1].vec.y();
-	float x3 = face.vertices[2].vec.x();
-	float y3 = face.vertices[2].vec.y();
-
-	int x1Ceil = std::ceil( x1 );
-	int y1Ceil = std::ceil( y1 );
-	int x2Ceil = std::ceil( x2 );
-	int y2Ceil = std::ceil( y2 );
-	int x3Ceil = std::ceil( x3 );
-	int y3Ceil = std::ceil( y3 );
-	float x1FCeil = static_cast<float>( x1Ceil );
-	float y1FCeil = static_cast<float>( y1Ceil );
-	float x2FCeil = static_cast<float>( x2Ceil );
-	float y2FCeil = static_cast<float>( y2Ceil );
-	float x3FCeil = static_cast<float>( x3Ceil );
-	float y3FCeil = static_cast<float>( y3Ceil );
-	float texCoordX1 = face.vertices[0].texCoords.x();
-	float texCoordY1 = face.vertices[0].texCoords.y();
-	float texCoordX2 = face.vertices[1].texCoords.x();
-	float texCoordY2 = face.vertices[1].texCoords.y();
-	float texCoordX3 = face.vertices[2].texCoords.x();
-	float texCoordY3 = face.vertices[2].texCoords.y();
-	float v1PerspMul = 1.0f / face.vertices[0].vec.w();
-	float v2PerspMul = 1.0f / face.vertices[1].vec.w();
-	float v3PerspMul = 1.0f / face.vertices[2].vec.w();
-	float v1Depth = face.vertices[0].vec.z();
-	float v2Depth = face.vertices[1].vec.z();
-	float v3Depth = face.vertices[2].vec.z();
-	Vector<4> lightDir({-0.5f, -0.5f, 0.0f, 0.0f}); // TODO remove this after testing
-	float v1LightAmnt = saturate( face.vertices[0].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
-	float v2LightAmnt = saturate( face.vertices[1].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
-	float v3LightAmnt = saturate( face.vertices[2].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
-
-	// floats for x-intercepts (assuming the top of the triangle is pointed for now)
-	float xLeftAccumulator  = x1FCeil;
-	float xRightAccumulator = x1FCeil;
-
-	// floats for incrementing xLeftAccumulator and xRightAccumulator
-	float xLeftIncrTop     = ( x2FCeil - x1FCeil ) / ( y2FCeil - y1FCeil );
-	float xRightIncrTop    = ( x3FCeil - x1FCeil ) / ( y3FCeil - y1FCeil );
-	float xLeftIncrBottom  = ( x3FCeil - x2FCeil ) / ( y3FCeil - y2FCeil );
-	float xRightIncrBottom = ( x3FCeil - x1FCeil ) / ( y3FCeil - y1FCeil );
-
-	// get handedness by calculating area by getting cross product of vectors of lines 1 and 2
-	const float vec1X = x3FCeil - x1FCeil;
-	const float vec1Y = y3FCeil - y1FCeil;
-	const float vec2X = x2FCeil - x1FCeil;
-	const float vec2Y = y2FCeil - y1FCeil;
-
-	const float area = ( vec1X * vec2Y ) - ( vec2X * vec1Y );
-	const int leftHanded = ( area >= 0 ) ? 1 : 0;
-
-	// depending on the position of the vertices, we need to swap increments
-	if ( leftHanded == 0 )
-	{
-		float tempIncr = xLeftIncrTop;
-		xLeftIncrTop = xRightIncrTop;
-		xRightIncrTop = tempIncr;
-
-		tempIncr = xLeftIncrBottom;
-		xLeftIncrBottom = xRightIncrBottom;
-		xRightIncrBottom = tempIncr;
-	}
-
-	// gradient calculation vars
-	const float oneOverdX = 1.0f / ( ((x2FCeil - x3FCeil) * (y1FCeil - y3FCeil)) - ((x1FCeil - x3FCeil) * (y2FCeil - y3FCeil)) );
-	const float oneOverdY = -oneOverdX;
-	Vector<3> texCoordsX({ texCoordX1 * v1PerspMul, texCoordX2 * v2PerspMul, texCoordX3 * v3PerspMul });
-	Vector<3> texCoordsY({ texCoordY1 * v1PerspMul, texCoordY2 * v2PerspMul, texCoordY3 * v3PerspMul });
-	const float texCoordXXIncr = calcIncr( texCoordsX, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float texCoordXYIncr = calcIncr( texCoordsX, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-	const float texCoordYXIncr = calcIncr( texCoordsY, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float texCoordYYIncr = calcIncr( texCoordsY, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-	Vector<3> persps({ v1PerspMul, v2PerspMul, v3PerspMul });
-	const float perspXIncr = calcIncr( persps, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float perspYIncr = calcIncr( persps, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-	Vector<3> depths({ v1Depth, v2Depth, v3Depth });
-	const float depthXIncr = calcIncr( depths, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float depthYIncr = calcIncr( depths, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-	Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
-	const float lightAmntXIncr = calcIncr( lightAmnts, y1FCeil, y2FCeil, y3FCeil, oneOverdX );
-	const float lightAmntYIncr = calcIncr( lightAmnts, x1FCeil, x2FCeil, x3FCeil, oneOverdY );
-	// TODO we actually just want to interpolate the normals, for vertex-shaded lighting we can calculate in the vertex shader and pass down
-
-	ColorProfile currentColor;
-
-	// render up until the second vertice
-	renderScanlines<texFormat, withTransparency>( y1Ceil, y2Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul,
-		v1Depth, xLeftIncrTop, xRightIncrTop, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr,
-		texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
-		depthBuffer, leftHanded );
-
-	// in case the top of the triangle is straight, set the accumulators appropriately
-	if ( y1Ceil == y2Ceil == y3Ceil )
-	{
-		xLeftAccumulator  = x1FCeil;
-		xRightAccumulator = x3FCeil;
-	}
-	else if ( y1Ceil == y2Ceil )
-	{
-		xLeftAccumulator  = x1FCeil;
-		xRightAccumulator = x2FCeil;
-	}
-
-	// rasterize up until the last vertice
-	renderScanlines<texFormat, withTransparency>( y2Ceil, y3Ceil, x1FCeil, y1FCeil, xLeftAccumulator, xRightAccumulator, v1PerspMul,
+	renderScanlines<texFormat, withTransparency>( y2Ceil, y3Ceil, x1, y1, xLeftAccumulator, xRightAccumulator, v1PerspMul,
 		v1Depth, xLeftIncrBottom, xRightIncrBottom, shaderData, currentColor, texCoordX1, texCoordY1, texCoordXXIncr, texCoordXYIncr,
 		texCoordYXIncr, texCoordYYIncr, perspXIncr, perspYIncr, depthXIncr, depthYIncr, v1LightAmnt, lightAmntXIncr, lightAmntYIncr,
 		depthBuffer, leftHanded );
-	*/
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
