@@ -631,7 +631,7 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 		drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData, m_DepthBuffer );
 }
 
-inline float calcIncr(Vector<3>& values, float xy1, float xy2, float xy3, float oneOverdXY)
+inline float calcIncr(const Vector<3>& values, float xy1, float xy2, float xy3, float oneOverdXY)
 {
 	const float retVal = ( ((values.at(1) - values.at(2)) * (xy1 - xy3)) - ((values.at(0) - values.at(2)) * (xy2 - xy3)) ) * oneOverdXY;
 	return ( retVal > 100000.0f || retVal < -100000.0f ) ? 0.0f : retVal;
@@ -660,11 +660,10 @@ inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, 
 		const unsigned int tempXY1 = ( (row * width) + leftX );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
 
-		// TODO maybe plus 1 to rightX???
 		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX ) - static_cast<float>( leftX ) );
 		const float rowF = static_cast<float>( row );
-		const float leftXF  = xLeftAccumulator;
-		const float rightXF = xRightAccumulator;
+		const float leftXF  = static_cast<float>( leftX );
+		const float rightXF = static_cast<float>( rightX );
 		const float depthStart = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (leftXF - x1) );
 		const float depthEnd   = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (rightXF - x1) );
 		const float texXStart  = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF - y1) ) + ( texCoordXXIncr * (leftXF - x1) );
@@ -812,39 +811,39 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 	float xRightAccumulator = x1 + ( (static_cast<float>(y1Ceil) - y1) * xRightIncrTop );
 
 	// get vertex values for gradient calculations
-	float texCoordX1 = face.vertices[0].texCoords.x();
-	float texCoordY1 = face.vertices[0].texCoords.y();
-	float texCoordX2 = face.vertices[1].texCoords.x();
-	float texCoordY2 = face.vertices[1].texCoords.y();
-	float texCoordX3 = face.vertices[2].texCoords.x();
-	float texCoordY3 = face.vertices[2].texCoords.y();
-	float v1PerspMul = 1.0f / face.vertices[0].vec.w();
-	float v2PerspMul = 1.0f / face.vertices[1].vec.w();
-	float v3PerspMul = 1.0f / face.vertices[2].vec.w();
-	float v1Depth = face.vertices[0].vec.z();
-	float v2Depth = face.vertices[1].vec.z();
-	float v3Depth = face.vertices[2].vec.z();
-	Vector<4> lightDir({-0.5f, -0.5f, 0.0f, 0.0f}); // TODO remove this after testing
-	float v1LightAmnt = saturate( face.vertices[0].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
-	float v2LightAmnt = saturate( face.vertices[1].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
-	float v3LightAmnt = saturate( face.vertices[2].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	const float texCoordX1 = face.vertices[0].texCoords.x();
+	const float texCoordY1 = face.vertices[0].texCoords.y();
+	const float texCoordX2 = face.vertices[1].texCoords.x();
+	const float texCoordY2 = face.vertices[1].texCoords.y();
+	const float texCoordX3 = face.vertices[2].texCoords.x();
+	const float texCoordY3 = face.vertices[2].texCoords.y();
+	const float v1PerspMul = 1.0f / face.vertices[0].vec.w();
+	const float v2PerspMul = 1.0f / face.vertices[1].vec.w();
+	const float v3PerspMul = 1.0f / face.vertices[2].vec.w();
+	const float v1Depth = face.vertices[0].vec.z();
+	const float v2Depth = face.vertices[1].vec.z();
+	const float v3Depth = face.vertices[2].vec.z();
+	const Vector<4> lightDir({-0.5f, -0.5f, 0.0f, 0.0f}); // TODO remove this after testing
+	const float v1LightAmnt = saturate( face.vertices[0].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	const float v2LightAmnt = saturate( face.vertices[1].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
+	const float v3LightAmnt = saturate( face.vertices[2].normal.normalize().dotProduct(lightDir) ) * 0.8f + 0.2f;
 
 	// gradient calculation vars
 	const float oneOverdX = 1.0f / ( ((x2 - x3) * (y1 - y3)) - ((x1 - x3) * (y2 - y3)) );
 	const float oneOverdY = -oneOverdX;
-	Vector<3> texCoordsX({ texCoordX1 * v1PerspMul, texCoordX2 * v2PerspMul, texCoordX3 * v3PerspMul });
-	Vector<3> texCoordsY({ texCoordY1 * v1PerspMul, texCoordY2 * v2PerspMul, texCoordY3 * v3PerspMul });
+	const Vector<3> texCoordsX({ texCoordX1 * v1PerspMul, texCoordX2 * v2PerspMul, texCoordX3 * v3PerspMul });
+	const Vector<3> texCoordsY({ texCoordY1 * v1PerspMul, texCoordY2 * v2PerspMul, texCoordY3 * v3PerspMul });
 	const float texCoordXXIncr = calcIncr( texCoordsX, y1, y2, y3, oneOverdX );
 	const float texCoordXYIncr = calcIncr( texCoordsX, x1, x2, x3, oneOverdY );
 	const float texCoordYXIncr = calcIncr( texCoordsY, y1, y2, y3, oneOverdX );
 	const float texCoordYYIncr = calcIncr( texCoordsY, x1, x2, x3, oneOverdY );
-	Vector<3> persps({ v1PerspMul, v2PerspMul, v3PerspMul });
+	const Vector<3> persps({ v1PerspMul, v2PerspMul, v3PerspMul });
 	const float perspXIncr = calcIncr( persps, y1, y2, y3, oneOverdX );
 	const float perspYIncr = calcIncr( persps, x1, x2, x3, oneOverdY );
-	Vector<3> depths({ v1Depth, v2Depth, v3Depth });
+	const Vector<3> depths({ v1Depth, v2Depth, v3Depth });
 	const float depthXIncr = calcIncr( depths, y1, y2, y3, oneOverdX );
 	const float depthYIncr = calcIncr( depths, x1, x2, x3, oneOverdY );
-	Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
+	const Vector<3> lightAmnts({ v1LightAmnt, v2LightAmnt, v3LightAmnt });
 	const float lightAmntXIncr = calcIncr( lightAmnts, y1, y2, y3, oneOverdX );
 	const float lightAmntYIncr = calcIncr( lightAmnts, x1, x2, x3, oneOverdY );
 	// TODO we actually just want to interpolate the normals, for vertex-shaded lighting we can calculate in the vertex shader and pass down
