@@ -1346,6 +1346,16 @@ template <CP_FORMAT texFormat, unsigned int shaderPassDataSize>
 static inline void basicSpriteFShader (Color& colorOut, TriShaderData<texFormat, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur,
 		float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
 {
+	// to ensure we show the whole texture in the triangle, we stretch the coords
+	const float texWidth  = static_cast<float>( fShaderData.textures[0]->getWidth() );
+	const float texHeight = static_cast<float>( fShaderData.textures[0]->getHeight() );
+	const float xOffsetMultiplier = ( texWidth + 1.0f )  / texWidth;
+	const float yOffsetMultiplier = ( texHeight + 1.0f ) / texHeight;
+
+	// then we make sure the texture value is between 0 and 1
+	texCoordX = texCoordX * xOffsetMultiplier;
+	texCoordY = 1.0f - ( (1.0f - texCoordY) * yOffsetMultiplier ); // need to do this since y coords are inverse
+
 	colorOut = fShaderData.textures[0]->getColor( texCoordX, texCoordY );
 }
 
