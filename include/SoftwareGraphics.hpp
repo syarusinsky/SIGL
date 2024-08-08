@@ -1364,8 +1364,8 @@ template <CP_FORMAT texFormat>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart,
 		Sprite<texFormat>& sprite)
 {
-	const float spriteWidthF  = static_cast<float>( sprite.getWidth() );
-	const float spriteHeightF = static_cast<float>( sprite.getHeight() );
+	const float spriteWidthF  = static_cast<float>( sprite.getWidth() + 1 ); // we add plus one since the texture is stretched
+	const float spriteHeightF = static_cast<float>( sprite.getHeight() + 1 );
 	const float spriteRotPointXF = static_cast<float>( sprite.getRotationPointX() );
 	const float spriteRotPointYF = static_cast<float>( sprite.getRotationPointY() );
 	xStart = xStart * static_cast<float>( width );

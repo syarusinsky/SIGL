@@ -547,78 +547,42 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 template <typename S>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
 {
-	// define vertices
-	float xPoint2 = xStart + ( sprite.getScaledWidth() * (1.0f / width) );
-	float yPoint2 = yStart;
-	float xPoint3 = xStart;
-	float yPoint3 = yStart + ( sprite.getScaledHeight() * (1.0f / height) );
-	float xEnd = xPoint2;
-	float yEnd = yPoint3;
+	const float spriteWidthF  = static_cast<float>( sprite.getWidth() + 1 ); // we add plus one since the texture is stretched
+	const float spriteHeightF = static_cast<float>( sprite.getHeight() + 1 );
+	const float spriteRotPointXF = static_cast<float>( sprite.getRotationPointX() );
+	const float spriteRotPointYF = static_cast<float>( sprite.getRotationPointY() );
+	xStart = xStart * static_cast<float>( width );
+	yStart = yStart * static_cast<float>( height );
 
-	// convert to pixel vals
-	constexpr float widthF = static_cast<float>( width );
-	constexpr float heightF = static_cast<float>( height );
-	xStart *= widthF;
-	xPoint2 *= widthF;
-	xPoint3 *= widthF;
-	xEnd *= widthF;
-	yStart *= heightF;
-	yPoint2 *= heightF;
-	yPoint3 *= heightF;
-	yEnd *= heightF;
+	// create faces
+	Face topFace = {{
+		{ {{xStart, 			yStart, 		0.0f, 1.0f}}, {{0.0f, 0.0f, -1.0f, 0.0f}}, {{0.0f, 1.0f}} },
+		{ {{xStart + spriteWidthF, 	yStart, 		0.0f, 1.0f}}, {{0.0f, 0.0f, -1.0f, 0.0f}}, {{1.0f, 1.0f}} },
+		{ {{xStart + spriteWidthF, 	yStart + spriteHeightF, 0.0f, 1.0f}}, {{0.0f, 0.0f, -1.0f, 0.0f}}, {{1.0f, 0.0f}} }
+	}};
+	Face bottomFace = {{
+		{ {{xStart, 			yStart, 		0.0f, 1.0f}}, {{0.0f, 0.0f, -1.0f, 0.0f}}, {{0.0f, 1.0f}} },
+		{ {{xStart + spriteWidthF, 	yStart + spriteHeightF, 0.0f, 1.0f}}, {{0.0f, 0.0f, -1.0f, 0.0f}}, {{1.0f, 0.0f}} },
+		{ {{xStart, 			yStart + spriteHeightF, 0.0f, 1.0f}}, {{0.0f, 0.0f, -1.0f, 0.0f}}, {{0.0f, 0.0f}} }
+	}};
 
-	// offset to rotation point
-	const float rotX = sprite.getRotationPointX() * sprite.getScaleFactor();
-	const float rotY = sprite.getRotationPointY() * sprite.getScaleFactor();
-	const float originalXStart = xStart;
-	const float originalYStart = yStart;
-	const float xOffsetToRotPoint = xStart + rotX;
-	const float yOffsetToRotPoint = yStart + rotY;
-	xStart -= xOffsetToRotPoint;
-	yStart -= yOffsetToRotPoint;
-	xPoint2 -= xOffsetToRotPoint;
-	yPoint2 -= yOffsetToRotPoint;
-	xPoint3 -= xOffsetToRotPoint;
-	yPoint3 -= yOffsetToRotPoint;
-	xEnd -= xOffsetToRotPoint;
-	yEnd -= yOffsetToRotPoint;
+	// create mesh
+	Mesh mesh{ {{topFace, bottomFace}} };
+	mesh.translate( -xStart - spriteRotPointXF, -yStart - spriteRotPointYF, 0.0f ); // return to rotation point
+	mesh.rotate( 0.0f, 0.0f, sprite.getRotationAngle() );
+	mesh.applyTransformations();
+	mesh.scale( sprite.getScaleFactor() );
+	mesh.translate( xStart + spriteRotPointXF, yStart + spriteRotPointYF, 0.0f );
 
-	// variables needed for rotation
-	const float radians = ( static_cast<float>(sprite.getRotationAngle()) * M_PI ) * ( 1.0f / 180.0f );
-	const float sinVal = sin( radians );
-	const float cosVal = cos( radians );
-
-	// rotate vertices
-	float xStartRot = ( cosVal * xStart ) - ( sinVal * yStart );
-	float yStartRot = ( sinVal * xStart ) + ( cosVal * yStart );
-	float xPoint2Rot = ( cosVal * xPoint2 ) - ( sinVal * yPoint2 );
-	float yPoint2Rot = ( sinVal * xPoint2 ) + ( cosVal * yPoint2 );
-	float xPoint3Rot = ( cosVal * xPoint3 ) - ( sinVal * yPoint3 );
-	float yPoint3Rot = ( sinVal * xPoint3 ) + ( cosVal * yPoint3 );
-	float xEndRot = ( cosVal * xEnd ) - ( sinVal * yEnd );
-	float yEndRot = ( sinVal * xEnd ) + ( cosVal * yEnd );
-
-	// offset back from rotation point
-	xStart = xStartRot + originalXStart + sprite.getRotationPointX();
-	yStart = yStartRot + originalYStart + sprite.getRotationPointY();
-	xPoint2 = xPoint2Rot + originalXStart + sprite.getRotationPointX();
-	yPoint2 = yPoint2Rot + originalYStart + sprite.getRotationPointY();
-	xPoint3 = xPoint3Rot + originalXStart + sprite.getRotationPointX();
-	yPoint3 = yPoint3Rot + originalYStart + sprite.getRotationPointY();
-	xEnd = xEndRot + originalXStart + sprite.getRotationPointX();
-	yEnd = yEndRot + originalYStart + sprite.getRotationPointY();
-
-	// convert back to relative
-	constexpr float oneOverWidthF = 1.0f / widthF;
-	constexpr float oneOverHeightF = 1.0f / heightF;
-	xStart *= oneOverWidthF;
-	xPoint2 *= oneOverWidthF;
-	xPoint3 *= oneOverWidthF;
-	xEnd *= oneOverWidthF;
-	yStart *= oneOverHeightF;
-	yPoint2 *= oneOverHeightF;
-	yPoint3 *= oneOverHeightF;
-	yEnd *= oneOverHeightF;
+	// offset to a range of 0 -> 1
+	xStart           = mesh.transformedFace(0).vertices[0].vec.x() * ( 1.0f / width );
+	yStart           = mesh.transformedFace(0).vertices[0].vec.y() * ( 1.0f / height );
+	float xPoint2    = mesh.transformedFace(0).vertices[1].vec.x() * ( 1.0f / width );
+	float yPoint2    = mesh.transformedFace(0).vertices[1].vec.y() * ( 1.0f / height );
+	float xEnd       = mesh.transformedFace(1).vertices[1].vec.x() * ( 1.0f / width );
+	float yEnd       = mesh.transformedFace(1).vertices[1].vec.y() * ( 1.0f / height );
+	float xPoint3    = mesh.transformedFace(1).vertices[2].vec.x() * ( 1.0f / width );
+	float yPoint3    = mesh.transformedFace(1).vertices[2].vec.y() * ( 1.0f / height );
 
 	openGLOffsetVerts( xStart, yStart, xPoint2, yPoint2, xPoint3, yPoint3, xEnd, yEnd );
 

@@ -112,7 +112,7 @@ int Sprite<format>::getRotationAngle() const
 template <CP_FORMAT format>
 void Sprite<format>::setRotationPointX (float x)
 {
-	m_RotPointX = ( this->getWidth() - 1 ) * x;
+	m_RotPointX = ( this->getWidth() + 1 ) * x; // + 1 since texture is stretched
 }
 
 template <CP_FORMAT format>
@@ -124,7 +124,7 @@ int Sprite<format>::getRotationPointX() const
 template <CP_FORMAT format>
 void Sprite<format>::setRotationPointY (float y)
 {
-	m_RotPointY = ( this->getHeight() - 1 ) * y;
+	m_RotPointY = ( this->getHeight() + 1 ) * y; // + 1 since texture is stretched
 }
 
 template <CP_FORMAT format>
