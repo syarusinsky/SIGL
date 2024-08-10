@@ -133,8 +133,8 @@ Color FrameBufferDynamic<format>::getColor (unsigned int x, unsigned y)
 template <CP_FORMAT format>
 Color FrameBufferDynamic<format>::getColor (float x, float y)
 {
-	unsigned int xInt = x * (m_Width  - 1);
-	unsigned int yInt = y * (m_Height - 1);
+	unsigned int xInt = ( x * (m_Width  - 1) );
+	unsigned int yInt = ( y * (m_Height - 1) );
 
 	return this->getColor( xInt, yInt );
 }

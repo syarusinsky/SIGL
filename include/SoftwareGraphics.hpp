@@ -660,24 +660,27 @@ inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, 
 		const unsigned int tempXY1 = ( (row * width) + leftX );
 		const unsigned int tempXY2 = ( (row * width) + rightX );
 
+		// offsetting float values from origin for Incr values
+		const float rowF = static_cast<float>( row ) - y1;
+		const float leftXF  = static_cast<float>( leftX ) - x1;
+		const float rightXF = static_cast<float>( rightX ) - x1;
+
 		const float oneOverPixelStride = 1.0f / ( static_cast<float>( rightX ) - static_cast<float>( leftX ) );
-		const float rowF = static_cast<float>( row );
-		const float leftXF  = static_cast<float>( leftX );
-		const float rightXF = static_cast<float>( rightX );
-		const float depthStart = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (leftXF - x1) );
-		const float depthEnd   = v1Depth + ( depthYIncr * (rowF - y1) ) + ( depthXIncr * (rightXF - x1) );
-		const float texXStart  = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF - y1) ) + ( texCoordXXIncr * (leftXF - x1) );
-		const float texXEnd    = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF - y1) ) + ( texCoordXXIncr * (rightXF - x1) );
-		const float texYStart  = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (rowF - y1) ) + ( texCoordYXIncr * (leftXF - x1) );
-		const float texYEnd    = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (rowF - y1) ) + ( texCoordYXIncr * (rightXF - x1) );
-		const float persStart  = v1PerspMul + ( perspYIncr * (rowF - y1) ) + ( perspXIncr * (leftXF - x1) );
-		const float persEnd    = v1PerspMul + ( perspYIncr * (rowF - y1) ) + ( perspXIncr * (rightXF - x1) );
-		const float lightStart = v1LightAmnt + ( lightAmntYIncr * (rowF - y1) ) + ( lightAmntXIncr * (leftXF - x1) );
-		const float lightEnd   = v1LightAmnt + ( lightAmntYIncr * (rowF - y1) ) + ( lightAmntXIncr * (rightXF - x1) );
+		const float depthStart = v1Depth + ( depthYIncr * (rowF) ) + ( depthXIncr * (leftXF ) );
+		const float depthEnd   = v1Depth + ( depthYIncr * (rowF) ) + ( depthXIncr * (rightXF) );
+		const float texXStart  = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF) ) + ( texCoordXXIncr * (leftXF ) );
+		const float texXEnd    = ( texCoordX1 * v1PerspMul ) + ( texCoordXYIncr * (rowF) ) + ( texCoordXXIncr * (rightXF) );
+		const float texYStart  = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (rowF) ) + ( texCoordYXIncr * (leftXF ) );
+		const float texYEnd    = ( texCoordY1 * v1PerspMul ) + ( texCoordYYIncr * (rowF) ) + ( texCoordYXIncr * (rightXF) );
+		const float persStart  = v1PerspMul + ( perspYIncr * (rowF) ) + ( perspXIncr * (leftXF ) );
+		const float persEnd    = v1PerspMul + ( perspYIncr * (rowF) ) + ( perspXIncr * (rightXF) );
+		const float lightStart = v1LightAmnt + ( lightAmntYIncr * (rowF) ) + ( lightAmntXIncr * (leftXF ) );
+		const float lightEnd   = v1LightAmnt + ( lightAmntYIncr * (rowF) ) + ( lightAmntXIncr * (rightXF) );
 		const float depthIncr  = ( depthEnd - depthStart ) * oneOverPixelStride;
 		const float persIncr   = ( persEnd - persStart ) * oneOverPixelStride;
 		const float texXIncr   = ( texXEnd - texXStart ) * oneOverPixelStride;
 		const float texYIncr   = ( texYEnd - texYStart ) * oneOverPixelStride;
+
 		const float lightIncr  = ( lightEnd - lightStart ) * oneOverPixelStride;
 		float depth = depthStart;
 		float texX  = texXStart;
@@ -1346,16 +1349,6 @@ template <CP_FORMAT texFormat, unsigned int shaderPassDataSize>
 static inline void basicSpriteFShader (Color& colorOut, TriShaderData<texFormat, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur,
 		float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
 {
-	// to ensure we show the whole texture in the triangle, we stretch the coords
-	const float texWidth  = static_cast<float>( fShaderData.textures[0]->getWidth() );
-	const float texHeight = static_cast<float>( fShaderData.textures[0]->getHeight() );
-	const float xOffsetMultiplier = ( texWidth + 1.0f )  / texWidth;
-	const float yOffsetMultiplier = ( texHeight + 1.0f ) / texHeight;
-
-	// then we make sure the texture value is between 0 and 1
-	texCoordX = texCoordX * xOffsetMultiplier;
-	texCoordY = 1.0f - ( (1.0f - texCoordY) * yOffsetMultiplier ); // need to do this since y coords are inverse
-
 	colorOut = fShaderData.textures[0]->getColor( texCoordX, texCoordY );
 }
 
@@ -1364,10 +1357,10 @@ template <CP_FORMAT texFormat>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart,
 		Sprite<texFormat>& sprite)
 {
-	const float spriteWidthF  = static_cast<float>( sprite.getWidth() + 1 ); // we add plus one since the texture is stretched
-	const float spriteHeightF = static_cast<float>( sprite.getHeight() + 1 );
-	const float spriteRotPointXF = static_cast<float>( sprite.getRotationPointX() );
-	const float spriteRotPointYF = static_cast<float>( sprite.getRotationPointY() );
+	const float spriteWidthF  = static_cast<float>( sprite.getWidth() );
+	const float spriteHeightF = static_cast<float>( sprite.getHeight() );
+	const float spriteRotPointXF = sprite.getRotationPointX();
+	const float spriteRotPointYF = sprite.getRotationPointY();
 	xStart = xStart * static_cast<float>( width );
 	yStart = yStart * static_cast<float>( height );
 

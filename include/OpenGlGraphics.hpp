@@ -547,10 +547,10 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 template <typename S>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart, S& sprite)
 {
-	const float spriteWidthF  = static_cast<float>( sprite.getWidth() + 1 ); // we add plus one since the texture is stretched
-	const float spriteHeightF = static_cast<float>( sprite.getHeight() + 1 );
-	const float spriteRotPointXF = static_cast<float>( sprite.getRotationPointX() );
-	const float spriteRotPointYF = static_cast<float>( sprite.getRotationPointY() );
+	const float spriteWidthF  = static_cast<float>( sprite.getWidth() );
+	const float spriteHeightF = static_cast<float>( sprite.getHeight() );
+	const float spriteRotPointXF = sprite.getRotationPointX();
+	const float spriteRotPointYF = sprite.getRotationPointY();
 	xStart = xStart * static_cast<float>( width );
 	yStart = yStart * static_cast<float>( height );
 

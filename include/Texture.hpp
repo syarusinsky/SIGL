@@ -57,7 +57,10 @@ const Color Texture<format>::getColor (float texCoordX, float texCoordY)
 	texCoordX = ( texCoordX < 0.0f ) ? 1.0f + texCoordX : texCoordX;
 	texCoordY = ( texCoordY < 0.0f ) ? 1.0f + texCoordY : texCoordY;
 
-	return FrameBufferDynamic<format>::getColor( texCoordX, texCoordY );
+	unsigned int xInt = ( texCoordX * (this->getWidth() ) );
+	unsigned int yInt = ( texCoordY * (this->getHeight()) );
+
+	return FrameBufferDynamic<format>::getColor( xInt, yInt );
 }
 
 template <CP_FORMAT format>

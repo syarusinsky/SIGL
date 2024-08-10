@@ -29,9 +29,20 @@ struct Color
 	bool  m_IsMonochrome = false;
 	bool  m_HasAlpha = false;
 
-	Color operator* (float scalar) const { return Color({ m_R * scalar, m_G * scalar, m_B * scalar, m_A * scalar, false, false, true }); }
-	Color operator+ (const Color& other) { return Color({ m_R + other.m_R, m_G + other.m_G, m_B + other.m_B, m_A + other.m_A, false, false, true }); }
-	Color alphaBlend (const Color& other) { return ( other * (1.0f - m_A) ) + ( *this * m_A ); }
+	Color operator* (float scalar) const
+	{
+		return Color({ m_R * scalar, m_G * scalar, m_B * scalar, m_A * scalar, false, false, true });
+	}
+
+	Color operator+ (const Color& other) const
+	{
+		return Color({ m_R + other.m_R, m_G + other.m_G, m_B + other.m_B, m_A + other.m_A, false, false, true });
+	}
+
+	Color alphaBlend (const Color& other) const
+	{
+		return ( other * (1.0f - m_A) ) + ( *this * m_A );
+	}
 };
 
 enum class CP_FORMAT

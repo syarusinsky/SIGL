@@ -13,11 +13,14 @@
 #include <math.h>
 
 template <CP_FORMAT format>
-class Sprite : public FrameBufferDynamic<format>
+class Sprite
 {
 	public:
 		Sprite (const unsigned int width, const unsigned int height);
 		Sprite (uint8_t* data);
+
+		unsigned int getWidth() const;
+		unsigned int getHeight() const;
 
 		unsigned int getScaledWidth() const;
 		unsigned int getScaledHeight() const;
@@ -28,9 +31,9 @@ class Sprite : public FrameBufferDynamic<format>
 		void setRotationAngle (int degrees);
 		int getRotationAngle() const;
 		void setRotationPointX (float x); // should be between 0.0f and 1.0f
-		int getRotationPointX() const;
+		float getRotationPointX() const;
 		void setRotationPointY (float y); // should be between 0.0f and 1.0f
-		int getRotationPointY() const;
+		float getRotationPointY() const;
 
 		Texture<format>& getTexture() { return m_Texture; }
 
@@ -38,43 +41,52 @@ class Sprite : public FrameBufferDynamic<format>
 		Texture<format> 	m_Texture;
 		float 			m_ScaleFactor;
 		int   			m_RotationDegrees;
-		int   			m_RotPointX;
-		int   			m_RotPointY;
+		float   		m_RotPointX;
+		float   		m_RotPointY;
 };
 
 template <CP_FORMAT format>
 Sprite<format>::Sprite (const unsigned int width, const unsigned int height) :
-	FrameBufferDynamic<format>( width, height ),
 	m_Texture( width, height ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
-	m_RotPointX( width / 2 ),
-	m_RotPointY( height / 2 )
+	m_RotPointX( static_cast<float>(width ) / 2.0f ),
+	m_RotPointY( static_cast<float>(height) / 2.0f )
 {
 }
 
 template <CP_FORMAT format>
 Sprite<format>::Sprite (uint8_t* data) :
-	FrameBufferDynamic<format>( (data[1] << 24) | (data[2] << 16) | (data[3] << 8) | data[4],
-					(data[5] << 24) | (data[6] << 16) | (data[7] << 8) | data[8], &data[9] ),
 	m_Texture( data ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
-	m_RotPointX( this->getWidth() / 2 ),
-	m_RotPointY( this->getHeight() / 2 )
+	m_RotPointX( static_cast<float>(m_Texture.getWidth() ) / 2.0f ),
+	m_RotPointY( static_cast<float>(m_Texture.getHeight()) / 2.0f )
 {
+}
+
+template <CP_FORMAT format>
+unsigned int Sprite<format>::getWidth() const
+{
+	return m_Texture.getWidth();
+}
+
+template <CP_FORMAT format>
+unsigned int Sprite<format>::getHeight() const
+{
+	return m_Texture.getHeight();
 }
 
 template <CP_FORMAT format>
 unsigned int Sprite<format>::getScaledWidth() const
 {
-	return std::floor( this->getWidth() * m_ScaleFactor );
+	return std::floor( m_Texture.getWidth() * m_ScaleFactor );
 }
 
 template <CP_FORMAT format>
 unsigned int Sprite<format>::getScaledHeight() const
 {
-	return std::floor( this->getHeight() * m_ScaleFactor );
+	return std::floor( m_Texture.getHeight() * m_ScaleFactor );
 }
 
 template <CP_FORMAT format>
@@ -112,11 +124,11 @@ int Sprite<format>::getRotationAngle() const
 template <CP_FORMAT format>
 void Sprite<format>::setRotationPointX (float x)
 {
-	m_RotPointX = ( this->getWidth() + 1 ) * x; // + 1 since texture is stretched
+	m_RotPointX = static_cast<float>( m_Texture.getWidth() ) * x;
 }
 
 template <CP_FORMAT format>
-int Sprite<format>::getRotationPointX() const
+float Sprite<format>::getRotationPointX() const
 {
 	return m_RotPointX;
 }
@@ -124,11 +136,11 @@ int Sprite<format>::getRotationPointX() const
 template <CP_FORMAT format>
 void Sprite<format>::setRotationPointY (float y)
 {
-	m_RotPointY = ( this->getHeight() + 1 ) * y; // + 1 since texture is stretched
+	m_RotPointY = static_cast<float>( m_Texture.getHeight() ) * y;
 }
 
 template <CP_FORMAT format>
-int Sprite<format>::getRotationPointY() const
+float Sprite<format>::getRotationPointY() const
 {
 	return m_RotPointY;
 }

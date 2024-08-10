@@ -39,9 +39,9 @@ bool Vertex::isInsideView()
 
 void Face::printFace()
 {
-	std::cout << vertices[0].vec.x() << ", " << vertices[0].vec.y() << std::endl; 
-	std::cout << vertices[1].vec.x() << ", " << vertices[1].vec.y() << std::endl; 
-	std::cout << vertices[2].vec.x() << ", " << vertices[2].vec.y() << std::endl; 
+	std::cout << std::to_string( vertices[0].vec.x() ) << ", " << std::to_string( vertices[0].vec.y() ) << std::endl; 
+	std::cout << std::to_string( vertices[1].vec.x() ) << ", " << std::to_string( vertices[1].vec.y() ) << std::endl; 
+	std::cout << std::to_string( vertices[2].vec.x() ) << ", " << std::to_string( vertices[2].vec.y() ) << std::endl; 
 }
 
 void Mesh::scale (float scaleFactor)
