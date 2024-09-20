@@ -74,6 +74,7 @@ FrameBufferOpenGl<width, height, format>::~FrameBufferOpenGl()
 {
 	glDeleteFramebuffers( 1, &m_FBO );
 	glDeleteTextures( 1, &m_Tex );
+	glDeleteRenderbuffers( 1, &m_RBO );
 }
 
 #endif // FRAMEBUFFEROPENGL_HPP

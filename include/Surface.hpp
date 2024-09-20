@@ -23,6 +23,7 @@ class SurfaceBase
 
 		const ColorProfile<format>& getColorProfile() const { return m_Graphics->getColorProfile(); }
 
+		// TODO move this to color profile
 		unsigned int getPixelWidthInBits() const
 		{
 			switch ( this->getColorProfile().getFormat() )
@@ -38,6 +39,7 @@ class SurfaceBase
 			}
 		}
 
+		// TODO move this to graphics
 		virtual void setFont (Font* font) = 0;
 
 		unsigned int getWidth() { return width; }
