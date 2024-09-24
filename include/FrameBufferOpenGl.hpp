@@ -7,10 +7,9 @@
 
 #include <GL/glew.h>
 
+#include "SLOGE.hpp"
 #include "ColorProfile.hpp"
 
-// TODO remove after testing
-#include <iostream>
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
 class FrameBufferOpenGl
@@ -58,7 +57,7 @@ FrameBufferOpenGl<width, height, format>::FrameBufferOpenGl() :
 
 	if ( glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE )
 	{
-		std::cout << "SOMETHING WEIRD HAPPENED :(" << std::endl;
+		SLOG::log( LogLevels::ERROR, LogMethodsE::ERROR, "failed checking framebuffer status __LINE__ __FILE___" );
 	}
 	else
 	{
