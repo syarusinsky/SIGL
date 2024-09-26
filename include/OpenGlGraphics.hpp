@@ -16,8 +16,6 @@
 #include <algorithm>
 #include <limits>
 
-// TODO remove after testing
-#include <iostream>
 
 inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3, float& x4, float& y4);
 inline void openGLOffsetVerts (float& x1, float& y1, float& x2, float& y2, float& x3, float& y3);
@@ -129,7 +127,8 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenG
 	{
 		char infoLog[512];
 		glGetShaderInfoLog( basicColorVertexShader, 512, NULL, infoLog );
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+		SLOG::log( LogLevels::ERROR, LogMethodsE::ERROR, "OpenGL error : vertex shader compilation failed", __LINE__, __FILE__ );
+
 	}
 	glCompileShader( basicColorFragmentShader );
 	glGetShaderiv( basicColorFragmentShader, GL_COMPILE_STATUS, &success );
@@ -137,7 +136,7 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenG
 	{
 		char infoLog[512];
 		glGetShaderInfoLog( basicColorFragmentShader, 512, NULL, infoLog );
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+		SLOG::log( LogLevels::ERROR, LogMethodsE::ERROR, "OpenGL error : fragment shader compilation failed", __LINE__, __FILE__ );
 	}
 	m_BasicColorProgram = glCreateProgram();
 	glAttachShader( m_BasicColorProgram, basicColorVertexShader );
@@ -148,7 +147,7 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenG
 	{
 		char infoLog[512];
 		glGetProgramInfoLog( m_BasicColorProgram, 512, NULL, infoLog );
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+		SLOG::log( LogLevels::ERROR, LogMethodsE::ERROR, "OpenGL error : shader program linking failed", __LINE__, __FILE__ );
 	}
 	glDeleteShader( basicColorVertexShader );
 	glDeleteShader( basicColorFragmentShader );
@@ -182,7 +181,7 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenG
 	{
 		char infoLog[512];
 		glGetShaderInfoLog( basicSpriteVertexShader, 512, NULL, infoLog );
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+		SLOG::log( LogLevels::ERROR, LogMethodsE::ERROR, "OpenGL error : vertex shader compilation failed", __LINE__, __FILE__ );
 	}
 	glCompileShader( basicSpriteFragmentShader );
 	glGetShaderiv( basicSpriteFragmentShader, GL_COMPILE_STATUS, &success );
@@ -190,7 +189,7 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenG
 	{
 		char infoLog[512];
 		glGetShaderInfoLog( basicSpriteFragmentShader, 512, NULL, infoLog );
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+		SLOG::log( LogLevels::ERROR, LogMethodsE::ERROR, "OpenGL error : fragment shader compilation failed", __LINE__, __FILE__ );
 	}
 	m_BasicSpriteProgram = glCreateProgram();
 	glAttachShader( m_BasicSpriteProgram, basicSpriteVertexShader );
@@ -201,7 +200,7 @@ OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::OpenG
 	{
 		char infoLog[512];
 		glGetProgramInfoLog( m_BasicSpriteProgram, 512, NULL, infoLog );
-		std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
+		SLOG::log( LogLevels::ERROR, LogMethodsE::ERROR, "OpenGL error : shader program linking failed", __LINE__, __FILE__ );
 	}
 	glDeleteShader( basicSpriteVertexShader );
 	glDeleteShader( basicSpriteFragmentShader );

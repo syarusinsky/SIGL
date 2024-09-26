@@ -3,7 +3,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#include <iostream>
+#include "SLOGE.hpp"
+
 
 static inline float lerp (float t, float a, float b)
 {
@@ -39,9 +40,9 @@ bool Vertex::isInsideView()
 
 void Face::printFace()
 {
-	std::cout << std::to_string( vertices[0].vec.x() ) << ", " << std::to_string( vertices[0].vec.y() ) << std::endl; 
-	std::cout << std::to_string( vertices[1].vec.x() ) << ", " << std::to_string( vertices[1].vec.y() ) << std::endl; 
-	std::cout << std::to_string( vertices[2].vec.x() ) << ", " << std::to_string( vertices[2].vec.y() ) << std::endl; 
+	SLOG::log( LogLevels::INFO, LogMethodsE::INFO, std::to_string(vertices[0].vec.x()) + ", " + std::to_string(vertices[0].vec.y()) );
+	SLOG::log( LogLevels::INFO, LogMethodsE::INFO, std::to_string(vertices[1].vec.x()) + ", " + std::to_string(vertices[1].vec.y()) );
+	SLOG::log( LogLevels::INFO, LogMethodsE::INFO, std::to_string(vertices[2].vec.x()) + ", " + std::to_string(vertices[2].vec.y()) );
 }
 
 void Mesh::scale (float scaleFactor)

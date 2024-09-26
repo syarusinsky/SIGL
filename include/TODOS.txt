@@ -1,5 +1,5 @@
 TODOS:
-- Proper logging library created (that will work on embedded as well) and replace all iostream stuff
+x Proper logging library created (that will work on embedded as well) and replace all iostream stuff
 - FrameBufferDynamic needs an opengl version
 - Make shaders a class (needs to work for opengl version as well)
 - Texture needs an opengl version
