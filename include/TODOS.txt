@@ -1,8 +1,9 @@
 TODOS:
 x Proper logging library created (that will work on embedded as well) and replace all iostream stuff
+- Get the vim plugin that shows how many warnings, errors, ect
 - FrameBufferDynamic needs an opengl version
-- Make shaders a class (needs to work for opengl version as well)
-- Texture needs an opengl version
 - Sprite needs an opengl version
+- Texture needs an opengl version
+- Make shaders a class (needs to work for opengl version as well)
 - Need to understand 3d units (3d space and distance)
 - Address all other todos
