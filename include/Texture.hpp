@@ -55,13 +55,13 @@ Color Texture<format, api>::getColor (float texCoordX, float texCoordY) const
 	unsigned int xInt = ( texCoordX * (this->getWidth() ) );
 	unsigned int yInt = ( texCoordY * (this->getHeight()) );
 
-	return FrameBufferDynamic<format, api>::getColor( xInt, yInt );
+	return getColor( xInt, yInt );
 }
 
 template <CP_FORMAT format, RENDER_API api>
 Color Texture<format, api>::getColor (unsigned int texCoordX, unsigned int texCoordY) const
 {
-	return FrameBufferDynamic<format, api>::getColor( texCoordX, texCoordY );
+	return getColor( texCoordX, texCoordY );
 }
 
 #endif // TEXTURE_HPP

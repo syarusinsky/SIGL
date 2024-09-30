@@ -77,14 +77,14 @@ FrameBufferFixed<width, height, format, api>::~FrameBufferFixed()
 template <CP_FORMAT format, RENDER_API api>
 FrameBufferDynamic<format, api>::FrameBufferDynamic (unsigned int width, unsigned int height) :
 	std::conditional<(api == RENDER_API::SOFTWARE), FrameBufferSoftwareGraphicsDynamic<format>,
-		FrameBufferOpenGlDynamic<format>>::type( width, height )
+		FrameBufferOpenGlDynamic<format>>( width, height )
 {
 }
 
 template <CP_FORMAT format, RENDER_API api>
 FrameBufferDynamic<format, api>::FrameBufferDynamic (unsigned int width, unsigned int height, uint8_t* pixels) :
 	std::conditional<(api == RENDER_API::SOFTWARE), FrameBufferSoftwareGraphicsDynamic<format>,
-		FrameBufferOpenGlDynamic<format>>::type( width, height, pixels )
+		FrameBufferOpenGlDynamic<format>>( width, height, pixels )
 {
 }
 

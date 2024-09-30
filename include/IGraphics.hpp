@@ -28,11 +28,11 @@ struct Face;
 struct PointLight;
 
 #ifdef SOFTWARE_RENDERING
-#define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
-#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
+#define VSHADER void (*vShader)(TriShaderData<format, api, shaderPassDataSize>& vShaderData)
+#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, api, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
 #else
-#define VSHADER void (*vShader)(TriShaderData<format, shaderPassDataSize>& vShaderData)
-#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
+#define VSHADER void (*vShader)(TriShaderData<format, api, shaderPassDataSize>& vShaderData)
+#define FSHADER void (*fShader)(Color& colorOut, TriShaderData<format, api, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur, float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
 // TODO use classes for hardware accelerated shaders (and maybe software rendered shaders too?)
 // class VShader;
 // class FShader;
@@ -40,10 +40,10 @@ struct PointLight;
 // #define FSHADER FShader*
 #endif // SOFTWARE_RENDERING
 
-template <CP_FORMAT format, unsigned int shaderPassDataSize>
+template <CP_FORMAT format, RENDER_API api, unsigned int shaderPassDataSize>
 struct TriShaderData
 {
-	std::array<Texture<format>*, 5>& textures;
+	std::array<Texture<format, api>*, 5>& textures;
 	Camera3D& camera;
 	Color color;
 	std::vector<PointLight>* lights;
@@ -58,21 +58,21 @@ class IGraphicsNo3D
 		virtual ~IGraphicsNo3D() {}
 };
 
-template <unsigned int width, unsigned int height, unsigned int shaderPassDataSize>
+template <RENDER_API api, unsigned int width, unsigned int height, unsigned int shaderPassDataSize>
 class IGraphics3D
 {
 	public:
 		virtual ~IGraphics3D() {}
 
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) = 0;
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) = 0;
-		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) = 0;
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, api, shaderPassDataSize>& shaderData) = 0;
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, api, shaderPassDataSize>& shaderData) = 0;
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, api, shaderPassDataSize>& shaderData) = 0;
 		virtual void drawDepthBuffer (Camera3D& camera) = 0;
 		virtual void clearDepthBuffer() = 0;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-class IGraphics : public std::conditional<include3D, IGraphics3D<width, height, shaderPassDataSize>, IGraphicsNo3D>::type
+class IGraphics : public std::conditional<include3D, IGraphics3D<api, width, height, shaderPassDataSize>, IGraphicsNo3D>::type
 {
 	public:
 		inline unsigned int convertXPercentageToUInt (float x) { return x * (width  - 1); }
@@ -96,9 +96,9 @@ class IGraphics : public std::conditional<include3D, IGraphics3D<width, height, 
 		virtual void drawCircleFilled (float originX, float originY, float radius) = 0;
 		virtual void drawText (float xStart, float yStart, const char* text, float scaleFactor) = 0;
 
-		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite) = 0;
-		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) = 0;
-		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) = 0;
+		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT, api>& sprite) = 0;
+		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT, api>& sprite) = 0;
+		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT, api>& sprite) = 0;
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 

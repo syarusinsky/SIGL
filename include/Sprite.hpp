@@ -12,18 +12,18 @@
 
 #include <math.h>
 
-template <CP_FORMAT format>
+template <CP_FORMAT format, RENDER_API api>
 class Sprite
 {
 	public:
 		Sprite (const unsigned int width, const unsigned int height);
 		Sprite (uint8_t* data);
 
-		unsigned int getWidth() const;
-		unsigned int getHeight() const;
-
 		unsigned int getScaledWidth() const;
 		unsigned int getScaledHeight() const;
+
+		unsigned int getWidth() const;
+		unsigned int getHeight() const;
 
 		void setScaleFactor (float scaleFactor);
 		float getScaleFactor() const;
@@ -35,18 +35,18 @@ class Sprite
 		void setRotationPointY (float y); // should be between 0.0f and 1.0f
 		float getRotationPointY() const;
 
-		Texture<format>& getTexture() { return m_Texture; }
+		Texture<format, api>& getTexture() { return m_Texture; }
 
 	protected:
-		Texture<format> 	m_Texture;
+		Texture<format, api> 	m_Texture;
 		float 			m_ScaleFactor;
 		int   			m_RotationDegrees;
 		float   		m_RotPointX;
 		float   		m_RotPointY;
 };
 
-template <CP_FORMAT format>
-Sprite<format>::Sprite (const unsigned int width, const unsigned int height) :
+template <CP_FORMAT format, RENDER_API api>
+Sprite<format, api>::Sprite (const unsigned int width, const unsigned int height) :
 	m_Texture( width, height ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
@@ -55,8 +55,8 @@ Sprite<format>::Sprite (const unsigned int width, const unsigned int height) :
 {
 }
 
-template <CP_FORMAT format>
-Sprite<format>::Sprite (uint8_t* data) :
+template <CP_FORMAT format, RENDER_API api>
+Sprite<format, api>::Sprite (uint8_t* data) :
 	m_Texture( data ),
 	m_ScaleFactor( 1.0f ),
 	m_RotationDegrees( 0 ),
@@ -65,44 +65,44 @@ Sprite<format>::Sprite (uint8_t* data) :
 {
 }
 
-template <CP_FORMAT format>
-unsigned int Sprite<format>::getWidth() const
+template <CP_FORMAT format, RENDER_API api>
+unsigned int Sprite<format, api>::getWidth() const
 {
 	return m_Texture.getWidth();
 }
 
-template <CP_FORMAT format>
-unsigned int Sprite<format>::getHeight() const
+template <CP_FORMAT format, RENDER_API api>
+unsigned int Sprite<format, api>::getHeight() const
 {
 	return m_Texture.getHeight();
 }
 
-template <CP_FORMAT format>
-unsigned int Sprite<format>::getScaledWidth() const
+template <CP_FORMAT format, RENDER_API api>
+unsigned int Sprite<format, api>::getScaledWidth() const
 {
 	return std::floor( m_Texture.getWidth() * m_ScaleFactor );
 }
 
-template <CP_FORMAT format>
-unsigned int Sprite<format>::getScaledHeight() const
+template <CP_FORMAT format, RENDER_API api>
+unsigned int Sprite<format, api>::getScaledHeight() const
 {
 	return std::floor( m_Texture.getHeight() * m_ScaleFactor );
 }
 
-template <CP_FORMAT format>
-void Sprite<format>::setScaleFactor (float scaleFactor)
+template <CP_FORMAT format, RENDER_API api>
+void Sprite<format, api>::setScaleFactor (float scaleFactor)
 {
 	m_ScaleFactor = scaleFactor;
 }
 
-template <CP_FORMAT format>
-float Sprite<format>::getScaleFactor() const
+template <CP_FORMAT format, RENDER_API api>
+float Sprite<format, api>::getScaleFactor() const
 {
 	return m_ScaleFactor;
 }
 
-template <CP_FORMAT format>
-void Sprite<format>::setRotationAngle (int degrees)
+template <CP_FORMAT format, RENDER_API api>
+void Sprite<format, api>::setRotationAngle (int degrees)
 {
 	if ( degrees < 0 )
 	{
@@ -115,32 +115,32 @@ void Sprite<format>::setRotationAngle (int degrees)
 	}
 }
 
-template <CP_FORMAT format>
-int Sprite<format>::getRotationAngle() const
+template <CP_FORMAT format, RENDER_API api>
+int Sprite<format, api>::getRotationAngle() const
 {
 	return m_RotationDegrees;
 }
 
-template <CP_FORMAT format>
-void Sprite<format>::setRotationPointX (float x)
+template <CP_FORMAT format, RENDER_API api>
+void Sprite<format, api>::setRotationPointX (float x)
 {
 	m_RotPointX = static_cast<float>( m_Texture.getWidth() ) * x;
 }
 
-template <CP_FORMAT format>
-float Sprite<format>::getRotationPointX() const
+template <CP_FORMAT format, RENDER_API api>
+float Sprite<format, api>::getRotationPointX() const
 {
 	return m_RotPointX;
 }
 
-template <CP_FORMAT format>
-void Sprite<format>::setRotationPointY (float y)
+template <CP_FORMAT format, RENDER_API api>
+void Sprite<format, api>::setRotationPointY (float y)
 {
 	m_RotPointY = static_cast<float>( m_Texture.getHeight() ) * y;
 }
 
-template <CP_FORMAT format>
-float Sprite<format>::getRotationPointY() const
+template <CP_FORMAT format, RENDER_API api>
+float Sprite<format, api>::getRotationPointY() const
 {
 	return m_RotPointY;
 }

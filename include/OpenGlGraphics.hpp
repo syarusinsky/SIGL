@@ -34,14 +34,14 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 class OpenGlGraphics3D : public IGraphics<width, height, format, api, include3D, shaderPassDataSize>
 {
 	public:
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, api, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, api, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, api, shaderPassDataSize>& shaderData) override;
 		void drawDepthBuffer (Camera3D& camera) override;
 		void clearDepthBuffer() override;
 
 	protected:
-		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData);
+		template <CP_FORMAT texFormat> void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, api, shaderPassDataSize>& shaderData);
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_FB;
@@ -74,9 +74,9 @@ class OpenGlGraphics 	: public std::conditional<include3D, OpenGlGraphics3D<widt
 		void drawCircleFilled (float originX, float originY, float radius) override;
 		void drawText (float xStart, float yStart, const char* text, float scaleFactor) override;
 
-		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite) override;
-		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) override;
-		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT, api>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT, api>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT, api>& sprite) override;
 
 	protected:
 		GLuint 	m_BasicColorProgram;
@@ -409,21 +409,21 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
-		TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData)
+		TriShaderData<CP_FORMAT::MONOCHROME_1BIT, api, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
-		TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData)
+		TriShaderData<CP_FORMAT::RGBA_32BIT, api, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT,
-		shaderPassDataSize>& shaderData)
+void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
+		TriShaderData<CP_FORMAT::RGB_24BIT, api, shaderPassDataSize>& shaderData)
 {
 	this->drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData );
 }
@@ -431,7 +431,7 @@ void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
 void OpenGlGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData)
+			TriShaderData<texFormat, api, shaderPassDataSize>& shaderData)
 {
 	// TODO draw shaded triangle using shaderData
 }
@@ -526,23 +526,23 @@ void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
-		Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite)
+		Sprite<CP_FORMAT::MONOCHROME_1BIT, api>& sprite)
 {
-	this->drawSpriteHelper<Sprite<CP_FORMAT::MONOCHROME_1BIT>>( xStart, yStart, sprite );
+	this->drawSpriteHelper<Sprite<CP_FORMAT::MONOCHROME_1BIT, api>>( xStart, yStart, sprite );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
-		Sprite<CP_FORMAT::RGBA_32BIT>& sprite)
+		Sprite<CP_FORMAT::RGBA_32BIT, api>& sprite)
 {
-	this->drawSpriteHelper<Sprite<CP_FORMAT::RGBA_32BIT>>( xStart, yStart, sprite );
+	this->drawSpriteHelper<Sprite<CP_FORMAT::RGBA_32BIT, api>>( xStart, yStart, sprite );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void OpenGlGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
-		Sprite<CP_FORMAT::RGB_24BIT>& sprite)
+		Sprite<CP_FORMAT::RGB_24BIT, api>& sprite)
 {
-	this->drawSpriteHelper<Sprite<CP_FORMAT::RGB_24BIT>>( xStart, yStart, sprite );
+	this->drawSpriteHelper<Sprite<CP_FORMAT::RGB_24BIT, api>>( xStart, yStart, sprite );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>

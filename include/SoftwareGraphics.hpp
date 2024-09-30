@@ -29,17 +29,17 @@ class SoftwareGraphicsBase : public IGraphics<width, height, format, api, includ
 
 	protected:
 		template <CP_FORMAT texFormat, bool withTransparency = false>
-		inline void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData,
+		inline void drawTriangleShadedHelper (Face& face, TriShaderData<texFormat, api, shaderPassDataSize>& shaderData,
 				std::array<float, width * height>& depthBuffer );
 		template <CP_FORMAT texFormat, bool withTransparency = false>
 		inline void renderScanlines (int startRow, int endRowExclusive, float x1, float y1,
 			float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
+			TriShaderData<texFormat, api, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1, float texCoordY1,
 			float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr,
 			float perspYIncr, float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr,
 			std::array<float, width * height>& depthBuffer, int leftHanded);
 		template <CP_FORMAT texFormat, bool withTransparency = false>
-		inline void renderInBoundsTriangle (Face& face, TriShaderData<texFormat, shaderPassDataSize>& shaderData,
+		inline void renderInBoundsTriangle (Face& face, TriShaderData<texFormat, api, shaderPassDataSize>& shaderData,
 							std::array<float, width * height>& depthBuffer);
 
 		using IGraphics<width, height, format, api, include3D, shaderPassDataSize>::m_ColorProfile;
@@ -59,9 +59,9 @@ class SoftwareGraphics3D : public SoftwareGraphicsBase<width, height, format, ap
 	public:
 		virtual ~SoftwareGraphics3D() {}
 
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData) override;
-		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, api, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, api, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, api, shaderPassDataSize>& shaderData) override;
 		void drawDepthBuffer (Camera3D& camera) override;
 		void clearDepthBuffer() override;
 
@@ -104,9 +104,9 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		void drawCircleFilled (float originX, float originY, float radius) override;
 		void drawText (float xStart, float yStart, const char* text, float scaleFactor) override;
 
-		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite) override;
-		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT>& sprite) override;
-		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT, api>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT, api>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT, api>& sprite) override;
 
 	protected:
 		// assumes this line is clipped by the clipEdge
@@ -116,7 +116,7 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		void drawTriangleFilledHelper (float x1, float y1, float x2, float y2, float x3, float y3);
 		void drawCircleHelper (int originX, int originY, int x, int y, bool filled = false);
 		template <CP_FORMAT texFormat>
-		void drawSpriteHelper (float xStart, float yStart, Sprite<texFormat>& sprite);
+		void drawSpriteHelper (float xStart, float yStart, Sprite<texFormat, api>& sprite);
 
 		SoftwareGraphics();
 		virtual ~SoftwareGraphics() override;
@@ -610,7 +610,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics3D<width, height, format, api,  include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
-		TriShaderData<CP_FORMAT::MONOCHROME_1BIT, shaderPassDataSize>& shaderData)
+		TriShaderData<CP_FORMAT::MONOCHROME_1BIT, api, shaderPassDataSize>& shaderData)
 {
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
 		drawTriangleShadedHelper<CP_FORMAT::MONOCHROME_1BIT>( face, shaderData, m_DepthBuffer );
@@ -618,14 +618,15 @@ void SoftwareGraphics3D<width, height, format, api,  include3D, shaderPassDataSi
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
-		TriShaderData<CP_FORMAT::RGBA_32BIT, shaderPassDataSize>& shaderData)
+		TriShaderData<CP_FORMAT::RGBA_32BIT, api, shaderPassDataSize>& shaderData)
 {
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
 		drawTriangleShadedHelper<CP_FORMAT::RGBA_32BIT>( face, shaderData, m_DepthBuffer );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, shaderPassDataSize>& shaderData)
+void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
+		TriShaderData<CP_FORMAT::RGB_24BIT, api, shaderPassDataSize>& shaderData)
 {
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
 		drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData, m_DepthBuffer );
@@ -646,7 +647,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 	CP_FORMAT texFormat, bool withTransparency>
 inline void renderScanlinesHelper (int startRow, int endRowExclusive, float x1, float y1, float& xLeftAccumulator, float& xRightAccumulator,
 					float v1PerspMul, float v1Depth, float xLeftIncr, float xRightIncr,
-					TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1,
+					TriShaderData<texFormat, api, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1,
 					float texCoordY1, float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr,
 					float perspXIncr, float perspYIncr, float depthXIncr, float depthYIncr, float v1LightAmnt,
 					float lightAmntXIncr, float lightAmntYIncr, std::array<float, width * height>& depthBuffer,
@@ -744,7 +745,7 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 template <CP_FORMAT texFormat, bool withTransparency>
 inline void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::renderScanlines (int startRow, int endRowExclusive,
 		float x1, float y1, float& xLeftAccumulator, float& xRightAccumulator, float v1PerspMul, float v1Depth, float xLeftIncr,
-		float xRightIncr, TriShaderData<texFormat, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1,
+		float xRightIncr, TriShaderData<texFormat, api, shaderPassDataSize>& shaderData, Color& currentColor, float texCoordX1,
 		float texCoordY1, float texCoordXXIncr, float texCoordXYIncr, float texCoordYXIncr, float texCoordYYIncr, float perspXIncr,
 		float perspYIncr, float depthXIncr, float depthYIncr, float v1LightAmnt, float lightAmntXIncr, float lightAmntYIncr,
 		std::array<float, width * height>& depthBuffer, int leftHanded)
@@ -759,7 +760,7 @@ inline void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPa
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat, bool withTransparency>
 void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::renderInBoundsTriangle (Face& face,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData, std::array<float, width * height>& depthBuffer)
+			TriShaderData<texFormat, api, shaderPassDataSize>& shaderData, std::array<float, width * height>& depthBuffer)
 {
 	// offset to screen space
 	face.vertices[0].vec.x() *= (width  - 1);
@@ -885,7 +886,7 @@ void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataS
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat, bool withTransparency>
 void SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShadedHelper (Face& face,
-			TriShaderData<texFormat, shaderPassDataSize>& shaderData, std::array<float, width * height>& depthBuffer)
+			TriShaderData<texFormat, api, shaderPassDataSize>& shaderData, std::array<float, width * height>& depthBuffer)
 {
 	// setup shader data
 	Camera3D& camera = shaderData.camera;
@@ -1322,31 +1323,31 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
-		Sprite<CP_FORMAT::MONOCHROME_1BIT>& sprite)
+		Sprite<CP_FORMAT::MONOCHROME_1BIT, api>& sprite)
 {
 	this->drawSpriteHelper<CP_FORMAT::MONOCHROME_1BIT>( xStart, yStart, sprite );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart,
-		Sprite<CP_FORMAT::RGBA_32BIT>& sprite)
+		Sprite<CP_FORMAT::RGBA_32BIT, api>& sprite)
 {
 	this->drawSpriteHelper<CP_FORMAT::RGBA_32BIT>( xStart, yStart, sprite );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
-void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT>& sprite)
+void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT, api>& sprite)
 {
 	this->drawSpriteHelper<CP_FORMAT::RGB_24BIT>( xStart, yStart, sprite );
 }
 
-template <CP_FORMAT texFormat, unsigned int shaderPassDataSize>
-static inline void basicSpriteVShader (TriShaderData<texFormat, shaderPassDataSize>& vShaderData)
+template <CP_FORMAT texFormat, RENDER_API api, unsigned int shaderPassDataSize>
+static inline void basicSpriteVShader (TriShaderData<texFormat, api, shaderPassDataSize>& vShaderData)
 {
 }
 
-template <CP_FORMAT texFormat, unsigned int shaderPassDataSize>
-static inline void basicSpriteFShader (Color& colorOut, TriShaderData<texFormat, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur,
+template <CP_FORMAT texFormat, RENDER_API api, unsigned int shaderPassDataSize>
+static inline void basicSpriteFShader (Color& colorOut, TriShaderData<texFormat, api, shaderPassDataSize>& fShaderData, float v1Cur, float v2Cur,
 		float v3Cur, float texCoordX, float texCoordY, float lightAmnt)
 {
 	colorOut = fShaderData.textures[0]->getColor( texCoordX, texCoordY );
@@ -1355,7 +1356,7 @@ static inline void basicSpriteFShader (Color& colorOut, TriShaderData<texFormat,
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 template <CP_FORMAT texFormat>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSpriteHelper (float xStart, float yStart,
-		Sprite<texFormat>& sprite)
+		Sprite<texFormat, api>& sprite)
 {
 	const float spriteWidthF  = static_cast<float>( sprite.getWidth() );
 	const float spriteHeightF = static_cast<float>( sprite.getHeight() );
@@ -1385,10 +1386,10 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 	mesh.translate( xStart + spriteRotPointXF, yStart + spriteRotPointYF, 0.0f );
 
 	// TODO allow the ability to use custom shaders in the near future
-	std::array<Texture<texFormat>*, 5> textures = { {&sprite.getTexture(), nullptr, nullptr, nullptr, nullptr} };
+	std::array<Texture<texFormat, api>*, 5> textures = { {&sprite.getTexture(), nullptr, nullptr, nullptr, nullptr} };
 	Camera3D camera( 0.0f, width, 0.0f, height, 0.0f, 1.0f );
 	std::vector<PointLight> lights;
-	TriShaderData<texFormat, shaderPassDataSize> shaderData{
+	TriShaderData<texFormat, api, shaderPassDataSize> shaderData{
 		textures,
 		camera,
 		Color(),
