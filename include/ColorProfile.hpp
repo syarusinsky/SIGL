@@ -116,7 +116,7 @@ class ColorProfileMonochrome : public ColorProfileCommon
 		}
 
 		template <unsigned int width, unsigned int height>
-		Color getPixel (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelNum)
+		Color getPixel (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelNum) const
 		{
 			Color color;
 
@@ -150,7 +150,7 @@ class ColorProfileMonochrome : public ColorProfileCommon
 			return color;
 		}
 
-		Color getPixel (uint8_t* pixels, unsigned int pixelNum)
+		Color getPixel (const uint8_t* pixels, const unsigned int pixelNum) const
 		{
 			Color color;
 
@@ -216,7 +216,7 @@ class ColorProfileRGB : public ColorProfileCommon
 		}
 
 		template <unsigned int width, unsigned int height>
-		Color getPixel (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
+		Color getPixel (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum) const
 		{
 			Color color;
 
@@ -233,7 +233,7 @@ class ColorProfileRGB : public ColorProfileCommon
 			return color;
 		}
 
-		Color getPixel (uint8_t* pixels, unsigned int pixelNum)
+		Color getPixel (const uint8_t* pixels, const unsigned int pixelNum) const
 		{
 			Color color;
 
@@ -283,7 +283,7 @@ class ColorProfileRGBA : public ColorProfileCommon
 		}
 
 		template <unsigned int width, unsigned int height>
-		Color getPixel (std::array<uint8_t, width * height * 4>& pixelArray, unsigned int pixelNum)
+		Color getPixel (std::array<uint8_t, width * height * 4>& pixelArray, unsigned int pixelNum) const
 		{
 			Color color;
 
@@ -300,7 +300,7 @@ class ColorProfileRGBA : public ColorProfileCommon
 			return color;
 		}
 
-		Color getPixel (uint8_t* pixels, unsigned int pixelNum)
+		Color getPixel (const uint8_t* pixels, const unsigned int pixelNum) const
 		{
 			Color color;
 

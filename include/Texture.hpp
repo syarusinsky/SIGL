@@ -61,7 +61,7 @@ Color Texture<format, api>::getColor (float texCoordX, float texCoordY) const
 template <CP_FORMAT format, RENDER_API api>
 Color Texture<format, api>::getColor (unsigned int texCoordX, unsigned int texCoordY) const
 {
-	return getColor( texCoordX, texCoordY );
+	return FrameBufferDynamic<format, api>::getColor( texCoordX, texCoordY );
 }
 
 #endif // TEXTURE_HPP

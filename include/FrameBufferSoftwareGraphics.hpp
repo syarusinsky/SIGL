@@ -136,18 +136,13 @@ class FrameBufferSoftwareGraphicsDynamic : public std::conditional<format == CP_
 		Color getColor (unsigned int width, unsigned int height) const;
 		Color getColor (float x, float y) const;
 
-		uint8_t* getData() { return m_Pixels; }
-
-		unsigned int getWidth() const;
-		unsigned int getHeight() const;
+		unsigned int getWidth() const { return m_Width; }
+		unsigned int getHeight() const { return m_Height; }
 
 	protected:
 		ColorProfile<format> m_ColorProfile;
 		const unsigned int m_Width;
 		const unsigned int m_Height;
-
-	private:
-		uint8_t*             m_Pixels;
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
@@ -194,7 +189,9 @@ std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
 	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochromeDynamic<format>,
 	FrameBufferRGBADynamic<format>>::type
 
-	>::type( width, height )
+	>::type( width, height ),
+	m_Width( width ),
+	m_Height( height )
 {
 }
 
@@ -205,11 +202,13 @@ std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
 	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochromeDynamic<format>,
 	FrameBufferRGBADynamic<format>>::type
 
-	>::type( width, height )
+	>::type( width, height ),
+	m_Width( width ),
+	m_Height( height )
 {
 	if constexpr ( format == CP_FORMAT::MONOCHROME_1BIT )
 	{
-		constexpr unsigned int numBytes = FrameBufferMonochromeDynamic<format>::m_NumPixels
+		const unsigned int numBytes = FrameBufferMonochromeDynamic<format>::m_NumPixels
 							* FrameBufferMonochromeDynamic<format>::m_PixelWidth;
 		for ( unsigned int byte = 0; byte < numBytes; byte++ )
 		{
@@ -218,7 +217,7 @@ std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
 	}
 	else if constexpr ( format == CP_FORMAT::RGBA_32BIT )
 	{
-		constexpr unsigned int numBytes = FrameBufferRGBADynamic<format>::m_NumPixels
+		const unsigned int numBytes = FrameBufferRGBADynamic<format>::m_NumPixels
 							* FrameBufferRGBADynamic<format>::m_PixelWidth;
 		for ( unsigned int byte = 0; byte < numBytes; byte++ )
 		{
@@ -227,7 +226,7 @@ std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
 	}
 	else if constexpr ( format == CP_FORMAT::RGB_24BIT )
 	{
-		constexpr unsigned int numBytes = FrameBufferRGBDynamic<format>::m_NumPixels
+		const unsigned int numBytes = FrameBufferRGBDynamic<format>::m_NumPixels
 							* FrameBufferRGBDynamic<format>::m_PixelWidth;
 		for ( unsigned int byte = 0; byte < numBytes; byte++ )
 		{
@@ -240,7 +239,25 @@ template <CP_FORMAT format>
 Color FrameBufferSoftwareGraphicsDynamic<format>::getColor (unsigned int x, unsigned int y) const
 {
 	const unsigned int pixelNum = ( m_Width * y ) + x;
-	return m_ColorProfile.getPixel( m_Pixels, pixelNum );
+
+	if constexpr ( format == CP_FORMAT::MONOCHROME_1BIT )
+	{
+		return m_ColorProfile.getPixel(
+				static_cast<const uint8_t*>(&FrameBufferMonochromeDynamic<format>::m_Pixels[0]),
+				pixelNum );
+	}
+	else if constexpr ( format == CP_FORMAT::RGBA_32BIT )
+	{
+		return m_ColorProfile.getPixel(
+				static_cast<const uint8_t*>(&FrameBufferRGBADynamic<format>::m_Pixels[0]),
+				pixelNum );
+	}
+	else
+	{
+		return m_ColorProfile.getPixel(
+				static_cast<const uint8_t*>(&FrameBufferRGBDynamic<format>::m_Pixels[0]),
+				pixelNum );
+	}
 }
 
 template <CP_FORMAT format>
