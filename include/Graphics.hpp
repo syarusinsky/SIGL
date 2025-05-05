@@ -12,7 +12,19 @@
 *************************************************************************/
 
 #include "SoftwareGraphics.hpp"
+
+#ifndef NO_GPU
 #include "OpenGlGraphics.hpp"
+#else
+	// stub out OpenGlGraphics
+	template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+	class OpenGlGraphics
+	{
+		public:
+			OpenGlGraphics() {}
+			virtual ~OpenGlGraphics() {}
+	};
+#endif
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 class Graphics : public std::conditional<(api == RENDER_API::SOFTWARE), SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>,

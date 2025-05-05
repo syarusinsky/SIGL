@@ -12,7 +12,27 @@
 #include "ColorProfile.hpp"
 
 #include "FrameBufferSoftwareGraphics.hpp"
+
+#ifndef NO_GPU
 #include "FrameBufferOpenGl.hpp"
+#else
+	// stub out FrameBufferOpenGl
+	template <unsigned int width, unsigned int height, CP_FORMAT format>
+	class FrameBufferOpenGlFixed
+	{
+		public:
+			FrameBufferOpenGlFixed(){}
+			virtual ~FrameBufferOpenGlFixed(){}
+	};
+
+	template <CP_FORMAT format>
+	class FrameBufferOpenGlDynamic
+	{
+		public:
+			FrameBufferOpenGlDynamic() {}
+			virtual ~FrameBufferOpenGlDynamic() {}
+	};
+#endif
 
 class FormatInitializer
 {
