@@ -164,23 +164,55 @@ class SurfaceThreaded : public SurfaceBase<api, width, height, format, include3D
 		}
 };
 
+// the user has to provide the Graphics pointers (framebuffers) for embedded
 template <RENDER_API api, unsigned int width, unsigned int height, CP_FORMAT format, bool include3D, unsigned int shaderPassDataSize>
 class SurfaceSingleCore : public SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>
 {
 	public:
 		SurfaceSingleCore()
 		{
-			m_Graphics = new Graphics<width, height, format, api, include3D, shaderPassDataSize>();
+// only allocate memory if not on embedded platform, since framebuffers are memory expensive
+#ifndef NO_GPU
+			m_GraphicsBuffer[0] = new Graphics<width, height, format, api, include3D, shaderPassDataSize>();
+			m_GraphicsBuffer[1] = new Graphics<width, height, format, api, include3D, shaderPassDataSize>();
+#endif
+
+			m_Graphics = m_GraphicsBuffer[1];
 		}
 
 		~SurfaceSingleCore()
 		{
-			delete m_Graphics;
+// only deallocate memory if not on embedded platform, since framebuffers are memory expensive
+#ifndef NO_GPU
+			delete m_GraphicsBuffer[0];
+			delete m_GraphicsBuffer[1];
+#endif
 		}
+
+// provide a way for the user to place framebuffers in memory if on an embedded platform
+#ifdef NO_GPU
+		bool placeGraphicsObjectsInMemory (uint8_t* memoryLocation, size_t memorySize)
+		{
+			if ( memorySize > sizeof(Graphics<width, height, format, api, include3D, shaderPassDataSize>) * 2 )
+			{
+				m_GraphicsBuffer[0] = new (memoryLocation) Graphics<width, height, format, api, include3D, shaderPassDataSize>();
+				m_GraphicsBuffer[1] = new (memoryLocation + sizeof(Graphics<width, height, format, api, include3D, shaderPassDataSize>))
+							Graphics<width, height, format, api, include3D, shaderPassDataSize>();
+
+				return true;
+			}
+
+			return false;
+		}
+#endif
 
 		FrameBufferFixed<width, height, format, api>& advanceFrameBuffer()
 		{
-			return m_Graphics->getFrameBuffer();
+			m_Graphics = m_GraphicsBuffer[static_cast<unsigned int>(m_DrawingBuffer1)];
+			m_DrawingBuffer1 = !m_DrawingBuffer1;
+
+			FrameBufferFixed<width, height, format, api>& fb = m_GraphicsBuffer[static_cast<unsigned int>(m_DrawingBuffer1)]->getFrameBuffer();
+			return fb;
 		}
 
 		void setFont (Font* font) override
@@ -201,6 +233,9 @@ class SurfaceSingleCore : public SurfaceBase<api, width, height, format, include
 		}
 
 	private:
+		bool m_DrawingBuffer1 = true;
+		std::array<Graphics<width, height, format, api, include3D, shaderPassDataSize>*, 2> 	m_GraphicsBuffer;
+
 		using 		SurfaceBase<api, width, height, format, include3D, shaderPassDataSize>::m_Graphics;
 };
 
