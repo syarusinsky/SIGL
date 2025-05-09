@@ -51,9 +51,10 @@ class FormatInitializer
 			{
 				m_Format = CP_FORMAT::MONOCHROME_1BIT;
 			}
-			else
+			else if ( format == 3 )
 			{
-				m_Format = CP_FORMAT::RGB_24BIT;
+				// TODO this is not yet implemented in sigl-utilites
+				m_Format = CP_FORMAT::BGR_24BIT;
 			}
 		}
 

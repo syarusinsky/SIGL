@@ -49,7 +49,8 @@ enum class CP_FORMAT
 {
 	MONOCHROME_1BIT,
 	RGB_24BIT,
-	RGBA_32BIT
+	RGBA_32BIT,
+	BGR_24BIT
 };
 
 class ColorProfileCommon
@@ -252,6 +253,72 @@ class ColorProfileRGB : public ColorProfileCommon
 };
 
 template <CP_FORMAT format>
+class ColorProfileBGR : public ColorProfileCommon
+{
+	public:
+
+		template <unsigned int width, unsigned int height>
+		void putPixel (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+
+			pixelArray[(pixelNum * 3) + 0] = m_BValue; // Blue
+			pixelArray[(pixelNum * 3) + 1] = m_GValue; // Green
+			pixelArray[(pixelNum * 3) + 2] = m_RValue; // Red
+		}
+
+		template <unsigned int width, unsigned int height>
+		void putPixelWithAlphaBlending (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
+		{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+			pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+			Color newColor = getColor<format>().alphaBlend( getPixel<width, height>(pixelArray, pixelNum) );
+
+			pixelArray[(pixelNum * 3) + 0] = 255 * newColor.m_B; // Blue
+			pixelArray[(pixelNum * 3) + 1] = 255 * newColor.m_G; // Green
+			pixelArray[(pixelNum * 3) + 2] = 255 * newColor.m_R; // Red
+		}
+
+		template <unsigned int width, unsigned int height>
+		Color getPixel (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum) const
+		{
+			Color color;
+
+			color.m_IsMonochrome = false;
+
+			color.m_B = static_cast<float>( pixelArray[(pixelNum * 3 ) + 0]) * (1.0f / 255.0f);
+			color.m_G = static_cast<float>( pixelArray[(pixelNum * 3 ) + 1]) * (1.0f / 255.0f);
+			color.m_R = static_cast<float>( pixelArray[(pixelNum * 3 ) + 2]) * (1.0f / 255.0f);
+			color.m_A = 1.0f;
+			color.m_M = true;
+
+			color.m_HasAlpha = false;
+
+			return color;
+		}
+
+		Color getPixel (const uint8_t* pixels, const unsigned int pixelNum) const
+		{
+			Color color;
+
+			color.m_IsMonochrome = false;
+
+			color.m_B = static_cast<float>( pixels[(pixelNum * 3 ) + 0]) * (1.0f / 255.0f);
+			color.m_G = static_cast<float>( pixels[(pixelNum * 3 ) + 1]) * (1.0f / 255.0f);
+			color.m_R = static_cast<float>( pixels[(pixelNum * 3 ) + 2]) * (1.0f / 255.0f);
+			color.m_A = 1.0f;
+			color.m_M = true;
+
+			color.m_HasAlpha = false;
+
+			return color;
+		}
+};
+
+template <CP_FORMAT format>
 class ColorProfileRGBA : public ColorProfileCommon
 {
 	public:
@@ -319,11 +386,13 @@ class ColorProfileRGBA : public ColorProfileCommon
 };
 
 template <CP_FORMAT format>
-class ColorProfile : public std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
+class ColorProfile : public std::conditional<format == CP_FORMAT::BGR_24BIT, ColorProfileBGR<format>,
+				typename std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
 
-				typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
-				ColorProfileRGBA<format>>::type
+					typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
+					ColorProfileRGBA<format>>::type
 
+					>::type
 				>::type
 {
 	public:
@@ -340,12 +409,14 @@ class ColorProfile : public std::conditional<format == CP_FORMAT::RGB_24BIT, Col
 
 template <CP_FORMAT format>
 ColorProfile<format>::ColorProfile() :
-	std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
+	std::conditional<format == CP_FORMAT::BGR_24BIT, ColorProfileBGR<format>,
+		typename std::conditional<format == CP_FORMAT::RGB_24BIT, ColorProfileRGB<format>,
 
-	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
-	ColorProfileRGBA<format>>::type
+			typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, ColorProfileMonochrome<format>,
+			ColorProfileRGBA<format>>::type
 
-	>::type()
+			>::type
+		>::type()
 {
 }
 

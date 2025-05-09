@@ -67,6 +67,7 @@ class IGraphics3D
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, api, shaderPassDataSize>& shaderData) = 0;
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, api, shaderPassDataSize>& shaderData) = 0;
 		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, api, shaderPassDataSize>& shaderData) = 0;
+		virtual void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::BGR_24BIT, api, shaderPassDataSize>& shaderData) = 0;
 		virtual void drawDepthBuffer (Camera3D& camera) = 0;
 		virtual void clearDepthBuffer() = 0;
 };
@@ -99,6 +100,7 @@ class IGraphics : public std::conditional<include3D, IGraphics3D<api, width, hei
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT, api>& sprite) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT, api>& sprite) = 0;
 		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT, api>& sprite) = 0;
+		virtual void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::BGR_24BIT, api>& sprite) = 0;
 
 		inline static float distance (float x1, float y1, float x2, float y2) { return sqrt(pow(y2 - y1, 2) + pow(x2 - x1, 2)); }
 

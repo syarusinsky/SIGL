@@ -160,7 +160,10 @@ FrameBufferOpenGlDynamic<format>::FrameBufferOpenGlDynamic (unsigned int width, 
 	} else if constexpr ( format == CP_FORMAT::RGB_24BIT )
 	{
 		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels );
-	} else if constexpr ( format == CP_FORMAT::MONOCHROME_1BIT )
+	} else if constexpr ( format == CP_FORMAT::BGR_24BIT )
+	{
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_BGR, m_Width, m_Height, 0, GL_BGR, GL_UNSIGNED_BYTE, pixels );
+	}else if constexpr ( format == CP_FORMAT::MONOCHROME_1BIT )
 	{
 		ColorProfile<CP_FORMAT::MONOCHROME_1BIT> colorProfile;
 		uint8_t newPixels[ width * height * 3 ];

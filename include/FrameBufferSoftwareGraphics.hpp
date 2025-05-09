@@ -104,7 +104,7 @@ class FrameBufferMonochromeDynamic
 };
 
 template <unsigned int width, unsigned int height, CP_FORMAT format>
-class FrameBufferSoftwareGraphicsFixed : public std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBFixed<width, height, format>,
+class FrameBufferSoftwareGraphicsFixed : public std::conditional<format == CP_FORMAT::RGB_24BIT || format == CP_FORMAT::BGR_24BIT, FrameBufferRGBFixed<width, height, format>,
 
 					typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochromeFixed<width, height, format>,
 					FrameBufferRGBAFixed<width, height, format>>::type
@@ -121,7 +121,7 @@ class FrameBufferSoftwareGraphicsFixed : public std::conditional<format == CP_FO
 };
 
 template <CP_FORMAT format>
-class FrameBufferSoftwareGraphicsDynamic : public std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
+class FrameBufferSoftwareGraphicsDynamic : public std::conditional<format == CP_FORMAT::RGB_24BIT || format == CP_FORMAT::BGR_24BIT, FrameBufferRGBDynamic<format>,
 
 					typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochromeDynamic<format>,
 					FrameBufferRGBADynamic<format>>::type
@@ -171,7 +171,7 @@ FrameBufferSoftwareGraphicsFixed<width, height, format>::FrameBufferSoftwareGrap
 			FrameBufferRGBAFixed<width, height, format>::m_Pixels[byte] = pixelData[byte];
 		}
 	}
-	else if constexpr ( format == CP_FORMAT::RGB_24BIT )
+	else if constexpr ( format == CP_FORMAT::RGB_24BIT || format == CP_FORMAT::BGR_24BIT )
 	{
 		constexpr unsigned int numBytes = FrameBufferRGBFixed<width, height, format>::m_NumPixels
 							* FrameBufferRGBFixed<width, height, format>::m_PixelWidth;
@@ -184,7 +184,7 @@ FrameBufferSoftwareGraphicsFixed<width, height, format>::FrameBufferSoftwareGrap
 
 template <CP_FORMAT format>
 FrameBufferSoftwareGraphicsDynamic<format>::FrameBufferSoftwareGraphicsDynamic (unsigned int width, unsigned int height) :
-std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
+std::conditional<format == CP_FORMAT::RGB_24BIT || format == CP_FORMAT::BGR_24BIT, FrameBufferRGBDynamic<format>,
 
 	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochromeDynamic<format>,
 	FrameBufferRGBADynamic<format>>::type
@@ -197,7 +197,7 @@ std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
 
 template <CP_FORMAT format>
 FrameBufferSoftwareGraphicsDynamic<format>::FrameBufferSoftwareGraphicsDynamic (unsigned int width, unsigned int height, uint8_t* pixelData) :
-std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
+std::conditional<format == CP_FORMAT::RGB_24BIT || format == CP_FORMAT::BGR_24BIT, FrameBufferRGBDynamic<format>,
 
 	typename std::conditional<format == CP_FORMAT::MONOCHROME_1BIT, FrameBufferMonochromeDynamic<format>,
 	FrameBufferRGBADynamic<format>>::type
@@ -224,7 +224,7 @@ std::conditional<format == CP_FORMAT::RGB_24BIT, FrameBufferRGBDynamic<format>,
 			FrameBufferRGBADynamic<format>::m_Pixels[byte] = pixelData[byte];
 		}
 	}
-	else if constexpr ( format == CP_FORMAT::RGB_24BIT )
+	else if constexpr ( format == CP_FORMAT::RGB_24BIT || format == CP_FORMAT::BGR_24BIT )
 	{
 		const unsigned int numBytes = FrameBufferRGBDynamic<format>::m_NumPixels
 							* FrameBufferRGBDynamic<format>::m_PixelWidth;
@@ -252,7 +252,7 @@ Color FrameBufferSoftwareGraphicsDynamic<format>::getColor (unsigned int x, unsi
 				static_cast<const uint8_t*>(&FrameBufferRGBADynamic<format>::m_Pixels[0]),
 				pixelNum );
 	}
-	else
+	else if constexpr ( format == CP_FORMAT::RGB_24BIT || format == CP_FORMAT::BGR_24BIT )
 	{
 		return m_ColorProfile.getPixel(
 				static_cast<const uint8_t*>(&FrameBufferRGBDynamic<format>::m_Pixels[0]),

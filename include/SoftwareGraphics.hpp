@@ -62,6 +62,7 @@ class SoftwareGraphics3D : public SoftwareGraphicsBase<width, height, format, ap
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::MONOCHROME_1BIT, api, shaderPassDataSize>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGBA_32BIT, api, shaderPassDataSize>& shaderData) override;
 		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::RGB_24BIT, api, shaderPassDataSize>& shaderData) override;
+		void drawTriangleShaded (Face& face, TriShaderData<CP_FORMAT::BGR_24BIT, api, shaderPassDataSize>& shaderData) override;
 		void drawDepthBuffer (Camera3D& camera) override;
 		void clearDepthBuffer() override;
 
@@ -107,6 +108,7 @@ class SoftwareGraphics 	: public std::conditional<include3D, SoftwareGraphics3D<
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::MONOCHROME_1BIT, api>& sprite) override;
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGBA_32BIT, api>& sprite) override;
 		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT, api>& sprite) override;
+		void drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::BGR_24BIT, api>& sprite) override;
 
 	protected:
 		// assumes this line is clipped by the clipEdge
@@ -630,6 +632,14 @@ void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSiz
 {
 	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
 		drawTriangleShadedHelper<CP_FORMAT::RGB_24BIT>( face, shaderData, m_DepthBuffer );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics3D<width, height, format, api, include3D, shaderPassDataSize>::drawTriangleShaded (Face& face,
+		TriShaderData<CP_FORMAT::BGR_24BIT, api, shaderPassDataSize>& shaderData)
+{
+	SoftwareGraphicsBase<width, height, format, api, include3D, shaderPassDataSize>::template
+		drawTriangleShadedHelper<CP_FORMAT::BGR_24BIT>( face, shaderData, m_DepthBuffer );
 }
 
 inline float calcIncr(const Vector<3>& values, float xy1, float xy2, float xy3, float oneOverdXY)
@@ -1339,6 +1349,12 @@ template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API 
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::RGB_24BIT, api>& sprite)
 {
 	this->drawSpriteHelper<CP_FORMAT::RGB_24BIT>( xStart, yStart, sprite );
+}
+
+template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
+void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::drawSprite (float xStart, float yStart, Sprite<CP_FORMAT::BGR_24BIT, api>& sprite)
+{
+	this->drawSpriteHelper<CP_FORMAT::BGR_24BIT>( xStart, yStart, sprite );
 }
 
 template <CP_FORMAT texFormat, RENDER_API api, unsigned int shaderPassDataSize>

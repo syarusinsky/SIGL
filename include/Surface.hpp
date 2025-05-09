@@ -32,6 +32,8 @@ class SurfaceBase
 					return 32;
 				case CP_FORMAT::RGB_24BIT:
 					return 24;
+				case CP_FORMAT::BGR_24BIT:
+					return 24;
 				case CP_FORMAT::MONOCHROME_1BIT:
 					return 1;
 				default:
