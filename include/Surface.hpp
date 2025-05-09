@@ -199,6 +199,8 @@ class SurfaceSingleCore : public SurfaceBase<api, width, height, format, include
 				m_GraphicsBuffer[1] = new (memoryLocation + sizeof(Graphics<width, height, format, api, include3D, shaderPassDataSize>))
 							Graphics<width, height, format, api, include3D, shaderPassDataSize>();
 
+				m_Graphics = m_GraphicsBuffer[1];
+
 				return true;
 			}
 
@@ -217,7 +219,8 @@ class SurfaceSingleCore : public SurfaceBase<api, width, height, format, include
 
 		void setFont (Font* font) override
 		{
-			m_Graphics->setFont( font );
+			m_GraphicsBuffer[0]->setFont( font );
+			m_GraphicsBuffer[1]->setFont( font );
 		}
 
 		bool render()
