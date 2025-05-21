@@ -97,6 +97,28 @@ class ColorProfileMonochrome : public ColorProfileCommon
 			}
 		}
 
+		template <unsigned int width, unsigned int height, unsigned int numPixelsToPut>
+		void putPixels (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelStart)
+		{
+			for ( unsigned int pixelNum = pixelStart; pixelNum < numPixelsToPut; pixelNum++ )
+			{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+				pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+				unsigned int byteNum = std::floor( pixelNum / 8 );
+				unsigned int pixelIndex = 7 - (pixelNum % 8);
+				uint8_t bitmask = ( 1 << pixelIndex );
+				if ( m_MValue == true && m_AValue > 0 )
+				{
+					pixelArray[byteNum] = pixelArray[byteNum] | bitmask;
+				}
+				else if ( m_AValue > 0 )
+				{
+					pixelArray[byteNum] = pixelArray[byteNum] & ~(bitmask);
+				}
+			}
+		}
+
 		template <unsigned int width, unsigned int height>
 		void putPixelWithAlphaBlending (std::array<uint8_t, (width * height) / 8>& pixelArray, unsigned int pixelNum)
 		{
@@ -203,6 +225,26 @@ class ColorProfileRGB : public ColorProfileCommon
 			pixelArray[(pixelNum * 3) + 2] = m_BValue; // Blue
 		}
 
+
+		template <unsigned int width, unsigned int height, unsigned int numPixelsToPut>
+		void putPixels (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelStart)
+		{
+			const uint8_t r = m_RValue;
+			const uint8_t g = m_GValue;
+			const uint8_t b = m_BValue;
+
+			for ( unsigned int pixelNum = pixelStart; pixelNum < numPixelsToPut; pixelNum++ )
+			{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+				pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+
+				pixelArray[(pixelNum * 3) + 0] = m_RValue; // Red
+				pixelArray[(pixelNum * 3) + 1] = m_GValue; // Green
+				pixelArray[(pixelNum * 3) + 2] = m_BValue; // Blue
+			}
+		}
+
 		template <unsigned int width, unsigned int height>
 		void putPixelWithAlphaBlending (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
 		{
@@ -269,6 +311,25 @@ class ColorProfileBGR : public ColorProfileCommon
 			pixelArray[(pixelNum * 3) + 2] = m_RValue; // Red
 		}
 
+		template <unsigned int width, unsigned int height, unsigned int numPixelsToPut>
+		void putPixels (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelStart)
+		{
+			const uint8_t b = m_BValue;
+			const uint8_t g = m_GValue;
+			const uint8_t r = m_RValue;
+
+			for ( unsigned int pixelNum = pixelStart; pixelNum < numPixelsToPut; pixelNum++ )
+			{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+				pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+
+				pixelArray[(pixelNum * 3) + 0] = b; // Blue
+				pixelArray[(pixelNum * 3) + 1] = g; // Green
+				pixelArray[(pixelNum * 3) + 2] = r; // Red
+			}
+		}
+
 		template <unsigned int width, unsigned int height>
 		void putPixelWithAlphaBlending (std::array<uint8_t, width * height * 3>& pixelArray, unsigned int pixelNum)
 		{
@@ -333,6 +394,27 @@ class ColorProfileRGBA : public ColorProfileCommon
 			pixelArray[(pixelNum * 4) + 1] = m_GValue; // Green
 			pixelArray[(pixelNum * 4) + 2] = m_BValue; // Blue
 			pixelArray[(pixelNum * 4) + 3] = m_AValue; // Alpha
+		}
+
+		template <unsigned int width, unsigned int height, unsigned int numPixelsToPut>
+		void putPixels (std::array<uint8_t, width * height * 4>& pixelArray, unsigned int pixelStart)
+		{
+			const uint8_t r = m_RValue;
+			const uint8_t g = m_GValue;
+			const uint8_t b = m_BValue;
+			const uint8_t a = m_AValue;
+
+			for ( unsigned int pixelNum = pixelStart; pixelNum < numPixelsToPut; pixelNum++ )
+			{
+#ifdef ROTATE_DISPLAY_180_DEGREES
+				pixelNum = fbNumPixels - 1 - pixelNum;
+#endif
+
+				pixelArray[(pixelNum * 4) + 0] = m_RValue; // Red
+				pixelArray[(pixelNum * 4) + 1] = m_GValue; // Green
+				pixelArray[(pixelNum * 4) + 2] = m_BValue; // Blue
+				pixelArray[(pixelNum * 4) + 3] = m_AValue; // Alpha
+			}
 		}
 
 		template <unsigned int width, unsigned int height>

@@ -183,10 +183,7 @@ void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
 void SoftwareGraphics<width, height, format, api, include3D, shaderPassDataSize>::fill()
 {
-	for ( unsigned int pixelNum = 0; pixelNum < width * height; pixelNum++ )
-	{
-		m_ColorProfile.template putPixel<width, height>( m_FB.getPixels(), pixelNum );
-	}
+	m_ColorProfile.template putPixels<width, height, width * height>( m_FB.getPixels(), 0 );
 }
 
 template <unsigned int width, unsigned int height, CP_FORMAT format, RENDER_API api, bool include3D, unsigned int shaderPassDataSize>
